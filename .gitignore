@@ -1,0 +1,14 @@
+# Ignore local env secrets
+.env
+
+# IDE folders
+.vs/
+.vscode/
+
+# User/OS files
+*.user
+*.suo
+
+# Build outputs
+**/bin/
+**/obj/
