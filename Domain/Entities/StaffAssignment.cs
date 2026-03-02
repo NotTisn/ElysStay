@@ -2,10 +2,11 @@
 
 public class StaffAssignment
 {
-    public Guid StaffId { get; set; }
     public Guid BuildingId { get; set; }
+    public Guid StaffId { get; set; }
     public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
 
-    public User? Staff { get; set; }
+    // Navigation properties
     public Building? Building { get; set; }
+    public User? Staff { get; set; }
 }

@@ -3,6 +3,6 @@
 public enum UserRole
 {
     Admin,
-    Staff,
+    Manager,
     Tenant
 }

@@ -5,30 +5,29 @@ namespace Domain.Entities;
 public class Contract
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public string ContractCode { get; set; } = string.Empty;
     public Guid RoomId { get; set; }
-    public Guid RepresentativeId { get; set; }
+    public Guid TenantUserId { get; set; }
+    public Guid? ReservationId { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public decimal RentAmount { get; set; }
+    public decimal RoomPrice { get; set; }
     public decimal DepositAmount { get; set; }
-    public DepositStatus DepositStatus { get; set; } = DepositStatus.Held;
-    public decimal RefundedDepositAmount { get; set; } = 0;
-    public DateTime? DepositRefundDate { get; set; }
-    public string PaymentCycle { get; set; } = "MONTHLY";
-    public int PaymentDate { get; set; }
-    public decimal ElectricityRate { get; set; }
-    public decimal WaterRate { get; set; }
-    public int InitialElectricityIndex { get; set; }
-    public int InitialWaterIndex { get; set; }
-    public string ServiceFees { get; set; } = "[]"; 
+    public DepositStatus DepositStatus { get; set; } = DepositStatus.Unpaid;
     public ContractStatus Status { get; set; } = ContractStatus.Active;
-    public string? ContractFileUrl { get; set; }
+    public DateTime? TerminationDate { get; set; }
+    public string? TerminationReason { get; set; }
+    public decimal? RefundAmount { get; set; }
+    public string? Note { get; set; }
+    public Guid CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? DeletedAt { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    // Navigation properties
     public Room? Room { get; set; }
-    public User? Representative { get; set; }
+    public User? TenantUser { get; set; }
+    public RoomReservation? Reservation { get; set; }
+    public User? Creator { get; set; }
     public ICollection<ContractTenant> ContractTenants { get; set; } = new List<ContractTenant>();
-    public ICollection<MeterReading> MeterReadings { get; set; } = new List<MeterReading>();
+    public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+    public ICollection<Payment> Payments { get; set; } = new List<Payment>();
 }

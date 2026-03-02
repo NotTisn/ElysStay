@@ -8,11 +8,38 @@ public class RoomConfiguration : IEntityTypeConfiguration<Room>
 {
     public void Configure(EntityTypeBuilder<Room> builder)
     {
-        builder.HasIndex(r => new { r.BuildingId, r.RoomCode }).IsUnique();
+        builder.HasKey(r => r.Id);
+
+        builder.Property(r => r.RoomNumber).IsRequired().HasMaxLength(50);
+        builder.Property(r => r.Area).HasColumnType("numeric(10,2)");
+        builder.Property(r => r.Price).HasColumnType("numeric(18,2)");
         builder.Property(r => r.Status).HasConversion<string>();
-        
-        builder.HasOne(r => r.Building)
-            .WithMany(b => b.Rooms)
-            .HasForeignKey(r => r.BuildingId);
+
+        builder.HasIndex(r => new { r.BuildingId, r.RoomNumber }).IsUnique();
+
+        builder.HasMany(r => r.RoomServices)
+            .WithOne(rs => rs.Room)
+            .HasForeignKey(rs => rs.RoomId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(r => r.Reservations)
+            .WithOne(rr => rr.Room)
+            .HasForeignKey(rr => rr.RoomId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(r => r.Contracts)
+            .WithOne(c => c.Room)
+            .HasForeignKey(c => c.RoomId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(r => r.MeterReadings)
+            .WithOne(m => m.Room)
+            .HasForeignKey(m => m.RoomId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(r => r.Issues)
+            .WithOne(i => i.Room)
+            .HasForeignKey(i => i.RoomId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

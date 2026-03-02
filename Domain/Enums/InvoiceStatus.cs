@@ -3,6 +3,7 @@
 public enum InvoiceStatus
 {
     Unpaid,
+    PartialPaid,
     Paid,
-    Overdue
+    Cancelled
 }

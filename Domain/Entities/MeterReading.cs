@@ -3,19 +3,18 @@
 public class MeterReading
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public Guid ContractId { get; set; }
     public Guid RoomId { get; set; }
-    public int BillingMonth { get; set; }
+    public Guid ServiceId { get; set; }
     public int BillingYear { get; set; }
-    public int OldElectricityIndex { get; set; }
-    public int NewElectricityIndex { get; set; }
-    public int OldWaterIndex { get; set; }
-    public int NewWaterIndex { get; set; }
-    public Guid? RecordedById { get; set; }
-    public DateTime ReadingDate { get; set; } = DateTime.UtcNow.Date;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public int BillingMonth { get; set; }
+    public decimal PreviousReading { get; set; }
+    public decimal CurrentReading { get; set; }
+    public decimal Consumption { get; set; }
+    public DateTime DateRead { get; set; } = DateTime.UtcNow;
+    public Guid CreatedBy { get; set; }
 
-    public Contract? Contract { get; set; }
+    // Navigation properties
     public Room? Room { get; set; }
-    public User? RecordedBy { get; set; }
+    public Service? Service { get; set; }
+    public User? Creator { get; set; }
 }

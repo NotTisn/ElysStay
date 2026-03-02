@@ -8,7 +8,25 @@ public class MaintenanceIssueConfiguration : IEntityTypeConfiguration<Maintenanc
 {
     public void Configure(EntityTypeBuilder<MaintenanceIssue> builder)
     {
+        builder.HasKey(m => m.Id);
+
+        builder.Property(m => m.Title).IsRequired().HasMaxLength(200);
         builder.Property(m => m.Status).HasConversion<string>();
         builder.Property(m => m.Priority).HasConversion<string>();
+
+        builder.HasOne(m => m.Room)
+            .WithMany(r => r.Issues)
+            .HasForeignKey(m => m.RoomId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(m => m.Reporter)
+            .WithMany()
+            .HasForeignKey(m => m.ReportedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(m => m.Assignee)
+            .WithMany()
+            .HasForeignKey(m => m.AssignedTo)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

@@ -8,12 +8,47 @@ public class ContractConfiguration : IEntityTypeConfiguration<Contract>
 {
     public void Configure(EntityTypeBuilder<Contract> builder)
     {
-        builder.HasIndex(c => c.ContractCode).IsUnique();
-        builder.Property(c => c.Status).HasConversion<string>();
+        builder.HasKey(c => c.Id);
+
+        builder.Property(c => c.RoomPrice).HasColumnType("numeric(18,2)");
+        builder.Property(c => c.DepositAmount).HasColumnType("numeric(18,2)");
+        builder.Property(c => c.RefundAmount).HasColumnType("numeric(18,2)");
         builder.Property(c => c.DepositStatus).HasConversion<string>();
-        
+        builder.Property(c => c.Status).HasConversion<string>();
+
         builder.HasOne(c => c.Room)
             .WithMany(r => r.Contracts)
-            .HasForeignKey(c => c.RoomId);
+            .HasForeignKey(c => c.RoomId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(c => c.TenantUser)
+            .WithMany()
+            .HasForeignKey(c => c.TenantUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(c => c.Reservation)
+            .WithMany(r => r.Contracts)
+            .HasForeignKey(c => c.ReservationId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(c => c.Creator)
+            .WithMany()
+            .HasForeignKey(c => c.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(c => c.ContractTenants)
+            .WithOne(ct => ct.Contract)
+            .HasForeignKey(ct => ct.ContractId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(c => c.Invoices)
+            .WithOne(i => i.Contract)
+            .HasForeignKey(i => i.ContractId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(c => c.Payments)
+            .WithOne(p => p.Contract)
+            .HasForeignKey(p => p.ContractId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

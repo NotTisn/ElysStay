@@ -5,29 +5,23 @@ namespace Domain.Entities;
 public class Invoice
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public string InvoiceCode { get; set; } = string.Empty;
-    public Guid BuildingId { get; set; }
     public Guid ContractId { get; set; }
-    public Guid TenantId { get; set; }
-    public int BillingMonth { get; set; }
     public int BillingYear { get; set; }
-    public decimal RoomCharge { get; set; }
-    public decimal ElectricityCharge { get; set; }
-    public int ElectricityUsage { get; set; }
-    public decimal WaterCharge { get; set; }
-    public int WaterUsage { get; set; }
-    public string ServiceFees { get; set; } = "[]"; 
+    public int BillingMonth { get; set; }
+    public decimal RoomAmount { get; set; }
+    public decimal ServiceAmount { get; set; }
+    public decimal PenaltyAmount { get; set; }
+    public decimal DiscountAmount { get; set; }
     public decimal TotalAmount { get; set; }
-    public decimal PaidAmount { get; set; } = 0;
-    public decimal RemainingAmount { get; set; }
     public InvoiceStatus Status { get; set; } = InvoiceStatus.Unpaid;
     public DateTime DueDate { get; set; }
-    public string? Notes { get; set; }
+    public Guid CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? DeletedAt { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public Building? Building { get; set; }
+    // Navigation properties
     public Contract? Contract { get; set; }
-    public User? Tenant { get; set; }
+    public User? Creator { get; set; }
+    public ICollection<InvoiceDetail> InvoiceDetails { get; set; } = new List<InvoiceDetail>();
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
 }

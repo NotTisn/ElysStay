@@ -2,8 +2,8 @@
 
 public enum IssueStatus
 {
-    New,
+    Pending,
     InProgress,
     Resolved,
-    Cancelled
+    Closed
 }

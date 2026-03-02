@@ -3,19 +3,19 @@
 public class Building
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid OwnerId { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string? AddressNumber { get; set; }
-    public string? AddressStreet { get; set; }
-    public string? AddressWard { get; set; }
-    public string? AddressDistrict { get; set; }
-    public string? AddressCity { get; set; }
+    public string Address { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public string Images { get; set; } = "[]"; 
-    public string SharedAmenities { get; set; } = "[]";
     public int TotalRooms { get; set; } = 0;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? DeletedAt { get; set; }
 
+    // Navigation properties
+    public User? Owner { get; set; }
     public ICollection<Room> Rooms { get; set; } = new List<Room>();
-    public ICollection<StaffAssignment> StaffAssignments { get; set; } = new List<StaffAssignment>();
+    public ICollection<StaffAssignment> BuildingStaffs { get; set; } = new List<StaffAssignment>();
+    public ICollection<Service> Services { get; set; } = new List<Service>();
+    public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
 }

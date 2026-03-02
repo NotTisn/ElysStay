@@ -8,12 +8,14 @@ public class TenantProfileConfiguration : IEntityTypeConfiguration<TenantProfile
 {
     public void Configure(EntityTypeBuilder<TenantProfile> builder)
     {
-        builder.HasKey(t => t.UserId);
-        builder.HasIndex(t => t.IdentityCard).IsUnique();
-        
-        builder.HasOne(t => t.User)
+        builder.HasKey(tp => tp.Id);
+
+        builder.HasIndex(tp => tp.UserId).IsUnique();
+        builder.HasIndex(tp => tp.IdentityCard).IsUnique();
+
+        builder.HasOne(tp => tp.User)
             .WithOne(u => u.TenantProfile)
-            .HasForeignKey<TenantProfile>(t => t.UserId)
+            .HasForeignKey<TenantProfile>(tp => tp.UserId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
