@@ -10,6 +10,8 @@ public class BuildingConfiguration : IEntityTypeConfiguration<Building>
     {
         builder.HasKey(b => b.Id);
 
+        builder.HasQueryFilter(b => b.DeletedAt == null);
+
         builder.Property(b => b.Name).IsRequired().HasMaxLength(200);
         builder.Property(b => b.Address).IsRequired();
 

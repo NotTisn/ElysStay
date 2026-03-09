@@ -10,7 +10,7 @@ public class ContractTenantConfiguration : IEntityTypeConfiguration<ContractTena
     {
         builder.HasKey(ct => ct.Id);
 
-        builder.HasIndex(ct => new { ct.ContractId, ct.TenantId }).IsUnique();
+        builder.HasIndex(ct => new { ct.ContractId, ct.TenantUserId }).IsUnique();
 
         builder.HasOne(ct => ct.Contract)
             .WithMany(c => c.ContractTenants)
@@ -19,7 +19,7 @@ public class ContractTenantConfiguration : IEntityTypeConfiguration<ContractTena
 
         builder.HasOne(ct => ct.Tenant)
             .WithMany()
-            .HasForeignKey(ct => ct.TenantId)
+            .HasForeignKey(ct => ct.TenantUserId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

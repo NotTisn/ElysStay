@@ -9,13 +9,13 @@ public class RoomReservation
     public Guid TenantUserId { get; set; }
     public decimal DepositAmount { get; set; }
     public ReservationStatus Status { get; set; } = ReservationStatus.Pending;
-    public string? Notes { get; set; }
+    public DateTime ExpiresAt { get; set; } = DateTime.UtcNow.AddDays(7);
+    public string? Note { get; set; }
     public decimal? RefundAmount { get; set; }
-    public DateTime? RefundDate { get; set; }
-    public string? CancelReason { get; set; }
+    public DateTime? RefundedAt { get; set; }
+    public string? RefundNote { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? DeletedAt { get; set; }
 
     // Navigation properties
     public Room? Room { get; set; }

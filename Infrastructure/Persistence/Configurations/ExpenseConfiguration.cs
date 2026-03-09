@@ -18,6 +18,11 @@ public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
             .HasForeignKey(e => e.BuildingId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasOne(e => e.Room)
+            .WithMany()
+            .HasForeignKey(e => e.RoomId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasOne(e => e.Recorder)
             .WithMany()
             .HasForeignKey(e => e.RecordedBy)

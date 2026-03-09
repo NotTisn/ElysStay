@@ -10,7 +10,7 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
     {
         builder.HasKey(i => i.Id);
 
-        builder.Property(i => i.RoomAmount).HasColumnType("numeric(18,2)");
+        builder.Property(i => i.RentAmount).HasColumnType("numeric(18,2)");
         builder.Property(i => i.ServiceAmount).HasColumnType("numeric(18,2)");
         builder.Property(i => i.PenaltyAmount).HasColumnType("numeric(18,2)");
         builder.Property(i => i.DiscountAmount).HasColumnType("numeric(18,2)");

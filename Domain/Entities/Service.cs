@@ -7,8 +7,8 @@ public class Service
     public string Name { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
     public decimal UnitPrice { get; set; }
-    public decimal PreviousUnitPrice { get; set; }
-    public DateTime PriceUpdatedAt { get; set; } = DateTime.UtcNow;
+    public decimal? PreviousUnitPrice { get; set; }
+    public DateTime? PriceUpdatedAt { get; set; }
     public bool IsMetered { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

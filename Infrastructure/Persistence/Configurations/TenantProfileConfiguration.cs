@@ -11,7 +11,7 @@ public class TenantProfileConfiguration : IEntityTypeConfiguration<TenantProfile
         builder.HasKey(tp => tp.Id);
 
         builder.HasIndex(tp => tp.UserId).IsUnique();
-        builder.HasIndex(tp => tp.IdentityCard).IsUnique();
+        builder.HasIndex(tp => tp.IdNumber).IsUnique().HasFilter("\"IdNumber\" IS NOT NULL");
 
         builder.HasOne(tp => tp.User)
             .WithOne(u => u.TenantProfile)
