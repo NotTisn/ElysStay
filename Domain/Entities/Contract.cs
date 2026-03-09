@@ -8,14 +8,15 @@ public class Contract
     public Guid RoomId { get; set; }
     public Guid TenantUserId { get; set; }
     public Guid? ReservationId { get; set; }
-    public DateTime StartDate { get; set; }
-    public DateTime EndDate { get; set; }
-    public decimal RoomPrice { get; set; }
+    public DateOnly StartDate { get; set; }
+    public DateOnly EndDate { get; set; }
+    public DateOnly MoveInDate { get; set; }
+    public decimal MonthlyRent { get; set; }
     public decimal DepositAmount { get; set; }
-    public DepositStatus DepositStatus { get; set; } = DepositStatus.Unpaid;
+    public DepositStatus DepositStatus { get; set; } = DepositStatus.Held;
     public ContractStatus Status { get; set; } = ContractStatus.Active;
-    public DateTime? TerminationDate { get; set; }
-    public string? TerminationReason { get; set; }
+    public DateOnly? TerminationDate { get; set; }
+    public string? TerminationNote { get; set; }
     public decimal? RefundAmount { get; set; }
     public string? Note { get; set; }
     public Guid CreatedBy { get; set; }

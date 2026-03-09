@@ -2,8 +2,8 @@
 
 public enum DepositStatus
 {
-    Unpaid,
-    PartiallyPaid,
-    Paid,
-    Refunded
+    Held,
+    PartiallyRefunded,
+    Refunded,
+    Forfeited
 }

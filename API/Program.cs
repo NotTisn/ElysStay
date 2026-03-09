@@ -1,8 +1,12 @@
+using Application;
+using Infrastructure;
+using Infrastructure.Auth;
 using Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +25,14 @@ builder.Host.UseSerilog();
 // OpenAPI
 builder.Services.AddOpenApi();
 
+// Controllers with camelCase JSON
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    });
+
 // CORS - allow local dev clients, adjust origins in production
 builder.Services.AddCors(options =>
 {
@@ -35,11 +47,11 @@ builder.Services.AddCors(options =>
 // Basic health checks
 builder.Services.AddHealthChecks();
 
-// PostgreSQL
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    ));
+// Infrastructure: DbContext, Auth services, Keycloak admin client
+builder.Services.AddInfrastructure(builder.Configuration);
+
+// Application: MediatR, FluentValidation, pipeline behaviors
+builder.Services.AddApplication();
 
 // ================= KEYCLOAK =================
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -83,11 +95,18 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Global error handling — must be early in pipeline
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+
 // Use CORS
 app.UseCors("DefaultCorsPolicy");
 
 app.UseAuthentication();
+app.UseMiddleware<UserAutoProvisioningMiddleware>();
 app.UseAuthorization();
+
+// Map controllers
+app.MapControllers();
 
 // Health endpoint
 app.MapHealthChecks("/healthz");

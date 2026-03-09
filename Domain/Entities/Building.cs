@@ -7,7 +7,8 @@ public class Building
     public string Name { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public int TotalRooms { get; set; } = 0;
+    public int TotalFloors { get; set; }
+    public int InvoiceDueDay { get; set; } = 10;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? DeletedAt { get; set; }

@@ -41,6 +41,9 @@ namespace Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<int>("InvoiceDueDay")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -49,7 +52,7 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("TotalRooms")
+                    b.Property<int>("TotalFloors")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -81,8 +84,14 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("EndDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("MonthlyRent")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateOnly>("MoveInDate")
+                        .HasColumnType("date");
 
                     b.Property<string>("Note")
                         .HasColumnType("text");
@@ -96,11 +105,8 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("RoomId")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("RoomPrice")
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -109,10 +115,10 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("TenantUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("TerminationDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly?>("TerminationDate")
+                        .HasColumnType("date");
 
-                    b.Property<string>("TerminationReason")
+                    b.Property<string>("TerminationNote")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -140,20 +146,23 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("ContractId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("MoveInDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<bool>("IsMainTenant")
+                        .HasColumnType("boolean");
 
-                    b.Property<DateTime?>("MoveOutDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("MoveInDate")
+                        .HasColumnType("date");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<DateOnly?>("MoveOutDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("TenantUserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("TenantUserId");
 
-                    b.HasIndex("ContractId", "TenantId")
+                    b.HasIndex("ContractId", "TenantUserId")
                         .IsUnique();
 
                     b.ToTable("ContractTenants");
@@ -183,13 +192,16 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("ExpenseDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("ExpenseDate")
+                        .HasColumnType("date");
 
                     b.Property<string>("ReceiptUrl")
                         .HasColumnType("text");
 
                     b.Property<Guid>("RecordedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("RoomId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -200,6 +212,8 @@ namespace Infrastructure.Migrations
                     b.HasIndex("BuildingId");
 
                     b.HasIndex("RecordedBy");
+
+                    b.HasIndex("RoomId");
 
                     b.ToTable("Expenses");
                 });
@@ -228,13 +242,16 @@ namespace Infrastructure.Migrations
                     b.Property<decimal>("DiscountAmount")
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<DateTime>("DueDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text");
 
                     b.Property<decimal>("PenaltyAmount")
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<decimal>("RoomAmount")
+                    b.Property<decimal>("RentAmount")
                         .HasColumnType("numeric(18,2)");
 
                     b.Property<decimal>("ServiceAmount")
@@ -319,7 +336,7 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("ImageUrl")
+                    b.Property<string>("ImageUrls")
                         .HasColumnType("text");
 
                     b.Property<string>("Priority")
@@ -329,7 +346,7 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("ReportedBy")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("RoomId")
+                    b.Property<Guid?>("RoomId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Status")
@@ -372,6 +389,9 @@ namespace Infrastructure.Migrations
                     b.Property<decimal>("Consumption")
                         .HasColumnType("numeric(18,3)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 
@@ -389,6 +409,9 @@ namespace Infrastructure.Migrations
 
                     b.Property<Guid>("ServiceId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -459,15 +482,15 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("InvoiceId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Method")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("Note")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("PaymentDate")
+                    b.Property<DateTime>("PaidAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PaymentMethod")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<Guid>("RecordedBy")
                         .HasColumnType("uuid");
@@ -475,7 +498,7 @@ namespace Infrastructure.Migrations
                     b.Property<string>("ReferenceCode")
                         .HasColumnType("text");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -528,6 +551,12 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -549,25 +578,25 @@ namespace Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("CancelReason")
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("DepositAmount")
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<string>("Notes")
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Note")
                         .HasColumnType("text");
 
                     b.Property<decimal?>("RefundAmount")
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<DateTime?>("RefundDate")
+                    b.Property<string>("RefundNote")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("RefundedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("RoomId")
@@ -646,10 +675,10 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<decimal>("PreviousUnitPrice")
+                    b.Property<decimal?>("PreviousUnitPrice")
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<DateTime>("PriceUpdatedAt")
+                    b.Property<DateTime?>("PriceUpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Unit")
@@ -697,23 +726,23 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("DateOfBirth")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date");
 
                     b.Property<string>("Gender")
                         .HasColumnType("text");
 
-                    b.Property<string>("IdCardBack")
+                    b.Property<string>("IdBackUrl")
                         .HasColumnType("text");
 
-                    b.Property<string>("IdCardFront")
+                    b.Property<string>("IdFrontUrl")
                         .HasColumnType("text");
 
-                    b.Property<string>("IdentityCard")
+                    b.Property<string>("IdNumber")
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("IssuedDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly?>("IssuedDate")
+                        .HasColumnType("date");
 
                     b.Property<string>("IssuedPlace")
                         .HasColumnType("text");
@@ -729,8 +758,9 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IdentityCard")
-                        .IsUnique();
+                    b.HasIndex("IdNumber")
+                        .IsUnique()
+                        .HasFilter("\"IdNumber\" IS NOT NULL");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -763,19 +793,13 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<string>("KeycloakId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("Phone")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
-
-                    b.Property<string>("RefreshToken")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("RefreshTokenExpiry")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -793,8 +817,13 @@ namespace Infrastructure.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
+                    b.HasIndex("KeycloakId")
+                        .IsUnique()
+                        .HasFilter("\"KeycloakId\" IS NOT NULL");
+
                     b.HasIndex("Phone")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"Phone\" IS NOT NULL");
 
                     b.ToTable("Users");
                 });
@@ -854,7 +883,7 @@ namespace Infrastructure.Migrations
 
                     b.HasOne("Domain.Entities.User", "Tenant")
                         .WithMany()
-                        .HasForeignKey("TenantId")
+                        .HasForeignKey("TenantUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -877,9 +906,16 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.Entities.Room", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Building");
 
                     b.Navigation("Recorder");
+
+                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("Domain.Entities.Invoice", b =>
@@ -941,8 +977,7 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Room", "Room")
                         .WithMany("Issues")
                         .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Assignee");
 

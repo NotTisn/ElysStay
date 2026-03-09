@@ -14,10 +14,15 @@ public class MaintenanceIssueConfiguration : IEntityTypeConfiguration<Maintenanc
         builder.Property(m => m.Status).HasConversion<string>();
         builder.Property(m => m.Priority).HasConversion<string>();
 
+        builder.HasOne(m => m.Building)
+            .WithMany()
+            .HasForeignKey(m => m.BuildingId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasOne(m => m.Room)
             .WithMany(r => r.Issues)
             .HasForeignKey(m => m.RoomId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasOne(m => m.Reporter)
             .WithMany()

@@ -14,6 +14,7 @@ public class Room
     public string? Description { get; set; }
     public RoomStatus Status { get; set; } = RoomStatus.Available;
     public string? Images { get; set; }
+    public byte[] RowVersion { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? DeletedAt { get; set; }

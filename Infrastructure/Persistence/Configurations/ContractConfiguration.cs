@@ -10,7 +10,7 @@ public class ContractConfiguration : IEntityTypeConfiguration<Contract>
     {
         builder.HasKey(c => c.Id);
 
-        builder.Property(c => c.RoomPrice).HasColumnType("numeric(18,2)");
+        builder.Property(c => c.MonthlyRent).HasColumnType("numeric(18,2)");
         builder.Property(c => c.DepositAmount).HasColumnType("numeric(18,2)");
         builder.Property(c => c.RefundAmount).HasColumnType("numeric(18,2)");
         builder.Property(c => c.DepositStatus).HasConversion<string>();

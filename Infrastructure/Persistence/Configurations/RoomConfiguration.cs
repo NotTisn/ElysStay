@@ -10,10 +10,13 @@ public class RoomConfiguration : IEntityTypeConfiguration<Room>
     {
         builder.HasKey(r => r.Id);
 
+        builder.HasQueryFilter(r => r.DeletedAt == null);
+
         builder.Property(r => r.RoomNumber).IsRequired().HasMaxLength(50);
         builder.Property(r => r.Area).HasColumnType("numeric(10,2)");
         builder.Property(r => r.Price).HasColumnType("numeric(18,2)");
         builder.Property(r => r.Status).HasConversion<string>();
+        builder.Property(r => r.RowVersion).IsRowVersion();
 
         builder.HasIndex(r => new { r.BuildingId, r.RoomNumber }).IsUnique();
 
@@ -40,6 +43,6 @@ public class RoomConfiguration : IEntityTypeConfiguration<Room>
         builder.HasMany(r => r.Issues)
             .WithOne(i => i.Room)
             .HasForeignKey(i => i.RoomId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

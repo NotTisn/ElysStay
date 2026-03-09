@@ -12,6 +12,8 @@ public class MeterReading
     public decimal Consumption { get; set; }
     public DateTime DateRead { get; set; } = DateTime.UtcNow;
     public Guid CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
     public Room? Room { get; set; }
