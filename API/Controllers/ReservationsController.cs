@@ -22,6 +22,17 @@ public class ReservationsController : BaseApiController
     }
 
     /// <summary>
+    /// Get a single reservation by ID. Owner/Staff only.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Owner,Staff")]
+    public async Task<IActionResult> GetReservationById(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetReservationByIdQuery(id), ct);
+        return OkResponse(result);
+    }
+
+    /// <summary>
     /// List reservations (paginated). Owner/Staff only.
     /// </summary>
     [HttpGet]

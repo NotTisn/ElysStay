@@ -21,6 +21,17 @@ public class ExpensesController : BaseApiController
     }
 
     /// <summary>
+    /// Get a single expense by ID. Owner/Staff only.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Owner,Staff")]
+    public async Task<IActionResult> GetExpenseById(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetExpenseByIdQuery(id), ct);
+        return OkResponse(result);
+    }
+
+    /// <summary>
     /// List expenses (paginated). Owner/Staff only.
     /// </summary>
     [HttpGet]

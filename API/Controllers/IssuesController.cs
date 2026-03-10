@@ -22,6 +22,16 @@ public class IssuesController : BaseApiController
     }
 
     /// <summary>
+    /// Get a single issue by ID. All roles. Tenant sees own only (AUTH-06).
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetIssueById(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetIssueByIdQuery(id), ct);
+        return OkResponse(result);
+    }
+
+    /// <summary>
     /// List issues (paginated). All roles. Tenant auto-filtered.
     /// </summary>
     [HttpGet]
