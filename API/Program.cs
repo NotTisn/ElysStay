@@ -3,9 +3,11 @@ using Infrastructure;
 using Infrastructure.Auth;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using System.Threading.RateLimiting;
 using API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -73,6 +75,35 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// ================= RATE LIMITING =================
+// AUTH-04: Fixed window rate limiting per IP address.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // "sensitive" policy: password changes, user creation — 5 req/min per IP
+    options.AddPolicy("sensitive", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 5,
+                QueueLimit = 0
+            }));
+
+    // Global limiter: 100 req/min per IP
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 100,
+                QueueLimit = 0
+            }));
+});
+
 var app = builder.Build();
 
 // ==========================================
@@ -100,6 +131,9 @@ app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 // Use CORS
 app.UseCors("DefaultCorsPolicy");
+
+// Rate limiting — before auth so abusive traffic is shed early
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseMiddleware<UserAutoProvisioningMiddleware>();
