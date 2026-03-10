@@ -87,6 +87,49 @@ public class KeycloakAdminService : IKeycloakAdminService
         _logger.LogInformation("Set Keycloak user {KeycloakUserId} enabled={Enabled}", keycloakUserId, enabled);
     }
 
+    public async Task ChangePasswordAsync(string keycloakUserId, string newPassword, CancellationToken ct = default)
+    {
+        await EnsureTokenAsync(ct);
+
+        var payload = new
+        {
+            type = "password",
+            value = newPassword,
+            temporary = false
+        };
+
+        var response = await PutAsync(
+            $"admin/realms/{_options.Realm}/users/{keycloakUserId}/reset-password", payload, ct);
+        response.EnsureSuccessStatusCode();
+
+        _logger.LogInformation("Changed password for Keycloak user {KeycloakUserId}", keycloakUserId);
+    }
+
+    public async Task<bool> VerifyPasswordAsync(string username, string password, CancellationToken ct = default)
+    {
+        try
+        {
+            var tokenEndpoint = $"realms/{_options.Realm}/protocol/openid-connect/token";
+            var formContent = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "password",
+                ["client_id"] = _options.ClientId,
+                ["client_secret"] = _options.ClientSecret,
+                ["username"] = username,
+                ["password"] = password,
+                ["scope"] = "openid"
+            });
+
+            var response = await _httpClient.PostAsync(tokenEndpoint, formContent, ct);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Password verification failed for user {Username}", username);
+            return false;
+        }
+    }
+
     private async Task EnsureTokenAsync(CancellationToken ct)
     {
         if (_accessToken is not null && DateTimeOffset.UtcNow < _tokenExpiry)
