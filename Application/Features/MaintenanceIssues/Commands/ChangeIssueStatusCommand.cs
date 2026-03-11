@@ -58,7 +58,12 @@ public class ChangeIssueStatusCommandHandler : IRequestHandler<ChangeIssueStatus
 
         // Auto-assign to current user when transitioning to InProgress
         if (request.Status == IssueStatus.InProgress && !issue.AssignedTo.HasValue)
+        {
             issue.AssignedTo = userId;
+
+            // Eagerly load the assignee nav prop so the response DTO includes the name
+            issue.Assignee = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        }
 
         issue.UpdatedAt = DateTime.UtcNow;
 

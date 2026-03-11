@@ -11,7 +11,10 @@ public class CreateExpenseCommandValidator : AbstractValidator<CreateExpenseComm
         RuleFor(x => x.Category).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Description).NotEmpty().MaximumLength(500);
         RuleFor(x => x.Amount).GreaterThan(0);
-        RuleFor(x => x.ExpenseDate).NotEmpty();
+        RuleFor(x => x.ExpenseDate)
+            .NotEmpty()
+            .Must(d => d <= DateOnly.FromDateTime(DateTime.UtcNow))
+            .WithMessage("ExpenseDate cannot be in the future.");
     }
 }
 
@@ -24,10 +27,20 @@ public class UpdateExpenseCommandValidator : AbstractValidator<UpdateExpenseComm
             .GreaterThan(0)
             .When(x => x.Amount.HasValue);
         RuleFor(x => x.Category)
+            .NotEmpty()
             .MaximumLength(100)
             .When(x => x.Category is not null);
         RuleFor(x => x.Description)
+            .NotEmpty()
             .MaximumLength(500)
             .When(x => x.Description is not null);
+    }
+}
+
+public class DeleteExpenseCommandValidator : AbstractValidator<DeleteExpenseCommand>
+{
+    public DeleteExpenseCommandValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty();
     }
 }

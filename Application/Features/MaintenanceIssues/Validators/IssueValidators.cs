@@ -18,9 +18,11 @@ public class UpdateIssueCommandValidator : AbstractValidator<UpdateIssueCommand>
     {
         RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.Title)
+            .NotEmpty()
             .MaximumLength(200)
             .When(x => x.Title is not null);
         RuleFor(x => x.Description)
+            .NotEmpty()
             .MaximumLength(2000)
             .When(x => x.Description is not null);
     }

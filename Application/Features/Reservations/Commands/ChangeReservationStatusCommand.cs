@@ -160,8 +160,11 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
             });
         }
 
-        // SM-03: Room BOOKED → AVAILABLE
-        reservation.Room!.Status = RoomStatus.Available;
-        reservation.Room.UpdatedAt = DateTime.UtcNow;
+        // SM-03: Room BOOKED → AVAILABLE (only if currently Booked)
+        if (reservation.Room!.Status == RoomStatus.Booked)
+        {
+            reservation.Room.Status = RoomStatus.Available;
+            reservation.Room.UpdatedAt = DateTime.UtcNow;
+        }
     }
 }

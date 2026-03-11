@@ -66,9 +66,12 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
             _ => DepositStatus.PartiallyRefunded
         };
 
-        // SM-04: Room → AVAILABLE
-        contract.Room!.Status = RoomStatus.Available;
-        contract.Room.UpdatedAt = DateTime.UtcNow;
+        // SM-04: Room → AVAILABLE (only if currently Occupied; preserve Maintenance flag)
+        if (contract.Room!.Status == RoomStatus.Occupied)
+        {
+            contract.Room.Status = RoomStatus.Available;
+            contract.Room.UpdatedAt = DateTime.UtcNow;
+        }
 
         // Create DEPOSIT_REFUND payment (even if refund is 0, for audit trail)
         if (refundAmount > 0)

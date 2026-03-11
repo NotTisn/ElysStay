@@ -25,11 +25,16 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IBuildingScopeService _buildingScope;
 
-    public CreateIssueCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    public CreateIssueCommandHandler(
+        IApplicationDbContext db,
+        ICurrentUserService currentUser,
+        IBuildingScopeService buildingScope)
     {
         _db = db;
         _currentUser = currentUser;
+        _buildingScope = buildingScope;
     }
 
     public async Task<MaintenanceIssueDto> Handle(CreateIssueCommand request, CancellationToken ct)
@@ -52,9 +57,11 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
             // If tenant provided a roomId, verify it belongs to the same building
             if (request.RoomId.HasValue)
             {
-                var room = await _db.Rooms
-                    .FirstOrDefaultAsync(r => r.Id == request.RoomId.Value && r.BuildingId == buildingId && r.DeletedAt == null, ct)
-                    ?? throw new NotFoundException($"Room {request.RoomId} not found in your building.");
+                var roomExists = await _db.Rooms
+                    .AnyAsync(r => r.Id == request.RoomId.Value && r.BuildingId == buildingId && r.DeletedAt == null, ct);
+
+                if (!roomExists)
+                    throw new NotFoundException($"Room {request.RoomId} not found in your building.");
             }
             else
             {
@@ -69,6 +76,9 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
                 throw new BadRequestException("BuildingId is required for Owner/Staff.");
 
             buildingId = request.BuildingId.Value;
+
+            // Building scope authorization — prevents cross-building privilege escalation
+            await _buildingScope.AuthorizeAsync(buildingId, ct);
 
             // Validate room belongs to building
             if (request.RoomId.HasValue)
