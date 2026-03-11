@@ -15,9 +15,11 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         builder.Property(i => i.PenaltyAmount).HasColumnType("numeric(18,2)");
         builder.Property(i => i.DiscountAmount).HasColumnType("numeric(18,2)");
         builder.Property(i => i.TotalAmount).HasColumnType("numeric(18,2)");
-        builder.Property(i => i.Status).HasConversion<string>();
+        builder.Property(i => i.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(i => i.Note).HasMaxLength(1000);
 
         builder.HasIndex(i => new { i.ContractId, i.BillingYear, i.BillingMonth }).IsUnique();
+        builder.HasIndex(i => new { i.ContractId, i.Status });
 
         builder.HasOne(i => i.Contract)
             .WithMany(c => c.Invoices)

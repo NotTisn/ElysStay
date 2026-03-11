@@ -11,8 +11,12 @@ public class MaintenanceIssueConfiguration : IEntityTypeConfiguration<Maintenanc
         builder.HasKey(m => m.Id);
 
         builder.Property(m => m.Title).IsRequired().HasMaxLength(200);
-        builder.Property(m => m.Status).HasConversion<string>();
-        builder.Property(m => m.Priority).HasConversion<string>();
+        builder.Property(m => m.Description).IsRequired().HasMaxLength(5000);
+        builder.Property(m => m.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(m => m.Priority).HasConversion<string>().HasMaxLength(20);
+
+        builder.HasIndex(m => new { m.BuildingId, m.Status });
+        builder.HasIndex(m => m.ReportedBy);
 
         builder.HasOne(m => m.Building)
             .WithMany()

@@ -72,6 +72,10 @@ public class AddContractTenantCommandHandler : IRequestHandler<AddContractTenant
             MoveInDate = request.MoveInDate
         };
         _db.ContractTenants.Add(contractTenant);
+
+        // Update parent contract timestamp so clients detect the change
+        contract.UpdatedAt = DateTime.UtcNow;
+
         await _db.SaveChangesAsync(cancellationToken);
 
         return new ContractTenantDto

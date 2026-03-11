@@ -101,7 +101,14 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
 
         // Room stays OCCUPIED — no status change (CT-01)
 
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_Contracts_RoomId_Active") == true)
+        {
+            throw new ConflictException("An active contract already exists for this room. Concurrent renewal detected.");
+        }
 
         return new ContractDto
         {

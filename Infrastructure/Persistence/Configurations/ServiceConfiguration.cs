@@ -15,6 +15,8 @@ public class ServiceConfiguration : IEntityTypeConfiguration<Service>
         builder.Property(s => s.UnitPrice).HasColumnType("numeric(18,2)");
         builder.Property(s => s.PreviousUnitPrice).HasColumnType("numeric(18,2)");
 
+        builder.HasIndex(s => new { s.BuildingId, s.IsActive });
+
         builder.HasMany(s => s.RoomServices)
             .WithOne(rs => rs.Service)
             .HasForeignKey(rs => rs.ServiceId)

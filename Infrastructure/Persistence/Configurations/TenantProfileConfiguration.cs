@@ -10,6 +10,13 @@ public class TenantProfileConfiguration : IEntityTypeConfiguration<TenantProfile
     {
         builder.HasKey(tp => tp.Id);
 
+        builder.Property(tp => tp.IdNumber).HasMaxLength(20);
+        builder.Property(tp => tp.IdFrontUrl).HasMaxLength(500);
+        builder.Property(tp => tp.IdBackUrl).HasMaxLength(500);
+        builder.Property(tp => tp.Gender).HasMaxLength(10);
+        builder.Property(tp => tp.PermanentAddress).HasMaxLength(500);
+        builder.Property(tp => tp.IssuedPlace).HasMaxLength(200);
+
         builder.HasIndex(tp => tp.UserId).IsUnique();
         builder.HasIndex(tp => tp.IdNumber).IsUnique().HasFilter("\"IdNumber\" IS NOT NULL");
 

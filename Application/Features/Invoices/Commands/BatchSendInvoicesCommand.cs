@@ -1,5 +1,6 @@
 using Application.Common.Exceptions;
 using Application.Common.Interfaces;
+using Domain.Entities;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -59,6 +60,16 @@ public class BatchSendInvoicesCommandHandler : IRequestHandler<BatchSendInvoices
             invoice.Status = InvoiceStatus.Sent;
             invoice.UpdatedAt = DateTime.UtcNow;
             sentCount++;
+
+            // NT-01: Notify tenant (matching SendInvoiceCommand behavior)
+            _db.Notifications.Add(new Notification
+            {
+                UserId = invoice.Contract!.TenantUserId,
+                Title = "Hóa đơn mới",
+                Message = $"Hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear} đã được gửi.",
+                Type = "INVOICE_SENT",
+                ReferenceId = invoice.Id,
+            });
         }
 
         if (sentCount > 0)

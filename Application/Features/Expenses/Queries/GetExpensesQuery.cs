@@ -18,8 +18,6 @@ public class GetExpensesQuery : PagedQuery, IRequest<PagedResult<ExpenseDto>>
     public string? Category { get; set; }
     public DateOnly? FromDate { get; set; }
     public DateOnly? ToDate { get; set; }
-    public string? SortBy { get; set; }
-    public bool SortDesc { get; set; }
 }
 
 public class GetExpensesQueryHandler : IRequestHandler<GetExpensesQuery, PagedResult<ExpenseDto>>
@@ -76,13 +74,7 @@ public class GetExpensesQueryHandler : IRequestHandler<GetExpensesQuery, PagedRe
             query = query.Where(e => e.ExpenseDate <= request.ToDate.Value);
 
         // Sort
-        query = request.SortBy?.ToLowerInvariant() switch
-        {
-            "amount" => request.SortDesc ? query.OrderByDescending(e => e.Amount) : query.OrderBy(e => e.Amount),
-            "expensedate" => request.SortDesc ? query.OrderByDescending(e => e.ExpenseDate) : query.OrderBy(e => e.ExpenseDate),
-            "category" => request.SortDesc ? query.OrderByDescending(e => e.Category) : query.OrderBy(e => e.Category),
-            _ => query.OrderByDescending(e => e.ExpenseDate)
-        };
+        query = ApplySort(query, request.Sort);
 
         var pagedResult = await query
             .Select(e => new ExpenseDto(
@@ -103,5 +95,19 @@ public class GetExpensesQueryHandler : IRequestHandler<GetExpensesQuery, PagedRe
             .ToPagedResultAsync(request, ct);
 
         return pagedResult;
+    }
+
+    private static IQueryable<Domain.Entities.Expense> ApplySort(IQueryable<Domain.Entities.Expense> query, string sort)
+    {
+        var parts = sort.Split(':');
+        var field = parts[0].ToLowerInvariant();
+        var desc = parts.Length > 1 && parts[1].Equals("desc", StringComparison.OrdinalIgnoreCase);
+
+        return field switch
+        {
+            "amount" => desc ? query.OrderByDescending(e => e.Amount) : query.OrderBy(e => e.Amount),
+            "category" => desc ? query.OrderByDescending(e => e.Category) : query.OrderBy(e => e.Category),
+            _ => desc ? query.OrderByDescending(e => e.ExpenseDate) : query.OrderBy(e => e.ExpenseDate) // default: expenseDate
+        };
     }
 }

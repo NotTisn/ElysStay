@@ -88,7 +88,14 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
             _db.Payments.Add(refundPayment);
         }
 
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConflictException("The room was modified by another operation. Please retry.");
+        }
 
         return new ContractDto
         {

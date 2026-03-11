@@ -55,6 +55,28 @@ public class BulkUpsertMeterReadingsCommandHandler : IRequestHandler<BulkUpsertM
         if (!buildingExists)
             throw new NotFoundException("Building", request.BuildingId);
 
+        // Validate all room IDs belong to this building
+        var requestedRoomIds = request.Readings.Select(r => r.RoomId).Distinct().ToList();
+        var validRoomIds = await _db.Rooms
+            .Where(r => r.BuildingId == request.BuildingId && requestedRoomIds.Contains(r.Id))
+            .Select(r => r.Id)
+            .ToListAsync(cancellationToken);
+
+        var invalidRoomIds = requestedRoomIds.Except(validRoomIds).ToList();
+        if (invalidRoomIds.Count > 0)
+            throw new BadRequestException($"Rooms [{string.Join(", ", invalidRoomIds)}] do not belong to this building.");
+
+        // Validate all service IDs are metered services of this building
+        var requestedServiceIds = request.Readings.Select(r => r.ServiceId).Distinct().ToList();
+        var validServiceIds = await _db.Services
+            .Where(s => s.BuildingId == request.BuildingId && s.IsMetered && requestedServiceIds.Contains(s.Id))
+            .Select(s => s.Id)
+            .ToListAsync(cancellationToken);
+
+        var invalidServiceIds = requestedServiceIds.Except(validServiceIds).ToList();
+        if (invalidServiceIds.Count > 0)
+            throw new BadRequestException($"Services [{string.Join(", ", invalidServiceIds)}] are not valid metered services for this building.");
+
         // Compute the previous billing period for auto-fetching PreviousReading
         var prevYear = request.BillingMonth == 1 ? request.BillingYear - 1 : request.BillingYear;
         var prevMonth = request.BillingMonth == 1 ? 12 : request.BillingMonth - 1;

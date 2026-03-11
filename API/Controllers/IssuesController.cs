@@ -39,8 +39,7 @@ public class IssuesController : BaseApiController
         [FromQuery] Guid? buildingId,
         [FromQuery] IssueStatus? status,
         [FromQuery] PriorityLevel? priority,
-        [FromQuery] string? sortBy,
-        [FromQuery] bool sortDesc,
+        [FromQuery] string sort = "createdAt:desc",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
@@ -50,8 +49,7 @@ public class IssuesController : BaseApiController
             BuildingId = buildingId,
             Status = status,
             Priority = priority,
-            SortBy = sortBy,
-            SortDesc = sortDesc,
+            Sort = sort,
             Page = page,
             PageSize = pageSize
         };

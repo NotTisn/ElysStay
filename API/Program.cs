@@ -27,6 +27,9 @@ builder.Host.UseSerilog();
 // OpenAPI
 builder.Services.AddOpenApi();
 
+// Lowercase URLs globally
+builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
+
 // Controllers with camelCase JSON
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -35,14 +38,18 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
 
-// CORS - allow local dev clients, adjust origins in production
+// CORS — restrict origins per environment; adjust AllowedOrigins in appsettings for production
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultCorsPolicy", policy =>
     {
-        policy.AllowAnyOrigin()
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? ["http://localhost:3000", "http://localhost:3001"];
+
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -63,7 +70,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
         options.Authority = keycloak["Authority"];
         options.Audience = keycloak["ClientId"];
-        options.RequireHttpsMetadata = false;
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -80,6 +87,13 @@ builder.Services.AddAuthorization();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.OnRejected = async (context, _) =>
+    {
+        context.HttpContext.Response.Headers.RetryAfter = "60";
+        Log.Warning("Rate limit exceeded for {IP}", context.HttpContext.Connection.RemoteIpAddress);
+        await Task.CompletedTask;
+    };
 
     // "sensitive" policy: password changes, user creation — 5 req/min per IP
     options.AddPolicy("sensitive", context =>
@@ -119,15 +133,30 @@ if (app.Environment.IsDevelopment())
 // ==========================================
 // PIPELINE
 // ==========================================
+
+// Global error handling — must be first in pipeline
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+
+// Security headers
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    await next();
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+else
+{
+    app.UseHsts();
+}
 
 app.UseHttpsRedirection();
-
-// Global error handling — must be early in pipeline
-app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 // Use CORS
 app.UseCors("DefaultCorsPolicy");
@@ -144,13 +173,6 @@ app.MapControllers();
 
 // Health endpoint
 app.MapHealthChecks("/healthz");
-
-// Public API
-app.MapGet("/", () => "Hệ thống Quản lý Trọ API đang chạy ngon lành! 🚀");
-
-// Protected API
-app.MapGet("/secure", () => "Bạn đã authenticated!")
-   .RequireAuthorization();
 
 try
 {

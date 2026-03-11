@@ -31,4 +31,25 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
     }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.State == EntityState.Modified)
+            {
+                var updatedAtProp = entry.Properties
+                    .FirstOrDefault(p => p.Metadata.Name == "UpdatedAt");
+
+                if (updatedAtProp is not null && updatedAtProp.Metadata.ClrType == typeof(DateTime))
+                {
+                    updatedAtProp.CurrentValue = now;
+                }
+            }
+        }
+
+        return base.SaveChangesAsync(cancellationToken);
+    }
 }

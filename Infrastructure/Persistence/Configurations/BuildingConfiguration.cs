@@ -13,7 +13,8 @@ public class BuildingConfiguration : IEntityTypeConfiguration<Building>
         builder.HasQueryFilter(b => b.DeletedAt == null);
 
         builder.Property(b => b.Name).IsRequired().HasMaxLength(200);
-        builder.Property(b => b.Address).IsRequired();
+        builder.Property(b => b.Address).IsRequired().HasMaxLength(500);
+        builder.Property(b => b.Description).HasMaxLength(2000);
 
         builder.HasMany(b => b.Rooms)
             .WithOne(r => r.Building)

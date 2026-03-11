@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Application.Common.Interfaces;
 
@@ -26,6 +27,9 @@ public interface IApplicationDbContext
     DbSet<Expense> Expenses { get; }
     DbSet<MaintenanceIssue> MaintenanceIssues { get; }
     DbSet<Notification> Notifications { get; }
+
+    /// <summary>Provides access to database-related metadata and operations (transactions, migrations, etc.).</summary>
+    DatabaseFacade Database { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

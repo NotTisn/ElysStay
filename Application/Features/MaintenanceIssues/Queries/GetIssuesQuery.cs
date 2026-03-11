@@ -17,8 +17,6 @@ public class GetIssuesQuery : PagedQuery, IRequest<PagedResult<MaintenanceIssueD
     public Guid? BuildingId { get; set; }
     public IssueStatus? Status { get; set; }
     public PriorityLevel? Priority { get; set; }
-    public string? SortBy { get; set; }
-    public bool SortDesc { get; set; }
 }
 
 public class GetIssuesQueryHandler : IRequestHandler<GetIssuesQuery, PagedResult<MaintenanceIssueDto>>
@@ -73,13 +71,7 @@ public class GetIssuesQueryHandler : IRequestHandler<GetIssuesQuery, PagedResult
             query = query.Where(i => i.Priority == request.Priority.Value);
 
         // Sort
-        query = request.SortBy?.ToLowerInvariant() switch
-        {
-            "priority" => request.SortDesc ? query.OrderByDescending(i => i.Priority) : query.OrderBy(i => i.Priority),
-            "status" => request.SortDesc ? query.OrderByDescending(i => i.Status) : query.OrderBy(i => i.Status),
-            "title" => request.SortDesc ? query.OrderByDescending(i => i.Title) : query.OrderBy(i => i.Title),
-            _ => query.OrderByDescending(i => i.CreatedAt)
-        };
+        query = ApplySort(query, request.Sort);
 
         var pagedResult = await query
             .Select(i => new MaintenanceIssueDto(
@@ -102,5 +94,20 @@ public class GetIssuesQueryHandler : IRequestHandler<GetIssuesQuery, PagedResult
             .ToPagedResultAsync(request, ct);
 
         return pagedResult;
+    }
+
+    private static IQueryable<Domain.Entities.MaintenanceIssue> ApplySort(IQueryable<Domain.Entities.MaintenanceIssue> query, string sort)
+    {
+        var parts = sort.Split(':');
+        var field = parts[0].ToLowerInvariant();
+        var desc = parts.Length > 1 && parts[1].Equals("desc", StringComparison.OrdinalIgnoreCase);
+
+        return field switch
+        {
+            "priority" => desc ? query.OrderByDescending(i => i.Priority) : query.OrderBy(i => i.Priority),
+            "status" => desc ? query.OrderByDescending(i => i.Status) : query.OrderBy(i => i.Status),
+            "title" => desc ? query.OrderByDescending(i => i.Title) : query.OrderBy(i => i.Title),
+            _ => desc ? query.OrderByDescending(i => i.CreatedAt) : query.OrderBy(i => i.CreatedAt) // default: createdAt
+        };
     }
 }

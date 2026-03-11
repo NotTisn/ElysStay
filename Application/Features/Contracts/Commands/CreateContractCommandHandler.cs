@@ -61,8 +61,8 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             if (reservation.RoomId != request.RoomId)
                 throw new BadRequestException("Reservation does not belong to the specified room.");
 
-            if (reservation.Status != ReservationStatus.Confirmed && reservation.Status != ReservationStatus.Pending)
-                throw new ConflictException("Reservation is not in a valid state for contract creation.");
+            if (reservation.Status != ReservationStatus.Confirmed)
+                throw new ConflictException("Reservation must be Confirmed before creating a contract. Current: " + reservation.Status);
 
             if (room.Status != RoomStatus.Booked)
                 throw new ConflictException($"Room must be in Booked status to create a contract from reservation. Current: {room.Status}");

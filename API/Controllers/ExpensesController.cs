@@ -42,8 +42,7 @@ public class ExpensesController : BaseApiController
         [FromQuery] string? category,
         [FromQuery] DateOnly? fromDate,
         [FromQuery] DateOnly? toDate,
-        [FromQuery] string? sortBy,
-        [FromQuery] bool sortDesc,
+        [FromQuery] string sort = "expenseDate:desc",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
@@ -55,8 +54,7 @@ public class ExpensesController : BaseApiController
             Category = category,
             FromDate = fromDate,
             ToDate = toDate,
-            SortBy = sortBy,
-            SortDesc = sortDesc,
+            Sort = sort,
             Page = page,
             PageSize = pageSize
         };

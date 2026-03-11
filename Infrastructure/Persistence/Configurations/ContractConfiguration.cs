@@ -50,5 +50,22 @@ public class ContractConfiguration : IEntityTypeConfiguration<Contract>
             .WithOne(p => p.Contract)
             .HasForeignKey(p => p.ContractId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // Prevent duplicate active contracts per room (race condition guard)
+        builder.HasIndex(c => c.RoomId)
+            .HasFilter("\"Status\" = 'Active'")
+            .IsUnique()
+            .HasDatabaseName("IX_Contracts_RoomId_Active");
+
+        // Hot query paths
+        builder.HasIndex(c => new { c.RoomId, c.Status });
+        builder.HasIndex(c => new { c.TenantUserId, c.Status });
+        builder.HasIndex(c => c.EndDate);
+
+        // String length constraints
+        builder.Property(c => c.TerminationNote).HasMaxLength(1000);
+        builder.Property(c => c.Note).HasMaxLength(1000);
+        builder.Property(c => c.DepositStatus).HasMaxLength(30);
+        builder.Property(c => c.Status).HasMaxLength(30);
     }
 }

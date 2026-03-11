@@ -61,6 +61,9 @@ public class RemoveContractTenantCommandHandler : IRequestHandler<RemoveContract
         // Soft remove: set MoveOutDate
         contractTenant.MoveOutDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
+        // Update parent contract timestamp so clients detect the change
+        contract.UpdatedAt = DateTime.UtcNow;
+
         await _db.SaveChangesAsync(cancellationToken);
 
         return Unit.Value;

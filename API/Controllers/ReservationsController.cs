@@ -41,8 +41,7 @@ public class ReservationsController : BaseApiController
         [FromQuery] Guid? buildingId,
         [FromQuery] Guid? roomId,
         [FromQuery] ReservationStatus? status,
-        [FromQuery] string? sortBy,
-        [FromQuery] bool sortDesc,
+        [FromQuery] string sort = "createdAt:desc",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
@@ -52,8 +51,7 @@ public class ReservationsController : BaseApiController
             BuildingId = buildingId,
             RoomId = roomId,
             Status = status,
-            SortBy = sortBy,
-            SortDesc = sortDesc,
+            Sort = sort,
             Page = page,
             PageSize = pageSize
         };

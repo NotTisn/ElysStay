@@ -11,8 +11,10 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.HasKey(p => p.Id);
 
         builder.Property(p => p.Amount).HasColumnType("numeric(18,2)");
-        builder.Property(p => p.Type).HasConversion<string>().IsRequired();
+        builder.Property(p => p.Type).HasConversion<string>().IsRequired().HasMaxLength(30);
         builder.Property(p => p.PaymentMethod).HasMaxLength(50);
+        builder.Property(p => p.ReferenceCode).HasMaxLength(100);
+        builder.Property(p => p.Note).HasMaxLength(1000);
 
         builder.HasOne(p => p.Invoice)
             .WithMany(i => i.Payments)

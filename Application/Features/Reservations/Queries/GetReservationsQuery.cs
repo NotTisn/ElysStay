@@ -16,8 +16,6 @@ public class GetReservationsQuery : PagedQuery, IRequest<PagedResult<Reservation
     public Guid? BuildingId { get; set; }
     public Guid? RoomId { get; set; }
     public ReservationStatus? Status { get; set; }
-    public string? SortBy { get; set; }
-    public bool SortDesc { get; set; }
 }
 
 public class GetReservationsQueryHandler : IRequestHandler<GetReservationsQuery, PagedResult<ReservationDto>>
@@ -65,13 +63,7 @@ public class GetReservationsQueryHandler : IRequestHandler<GetReservationsQuery,
             query = query.Where(r => r.Status == request.Status.Value);
 
         // Sort
-        query = request.SortBy?.ToLowerInvariant() switch
-        {
-            "expiresat" => request.SortDesc ? query.OrderByDescending(r => r.ExpiresAt) : query.OrderBy(r => r.ExpiresAt),
-            "depositamount" => request.SortDesc ? query.OrderByDescending(r => r.DepositAmount) : query.OrderBy(r => r.DepositAmount),
-            "status" => request.SortDesc ? query.OrderByDescending(r => r.Status) : query.OrderBy(r => r.Status),
-            _ => query.OrderByDescending(r => r.CreatedAt)
-        };
+        query = ApplySort(query, request.Sort);
 
         var pagedResult = await query
             .Select(r => new ReservationDto(
@@ -94,5 +86,20 @@ public class GetReservationsQueryHandler : IRequestHandler<GetReservationsQuery,
             .ToPagedResultAsync(request, ct);
 
         return pagedResult;
+    }
+
+    private static IQueryable<Domain.Entities.RoomReservation> ApplySort(IQueryable<Domain.Entities.RoomReservation> query, string sort)
+    {
+        var parts = sort.Split(':');
+        var field = parts[0].ToLowerInvariant();
+        var desc = parts.Length > 1 && parts[1].Equals("desc", StringComparison.OrdinalIgnoreCase);
+
+        return field switch
+        {
+            "expiresat" => desc ? query.OrderByDescending(r => r.ExpiresAt) : query.OrderBy(r => r.ExpiresAt),
+            "depositamount" => desc ? query.OrderByDescending(r => r.DepositAmount) : query.OrderBy(r => r.DepositAmount),
+            "status" => desc ? query.OrderByDescending(r => r.Status) : query.OrderBy(r => r.Status),
+            _ => desc ? query.OrderByDescending(r => r.CreatedAt) : query.OrderBy(r => r.CreatedAt) // default: createdAt
+        };
     }
 }

@@ -10,7 +10,7 @@ public class InvoiceDetailConfiguration : IEntityTypeConfiguration<InvoiceDetail
     {
         builder.HasKey(d => d.Id);
 
-        builder.Property(d => d.Description).IsRequired();
+        builder.Property(d => d.Description).IsRequired().HasMaxLength(500);
         builder.Property(d => d.UnitPrice).HasColumnType("numeric(18,2)");
         builder.Property(d => d.Quantity).HasColumnType("numeric(18,3)");
         builder.Property(d => d.Amount).HasColumnType("numeric(18,2)");

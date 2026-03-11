@@ -15,10 +15,12 @@ public class RoomConfiguration : IEntityTypeConfiguration<Room>
         builder.Property(r => r.RoomNumber).IsRequired().HasMaxLength(50);
         builder.Property(r => r.Area).HasColumnType("numeric(10,2)");
         builder.Property(r => r.Price).HasColumnType("numeric(18,2)");
-        builder.Property(r => r.Status).HasConversion<string>();
+        builder.Property(r => r.Description).HasMaxLength(2000);
+        builder.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(r => r.RowVersion).IsRowVersion();
 
         builder.HasIndex(r => new { r.BuildingId, r.RoomNumber }).IsUnique();
+        builder.HasIndex(r => new { r.BuildingId, r.Status });
 
         builder.HasMany(r => r.RoomServices)
             .WithOne(rs => rs.Room)
