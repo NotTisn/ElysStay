@@ -1,0 +1,90 @@
+Nhóm,Mã,Quy tắc,Phạm vi,Sprint,Chi tiết
+Chuyển trạng thái,SM-01,Phòng: AVAILABLE → BOOKED (khi tạo đặt cọc),Room,3,"Mọi thay đổi trạng thái qua UpdateRoomStatusAsync() tập trung, dùng RowVersion cho concurrency"
+Chuyển trạng thái,SM-02,Phòng: BOOKED → OCCUPIED (khi tạo hợp đồng),Room,3,
+Chuyển trạng thái,SM-03,Phòng: BOOKED → AVAILABLE (hủy/hết hạn đặt cọc),Room,3,
+Chuyển trạng thái,SM-04,Phòng: OCCUPIED → AVAILABLE (thanh lý hợp đồng),Room,3,
+Chuyển trạng thái,SM-05,Phòng: AVAILABLE ↔ MAINTENANCE (chỉ PATCH thủ công),Room,2,Chỉ cho phép chuyển thủ công
+Chuyển trạng thái,SM-06,Phòng: AVAILABLE → OCCUPIED (tạo HĐ trực tiếp không qua đặt cọc),Room,3,
+Chuyển trạng thái,SM-07,Đặt cọc: PENDING → CONFIRMED → CONVERTED,Reservation,3,
+Chuyển trạng thái,SM-08,Đặt cọc: PENDING/CONFIRMED → CANCELLED (set RefundAmount),Reservation,3,
+Chuyển trạng thái,SM-09,Đặt cọc: PENDING/CONFIRMED → EXPIRED (tác vụ nền),Reservation,3,Tác vụ nền kiểm tra mỗi giờ. Cả đặt cọc đã xác nhận cũng có hạn
+Chuyển trạng thái,SM-10,Hợp đồng: ACTIVE → TERMINATED (chỉ thủ công),Contract,3,KHÔNG tự hết hạn. Quá EndDate vẫn ACTIVE. Dashboard hiện cảnh báo
+Chuyển trạng thái,SM-11,"Hóa đơn: DRAFT → SENT → PARTIALLY_PAID/PAID/OVERDUE → PAID/VOID",Invoice,4,
+Chuyển trạng thái,SM-12,Hóa đơn: Mọi status trừ PAID → VOID (chỉ chủ nhà),Invoice,4,HĐơn bị hủy không tính vào báo cáo lãi/lỗ
+Chuyển trạng thái,SM-13,Sự cố: NEW → IN_PROGRESS → RESOLVED → CLOSED,Issue,5,NEW → CLOSED cũng hợp lệ (không hợp lệ/trùng)
+Ràng buộc duy nhất,UQ-01,Chỉ 1 hợp đồng ACTIVE mỗi phòng,Contract,3,"Filtered unique constraint: (RoomId) WHERE Status='ACTIVE'. Trả 409 nếu vi phạm"
+Ràng buộc duy nhất,UQ-02,Chỉ 1 hóa đơn mỗi HĐ mỗi tháng,Invoice,4,"Unique (ContractId, BillingYear, BillingMonth). Chống tạo HĐơn trùng"
+Ràng buộc duy nhất,UQ-03,Chỉ 1 chỉ số mỗi phòng mỗi DV mỗi tháng,MeterReading,4,"Unique (RoomId, ServiceId, BillingYear, BillingMonth)"
+Ràng buộc duy nhất,UQ-04,Số phòng duy nhất trong tòa nhà,Room,2,"Unique (BuildingId, RoomNumber)"
+Ràng buộc duy nhất,UQ-05,Chỉ 1 override mỗi phòng mỗi DV,RoomService,2,"Unique (RoomId, ServiceId)"
+Ràng buộc duy nhất,UQ-06,Chỉ 1 phân công mỗi tòa nhà mỗi NV,BuildingStaff,2,"Unique (BuildingId, StaffId)"
+Ràng buộc duy nhất,UQ-07,Email duy nhất,User,1,
+Ràng buộc duy nhất,UQ-08,SĐT duy nhất (nếu có),User,1,
+Mặc định tòa nhà,BD-01,"Tạo tòa nhà tự tạo 5 DV: Điện 3500/kWh, Nước 20000/m³, Internet 100k/tháng, Rác 20k/tháng, Gửi xe 100k/người/tháng",Building,2,Cấu hình trong appsettings
+Mặc định tòa nhà,BD-02,Building.InvoiceDueDay mặc định 10 (range 1-28),Building,2,
+Giá cả,PR-01,Contract.MonthlyRent khóa khi ký — đổi giá phòng không ảnh hưởng HĐ cũ,Contract,3,
+Giá cả,PR-02,InvoiceDetail.UnitPrice chụp tại thời điểm tạo HĐơn,Invoice,4,
+Giá cả,PR-03,"Cập nhật DV lưu PreviousUnitPrice, PriceUpdatedAt",Service,2,Lưu vết thay đổi giá
+Giá cả,PR-04,"Ưu tiên override: OverrideUnitPrice ?? Service.UnitPrice, OverrideQuantity ?? occupantCount ?? 1",Invoice,4,
+Giá cả,PR-05,Prorate tháng đầu: MonthlyRent / sốNgàyTrongTháng × sốNgàyTừMoveInĐếnCuốiTháng,Invoice,4,Dựa trên Contract.MoveInDate
+Giá cả,PR-06,Prorate tháng cuối: tính tương tự theo tỷ lệ,Invoice,4,Dựa trên Contract.TerminationDate
+Tiền cọc,DEP-01,"Cọc theo dõi qua Payment: DEPOSIT_IN (nhận), DEPOSIT_REFUND (hoàn)",Payment,3/5,Hiện trong báo cáo lãi/lỗ. Amount luôn dương — Type quyết định chiều tiền
+Tiền cọc,DEP-02,Tiền cọc đặt phòng vào Payment khi giải quyết (chuyển HĐ hoặc hủy) — không phải lúc tạo,Payment,3,Từ lúc tạo đến khi giải quyết chỉ có Reservation.DepositAmount làm hồ sơ
+Tiền cọc,DEP-03,"Tạo HĐ từ đặt cọc: cọc → Payment(DEPOSIT_IN). Cọc thêm → Payment(DEPOSIT_IN) riêng",Payment,3,
+Tiền cọc,DEP-04,"Thanh lý: RefundAmount = DepositAmount - deductions → Payment(DEPOSIT_REFUND)",Payment,3,"Contract.DepositStatus theo dõi vòng đời: HELD → REFUNDED/FORFEITED"
+Tiền cọc,DEP-05,"Hủy đặt cọc: RefundAmount có thể = 0 (mất cọc), một phần, hoặc toàn bộ",Payment,3,
+Tạo hóa đơn,IG-01,POST /invoices/generate là IDEMPOTENT — bỏ qua nếu đã có cùng HĐ+tháng,Invoice,4,"Trả về { generated[], skipped[], warnings[] }"
+Tạo hóa đơn,IG-02,Thiếu chỉ số → BỎ QUA dòng DV đó + thêm warning (không chặn toàn bộ HĐơn),Invoice,4,
+Tạo hóa đơn,IG-03,"DV đồng hồ: consumption × (OverrideUnitPrice ?? UnitPrice). Kiểm tra RoomService.IsEnabled trước",Invoice,4,
+Tạo hóa đơn,IG-04,"DV cố định: quantity × (OverrideUnitPrice ?? UnitPrice). Quantity từ OverrideQuantity ?? occupantCount ?? 1",Invoice,4,
+Tạo hóa đơn,IG-05,InvoiceDetail cho DV đồng hồ có PreviousReading + CurrentReading chụp,Invoice,4,Hiển thị chỉ số chi tiết
+Tạo hóa đơn,IG-06,DueDate = tháng sau / Building.InvoiceDueDay,Invoice,4,
+Tạo hóa đơn,IG-07,Invoice.Status bắt đầu là DRAFT,Invoice,4,Phải gửi (SEND) riêng
+Tạo hóa đơn,IG-08,1 DB transaction cho toàn bộ batch,Invoice,4,
+Thanh toán,PAY-01,Invoice.PaidAmount tính từ SUM(Payment) — KHÔNG lưu DB,Invoice,5,Tránh lỗi đồng bộ. Chỉ trả trong DTO
+Thanh toán,PAY-02,Payment.Amount luôn dương. Type quyết định chiều tiền,Payment,5,"RENT_PAYMENT/DEPOSIT_IN = tiền vào. DEPOSIT_REFUND = tiền ra"
+Thanh toán,PAY-03,"Tự chuyển: PaidAmount ≥ TotalAmount → PAID. PaidAmount > 0 → PARTIALLY_PAID",Invoice,5,
+Thanh toán,PAY-04,"Không trả được DRAFT hoặc VOID. Phải là SENT, OVERDUE, hoặc PARTIALLY_PAID",Invoice,5,
+Thanh toán,PAY-05,Thanh toán không chỉnh sửa được. Sửa lỗi qua điều chỉnh âm hoặc hủy HĐơn,Payment,5,
+Thanh toán,PAY-06,Thanh toán hàng loạt: tuần tự trong 1 transaction. Tất-cả-hoặc-không,Payment,5,
+Xác thực & Bảo mật,AUTH-01,Access token TTL: 30 phút. Refresh token TTL: 7 ngày,Auth,1,Lưu trong DB
+Xác thực & Bảo mật,AUTH-02,User bị vô hiệu hóa → 403 khi đăng nhập + xóa RefreshToken,User,1,
+Xác thực & Bảo mật,AUTH-03,Mật khẩu tối thiểu 8 ký tự,Auth,1,
+Xác thực & Bảo mật,AUTH-04,"Giới hạn: đăng nhập 5/phút, quên mật khẩu 3/phút (fixed window)",Auth,1,ASP.NET Core Rate Limiting
+Xác thực & Bảo mật,AUTH-05,Phân quyền theo tòa nhà: NV chỉ truy cập tòa nhà được phân công,Middleware,2,BuildingScopeFilter kiểm tra bảng BuildingStaff
+Xác thực & Bảo mật,AUTH-06,KT tự lọc: endpoint danh sách tự lọc theo JWT UserId cho KT,Service Layer,1-5,Không cần route riêng cho KT
+Xóa mềm,SD-01,"User, Building, Room có DeletedAt",Multiple,1-2,GET danh sách mặc định loại trừ DeletedAt IS NOT NULL
+Xóa mềm,SD-02,ContractTenant gỡ mềm: set MoveOutDate,ContractTenant,4,KT vẫn còn trong lịch sử
+Xóa mềm,SD-03,DV vô hiệu hóa: IsActive=false (không xóa cứng),Service,2,
+Xóa mềm,SD-04,Không xóa mềm tòa nhà/phòng nếu có HĐ ACTIVE,Building/Room,2,Trả 409 Conflict
+Hồ sơ khách thuê,TP-01,Tự tạo (rỗng) khi tạo User khách thuê,TenantProfile,1,Mọi field nullable trừ UserId
+Hồ sơ khách thuê,TP-02,OCR chỉ trả dữ liệu — KHÔNG tự lưu,TenantProfile,3,Frontend preview → user xác nhận → PUT lưu
+Hợp đồng,CT-01,Gia hạn: tạo HĐ mới. Cũ → TERMINATED. Cùng phòng+khách. StartDate = cũ.EndDate+1,Contract,3,
+Hợp đồng,CT-02,Thanh lý: set TerminationDate + tính hoàn cọc,Contract,3,Hoàn = DepositAmount - deductions
+Hợp đồng,CT-03,Cập nhật: đổi được EndDate (gia hạn) và MonthlyRent. Không đổi được RoomId/TenantUserId,Contract,3,
+Hợp đồng,CT-04,CreatedBy lưu ai tạo/ký HĐ,Contract,3,Truy vết trách nhiệm
+Sự cố,IS-01,KT báo sự cố: BuildingId tự lấy từ HĐ → phòng → tòa nhà,Issue,5,KT chỉ cần Title + Description + RoomId (tùy chọn)
+Sự cố,IS-02,Tối đa 3 ảnh/sự cố (3MB/ảnh),Issue,5,
+Thông báo,NT-01,Tạo hóa đơn → thông báo cho KT,Notification,4,
+Thông báo,NT-02,Hóa đơn quá hạn → thông báo cho KT,Notification,4,
+Thông báo,NT-03,Đổi trạng thái sự cố → thông báo cho người báo cáo,Notification,5,
+Thông báo,NT-04,HĐ quá EndDate → cảnh báo chủ nhà + KT,Notification,3,
+Thông báo,NT-05,Ghi nhận thanh toán → thông báo cho KT,Notification,5,
+Tác vụ nền,BG-01,Hết hạn đặt cọc: mỗi giờ. PENDING/CONFIRMED quá ExpiresAt → EXPIRED + phòng→AVAILABLE,Background,3,IHostedService timer
+Tác vụ nền,BG-02,Hóa đơn quá hạn: hàng ngày 00:00. SENT quá DueDate → OVERDUE,Background,4,
+Tác vụ nền,BG-03,Cảnh báo HĐ sắp hết: hàng ngày 08:00. ACTIVE có EndDate ≤ hôm nay+30 → Thông báo,Background,3,
+Kiểm tra dữ liệu,VAL-01,CCCD (IdNumber): 12 chữ số,TenantProfile,3,
+Kiểm tra dữ liệu,VAL-02,SĐT: 10 chữ số,User,1,
+Kiểm tra dữ liệu,VAL-03,"Room.Floor ≥ 1, ≤ Building.TotalFloors",Room,2,
+Kiểm tra dữ liệu,VAL-04,MeterReading.CurrentReading ≥ PreviousReading,MeterReading,4,
+Kiểm tra dữ liệu,VAL-05,Contract.StartDate < EndDate,Contract,3,
+Kiểm tra dữ liệu,VAL-06,"BillingMonth 1-12, BillingYear 2020-2100",MeterReading/Invoice,4,
+Kiểm tra dữ liệu,VAL-07,"Room.MaxOccupants 1-20, Room.Area > 0 và ≤ 1000",Room,2,
+Tải file,FU-01,"Avatar: tối đa 2MB, JPEG/PNG, tối đa 1024×1024 px",User,1,Cloudinary
+Tải file,FU-02,"Ảnh CCCD: tối đa 5MB/ảnh, JPEG/PNG",TenantProfile,3,Cloudinary
+Tải file,FU-03,"Biên lai chi phí: tối đa 5MB, JPEG/PNG/PDF",Expense,5,Cloudinary
+Tải file,FU-04,"Ảnh sự cố: tối đa 3MB/ảnh, JPEG/PNG, tối đa 3/sự cố",Issue,5,Cloudinary
+Báo cáo lãi/lỗ,PNL-01,"Theo tháng: thu hoạt động, cọc nhận, cọc hoàn, chi phí, lãi ròng, dòng tiền",Report,5,
+Báo cáo lãi/lỗ,PNL-02,Lãi ròng hoạt động = thu hoạt động - chi phí,Report,5,
+Báo cáo lãi/lỗ,PNL-03,Dòng tiền ròng = thu hoạt động + cọc nhận - cọc hoàn - chi phí,Report,5,
+Báo cáo lãi/lỗ,PNL-04,HĐơn bị hủy (VOID) không tính vào báo cáo,Report,5,

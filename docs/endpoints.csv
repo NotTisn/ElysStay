@@ -1,0 +1,85 @@
+Sprint,STT,Dev,Method,Route,Mô tả,Phân quyền,Dữ liệu gửi lên,Quy tắc chính
+1 - Xác thực & Người dùng,1,A,POST,/auth/login,Đăng nhập → trả access + refresh token,Public,"{email, password}","Access TTL: 30 phút. Refresh TTL: 7 ngày. Trả về: {accessToken, refreshToken, user}"
+1 - Xác thực & Người dùng,2,A,POST,/auth/refresh-token,Làm mới access token từ refresh token,Public,"{refreshToken}",Trả về cặp access + refresh mới
+1 - Xác thực & Người dùng,3,A,POST,/auth/logout,Đăng xuất — hủy refresh token,All,,Xóa RefreshToken trong DB
+1 - Xác thực & Người dùng,4,A,POST,/auth/register-staff,Tạo tài khoản nhân viên,OWNER,"{email, fullName, phone, password}",Role=STAFF
+1 - Xác thực & Người dùng,5,A,POST,/auth/change-password,Đổi mật khẩu,All,"{oldPassword, newPassword}",
+1 - Xác thực & Người dùng,6,A,POST,/auth/forgot-password,Gửi email/OTP khôi phục mật khẩu,Public,"{email}",Giới hạn: 3 lần/phút
+1 - Xác thực & Người dùng,7,A,POST,/auth/reset-password,Đặt lại mật khẩu bằng OTP,Public,"{email, otp, newPassword}",Kiểm tra OTP + đặt mật khẩu mới
+1 - Xác thực & Người dùng,8,B,GET,/users/me,Xem thông tin cá nhân,All,,
+1 - Xác thực & Người dùng,9,B,PUT,/users/me,Cập nhật tên / SĐT cá nhân,All,"{fullName?, phone?}",
+1 - Xác thực & Người dùng,10,B,POST,/users/me/avatar,Tải ảnh đại diện lên Cloudinary,All,multipart/form-data (file),Tối đa 2MB. JPEG/PNG. Tối đa 1024×1024
+1 - Xác thực & Người dùng,11,B,GET,/users/me/dashboard,Trang chủ tổng hợp theo vai trò,All,,"KT: phòng+HĐ+hóa đơn chưa trả+sự cố. NV: tòa nhà+sự cố+chỉ số chờ. Chủ: thống kê+doanh thu"
+1 - Xác thực & Người dùng,12,C,GET,/users/tenants,Danh sách khách thuê (phân trang),OWNER / STAFF,?search=&page=&pageSize=,Tìm theo: tên / SĐT / email
+1 - Xác thực & Người dùng,13,C,GET,/users/staff,Danh sách nhân viên,OWNER,?page=&pageSize=,
+1 - Xác thực & Người dùng,14,C,GET,/users/{id},Chi tiết người dùng,OWNER / STAFF,,
+1 - Xác thực & Người dùng,15,C,POST,/users/tenants,Tạo tài khoản khách thuê,OWNER / STAFF,"{email, fullName, phone, password?}","Role=TENANT. Tự tạo TenantProfile rỗng. Không có password → tạo ngẫu nhiên + gửi thông báo"
+1 - Xác thực & Người dùng,16,C,PATCH,/users/{id}/status,Kích hoạt / Vô hiệu hóa tài khoản,OWNER,"{status: ACTIVE|DEACTIVATED}","Xóa RefreshToken. DEACTIVATED → 403 khi đăng nhập"
+2 - Tòa nhà & Phòng,17,A,GET,/buildings,Danh sách tòa nhà,OWNER / STAFF,?name=&address=&page=,NV chỉ thấy tòa nhà được phân công
+2 - Tòa nhà & Phòng,18,A,GET,/buildings/{id},Chi tiết tòa nhà + thống kê,OWNER / STAFF,,Bao gồm số phòng / tỷ lệ lấp đầy
+2 - Tòa nhà & Phòng,19,A,POST,/buildings,Tạo tòa nhà,OWNER,"{name, address, description?, totalFloors, invoiceDueDay?}","Tự tạo 5 DV: Điện 3500/kWh, Nước 20000/m³, Internet 100k/tháng, Rác 20k/tháng, Gửi xe 100k/người"
+2 - Tòa nhà & Phòng,20,A,PUT,/buildings/{id},Cập nhật tòa nhà,OWNER,"{name?, address?, description?, totalFloors?, invoiceDueDay?}",
+2 - Tòa nhà & Phòng,21,A,DELETE,/buildings/{id},Xóa mềm tòa nhà,OWNER,,409 nếu còn phòng có HĐ ACTIVE
+2 - Tòa nhà & Phòng,22,B,GET,/buildings/{id}/staff,Danh sách NV được phân công,OWNER / STAFF,,
+2 - Tòa nhà & Phòng,23,B,POST,/buildings/{id}/staff,Phân công NV vào tòa nhà,OWNER,"{staffId}",
+2 - Tòa nhà & Phòng,24,B,DELETE,/buildings/{id}/staff/{staffId},Gỡ phân công NV,OWNER,,
+2 - Tòa nhà & Phòng,25,C,GET,/rooms,Danh sách phòng (tất cả tòa nhà),OWNER / STAFF,?buildingId=&status=&floor=&page=,buildingId không bắt buộc → trả tất cả
+2 - Tòa nhà & Phòng,26,C,GET,/buildings/{id}/rooms,Danh sách phòng trong tòa nhà,OWNER / STAFF,?status=&floor=&page=,
+2 - Tòa nhà & Phòng,27,C,GET,/rooms/{id},Chi tiết phòng,OWNER / STAFF / TENANT (của mình),,Bao gồm HĐ hiện tại + khách thuê + dịch vụ
+2 - Tòa nhà & Phòng,28,C,POST,/buildings/{id}/rooms,Tạo phòng,OWNER / STAFF,"{roomNumber, floor, area, price, maxOccupants, description?}","Floor phải ≤ Building.TotalFloors. Unique (BuildingId+RoomNumber)"
+2 - Tòa nhà & Phòng,29,C,PUT,/rooms/{id},Cập nhật phòng,OWNER / STAFF,"{roomNumber?, floor?, area?, price?, maxOccupants?, description?}",
+2 - Tòa nhà & Phòng,30,C,DELETE,/rooms/{id},Xóa mềm phòng,OWNER,,409 nếu phòng có HĐ ACTIVE
+2 - Tòa nhà & Phòng,31,C,PATCH,/rooms/{id}/status,Đổi trạng thái phòng thủ công,OWNER / STAFF,"{status: AVAILABLE|MAINTENANCE}","Chỉ AVAILABLE↔MAINTENANCE. BOOKED/OCCUPIED chỉ qua reservation/contract"
+2 - Tòa nhà & Phòng,32,A,GET,/buildings/{id}/services,Danh sách dịch vụ / cấu hình phí,OWNER / STAFF / TENANT,,
+2 - Tòa nhà & Phòng,33,A,POST,/buildings/{id}/services,Tạo dịch vụ,OWNER,"{name, unit, unitPrice, isMetered}",
+2 - Tòa nhà & Phòng,34,A,PUT,/services/{id},Cập nhật dịch vụ,OWNER,"{name?, unit?, unitPrice?, isMetered?}","Khi UnitPrice thay đổi → lưu PreviousUnitPrice + PriceUpdatedAt"
+2 - Tòa nhà & Phòng,35,A,DELETE,/services/{id},Vô hiệu hóa dịch vụ,OWNER,,IsActive=false (không xóa cứng)
+2 - Tòa nhà & Phòng,36,B,GET,/rooms/{id}/services,Xem cấu hình DV riêng của phòng,OWNER / STAFF,,So sánh override với mặc định tòa nhà
+2 - Tòa nhà & Phòng,37,B,PUT,/rooms/{id}/services,Cập nhật cấu hình DV phòng (hàng loạt),OWNER / STAFF,"[{serviceId, isEnabled, overrideUnitPrice?, overrideQuantity?}]","Gửi toàn bộ state. Thiếu = về mặc định. IsEnabled=false → phòng bỏ qua DV này"
+2 - Tòa nhà & Phòng,38,B,DELETE,/rooms/{id}/services/{serviceId},Xóa override 1 DV của phòng,OWNER / STAFF,,Về mặc định tòa nhà cho DV đó
+3 - Hồ sơ & Hợp đồng,39,A,GET,/tenant-profiles/{userId},Xem hồ sơ CCCD,OWNER / STAFF / TENANT (của mình),,Tự tạo (rỗng) khi tạo User khách thuê
+3 - Hồ sơ & Hợp đồng,40,A,PUT,/tenant-profiles/{userId},Cập nhật hồ sơ CCCD (text),OWNER / STAFF / TENANT (của mình),"{idNumber?, dateOfBirth?, gender?, permanentAddress?, issuedDate?, issuedPlace?}",
+3 - Hồ sơ & Hợp đồng,41,A,POST,/tenant-profiles/{userId}/ocr,Quét OCR CCCD → trả dữ liệu phân tích,OWNER / STAFF,multipart/form-data (image),"Chỉ trả dữ liệu, KHÔNG tự lưu. Frontend preview → user xác nhận → PUT lưu"
+3 - Hồ sơ & Hợp đồng,42,A,POST,/tenant-profiles/{userId}/upload-id-images,Tải ảnh CCCD mặt trước + sau,OWNER / STAFF / TENANT (của mình),multipart/form-data (front + back),Tối đa 5MB/ảnh. JPEG/PNG
+3 - Hồ sơ & Hợp đồng,43,B,GET,/reservations,Danh sách đặt cọc,OWNER / STAFF,?buildingId=&status=&roomId=&page=,
+3 - Hồ sơ & Hợp đồng,44,B,POST,/reservations,Tạo đặt cọc → phòng chuyển BOOKED,OWNER / STAFF,"{roomId, tenantUserId, depositAmount?, expiresAt?, note?}","Phòng phải AVAILABLE → BOOKED. Cọc mặc định 500k. Hết hạn mặc định +7 ngày"
+3 - Hồ sơ & Hợp đồng,45,B,PATCH,/reservations/{id}/status,Hủy / Xác nhận đặt cọc,OWNER / STAFF,"{action: CONFIRM|CANCEL, refundAmount?, refundNote?}","Hủy: set RefundAmount + phòng→AVAILABLE. Tiền cọc vào Payment khi giải quyết (chuyển HĐ hoặc hủy)"
+3 - Hồ sơ & Hợp đồng,46,C,GET,/contracts,Danh sách hợp đồng,ALL,?buildingId=&roomId=&status=&page=,KT: tự lọc theo HĐ của mình
+3 - Hồ sơ & Hợp đồng,47,C,GET,/contracts/{id},Chi tiết hợp đồng + người ở ghép,ALL,,KT: chỉ xem của mình
+3 - Hồ sơ & Hợp đồng,48,C,POST,/contracts,Tạo hợp đồng,OWNER / STAFF,"{roomId, tenantUserId, reservationId?, startDate, endDate, moveInDate, monthlyRent, depositAmount}","UNIQUE: 1 HĐ ACTIVE/phòng (409). Tự tạo ContractTenant(IsMainTenant=true). Cọc → Payment(DEPOSIT_IN)"
+3 - Hồ sơ & Hợp đồng,49,C,PUT,/contracts/{id},Cập nhật hợp đồng,OWNER / STAFF,"{endDate?, monthlyRent?, note?}","Có thể gia hạn EndDate hoặc điều chỉnh tiền thuê. Không đổi được roomId/tenantUserId"
+3 - Hồ sơ & Hợp đồng,50,C,PATCH,/contracts/{id}/terminate,Thanh lý hợp đồng,OWNER / STAFF,"{terminationDate, note?, deductions?}","Hoàn cọc = DepositAmount - deductions. HĐ→TERMINATED. Phòng→AVAILABLE. Hoàn→Payment(DEPOSIT_REFUND)"
+3 - Hồ sơ & Hợp đồng,51,C,PATCH,/contracts/{id}/renew,Gia hạn hợp đồng,OWNER / STAFF,"{newEndDate, newMonthlyRent?}","Tạo HĐ mới. Cũ→TERMINATED. Cùng phòng+khách. StartDate = cũ.EndDate+1"
+4 - Chỉ số & Hóa đơn,52,A,GET,/contracts/{id}/tenants,Danh sách người ở ghép,ALL,,Bao gồm đã dọn đi (có MoveOutDate). KT: chỉ HĐ của mình
+4 - Chỉ số & Hóa đơn,53,A,POST,/contracts/{id}/tenants,Thêm người ở ghép,OWNER / STAFF,"{tenantUserId, moveInDate}",
+4 - Chỉ số & Hóa đơn,54,A,DELETE,/contracts/{id}/tenants/{tenantId},Gỡ người ở ghép (mềm),OWNER / STAFF,,Set MoveOutDate. Không gỡ được IsMainTenant=true
+4 - Chỉ số & Hóa đơn,55,B,GET,/meter-readings,Danh sách chỉ số điện/nước,OWNER / STAFF / TENANT (phòng mình),?buildingId=&billingYear=&billingMonth= (BẮT BUỘC),KT: chỉ phòng mình
+4 - Chỉ số & Hóa đơn,56,B,POST,/meter-readings/bulk,Nhập chỉ số điện/nước hàng loạt,OWNER / STAFF,"{buildingId, billingYear, billingMonth, readings: [{roomId, serviceId, previousReading, currentReading}]}","UPSERT: có rồi→cập nhật, mới→thêm. CurrentReading ≥ PreviousReading. PreviousReading tự lấy từ tháng trước"
+4 - Chỉ số & Hóa đơn,57,B,PUT,/meter-readings/{id},Sửa 1 chỉ số,OWNER / STAFF,"{previousReading?, currentReading?}",
+4 - Chỉ số & Hóa đơn,58,C,GET,/invoices,Danh sách hóa đơn,ALL,?buildingId=&billingYear=&billingMonth=&status=&page=,KT: tự lọc theo của mình
+4 - Chỉ số & Hóa đơn,59,C,GET,/invoices/{id},Chi tiết hóa đơn + từng dòng,ALL,,Bao gồm InvoiceDetail[] + PaidAmount = SUM(Payment) — không lưu DB
+4 - Chỉ số & Hóa đơn,60,C,POST,/invoices/generate,Tạo hóa đơn cho tòa nhà/tháng,OWNER / STAFF,"{buildingId, billingYear, billingMonth}","IDEMPOTENT: bỏ qua nếu đã có. Prorate tháng đầu/cuối. Trả {generated[], skipped[], warnings[]}"
+4 - Chỉ số & Hóa đơn,61,C,PUT,/invoices/{id},Sửa phụ phí / giảm giá hóa đơn,OWNER / STAFF,"{penaltyAmount?, discountAmount?, note?}",Chỉ khi status DRAFT hoặc SENT
+4 - Chỉ số & Hóa đơn,62,C,PATCH,/invoices/{id}/send,Gửi hóa đơn cho khách,OWNER / STAFF,,DRAFT→SENT. Gửi thông báo cho khách thuê
+4 - Chỉ số & Hóa đơn,63,C,POST,/invoices/send-batch,Gửi hóa đơn hàng loạt,OWNER / STAFF,"{invoiceIds: []}",
+4 - Chỉ số & Hóa đơn,64,C,PATCH,/invoices/{id}/void,Hủy hóa đơn,OWNER,,Mọi status trừ PAID → VOID. Không tính vào báo cáo lãi/lỗ
+4 - Chỉ số & Hóa đơn,65,C,GET,/invoices/{id}/export,Xuất hóa đơn PDF,OWNER / STAFF / TENANT (của mình),,QuestPDF. Giao diện tiếng Việt
+4 - Chỉ số & Hóa đơn,66,B,GET,/rooms/{id}/meter-history,Lịch sử chỉ số điện/nước theo phòng,OWNER / STAFF / TENANT (phòng mình),,Xem xu hướng tiêu thụ
+5 - Thanh toán & Báo cáo,67,A,POST,/invoices/{id}/payments,Ghi nhận thanh toán,OWNER / STAFF,"{amount, paymentMethod?, note?}","Amount luôn dương. Type=RENT_PAYMENT. Không trả DRAFT/VOID. Tự chuyển: SENT→PARTIALLY_PAID→PAID"
+5 - Thanh toán & Báo cáo,68,A,POST,/payments/batch,Ghi nhận thanh toán hàng loạt,OWNER / STAFF,"[{invoiceId, amount, paymentMethod?, note?}]",Tất-cả-hoặc-không (1 transaction)
+5 - Thanh toán & Báo cáo,69,A,GET,/payments,Lịch sử thanh toán,OWNER / STAFF / TENANT (của mình),?buildingId=&dateRange=&type=&page=,Lọc theo type: RENT_PAYMENT / DEPOSIT_IN / DEPOSIT_REFUND
+5 - Thanh toán & Báo cáo,70,A,GET,/expenses,Danh sách chi phí,OWNER / STAFF,?buildingId=&roomId=&dateRange=&category=&page=,
+5 - Thanh toán & Báo cáo,71,A,POST,/expenses,Tạo chi phí,OWNER / STAFF,"{buildingId, roomId?, category, description, amount, expenseDate}",
+5 - Thanh toán & Báo cáo,72,A,PUT,/expenses/{id},Cập nhật chi phí,OWNER / STAFF,"{category?, description?, amount?, expenseDate?}",
+5 - Thanh toán & Báo cáo,73,A,DELETE,/expenses/{id},Xóa chi phí,OWNER,,
+5 - Thanh toán & Báo cáo,74,A,POST,/expenses/{id}/receipt,Tải ảnh biên lai,OWNER / STAFF,multipart/form-data (file),Tối đa 5MB. JPEG/PNG/PDF
+5 - Thanh toán & Báo cáo,75,B,GET,/issues,Danh sách sự cố,ALL,?buildingId=&status=&priority=&page=,KT: chỉ sự cố của mình
+5 - Thanh toán & Báo cáo,76,B,POST,/issues,Báo sự cố,ALL,"{buildingId?, roomId?, title, description}","KT: buildingId tự lấy từ HĐ→phòng→tòa nhà. Chủ/NV: buildingId bắt buộc"
+5 - Thanh toán & Báo cáo,77,B,PUT,/issues/{id},Sửa sự cố,OWNER / STAFF / TENANT (của mình),"{title?, description?}",
+5 - Thanh toán & Báo cáo,78,B,PATCH,/issues/{id}/status,Đổi trạng thái sự cố,OWNER / STAFF,"{status: IN_PROGRESS|RESOLVED|CLOSED}",Gửi thông báo cho người báo cáo khi đổi trạng thái
+5 - Thanh toán & Báo cáo,79,B,POST,/issues/{id}/images,Tải ảnh sự cố,ALL,multipart/form-data (files),Tối đa 3MB/ảnh. JPEG/PNG. Tối đa 3 ảnh/sự cố
+5 - Thanh toán & Báo cáo,80,C,GET,/reports/dashboard-stats,Thống kê trang chủ,OWNER / STAFF,?buildingId=,"Số phòng / tỷ lệ lấp đầy / HĐ quá hạn / số tiền quá hạn / doanh thu"
+5 - Thanh toán & Báo cáo,81,C,GET,/reports/pnl,Báo cáo lãi/lỗ,OWNER,?buildingId=&year=,"Theo tháng: thu hoạt động, cọc nhận, cọc hoàn, chi phí, lãi ròng, dòng tiền"
+5 - Thanh toán & Báo cáo,82,C,GET,/notifications,Thông báo cá nhân,ALL,?page=&pageSize=,
+5 - Thanh toán & Báo cáo,83,C,PATCH,/notifications/{id}/read,Đánh dấu đã đọc 1 thông báo,ALL,,
+5 - Thanh toán & Báo cáo,84,C,PATCH,/notifications/mark-all-read,Đánh dấu tất cả đã đọc,ALL,,

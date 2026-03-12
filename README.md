@@ -9,8 +9,50 @@ This README summarizes what's in the repository and shows step-by-step instructi
 - `Infrastructure/` — EF Core persistence, Identity, migrations
 - `keycloak/` — Keycloak realm export used by the Docker Keycloak instance
 - `docker-compose.yml` — Compose file to run Postgres + Keycloak
+- `dev-tools/` — One-command dev launcher (also manages frontend sibling)
+- `docs/` — Product spec, entity definitions, endpoints, business rules
 
-## Prerequisites
+## One-Command Dev Start (recommended)
+
+> **Requires:** Docker Desktop (running), .NET 10 SDK, Node.js 18+, npm.
+> **Expects** the frontend repo cloned as a sibling: `../ElysStay-fe/`
+
+```powershell
+.\dev-tools\dev.bat
+```
+
+This will:
+1. Check prerequisites (Docker, .NET SDK, Node, npm)
+2. Start infrastructure (Postgres on :5433, Keycloak on :8080)
+3. Launch backend (.NET on :5027) in a named window
+4. Launch frontend (Next.js on :3000) in a named window
+
+### Other commands
+
+```powershell
+.\dev-tools\dev.bat -Status       # Show what's running
+.\dev-tools\dev.bat -Kill         # Stop backend + frontend
+.\dev-tools\dev.bat -Kill -Docker # Stop everything including Docker
+.\dev-tools\dev.bat -Logs         # Tail service logs
+.\dev-tools\dev.bat -Clean        # Nuclear reset (with confirmation)
+.\dev-tools\dev.bat -Backend      # Start only backend
+.\dev-tools\dev.bat -Frontend     # Start only frontend
+.\dev-tools\dev.bat -Infra        # Start only Docker services
+```
+
+### Service ports
+
+| Service | Port |
+|---------|------|
+| Backend API | [localhost:5027](http://localhost:5027) |
+| Frontend | [localhost:3000](http://localhost:3000) |
+| PostgreSQL | localhost:5433 |
+| Keycloak Admin | [localhost:8080](http://localhost:8080) |
+| Health Check | [localhost:5027/healthz](http://localhost:5027/healthz) |
+
+## Manual Setup (alternative)
+
+### Prerequisites
 - Git
 - .NET 10 SDK (dotnet) — confirm with `dotnet --version`
 - Docker Desktop (with Compose)

@@ -1,0 +1,181 @@
+Entity,Field,Kiểu,Nullable,Ràng buộc,Ghi chú
+User,Id,int,Không,PK (identity),
+User,Email,string,Không,Unique,Dùng để đăng nhập
+User,PasswordHash,string,Không,,Mã hóa BCrypt
+User,FullName,string,Không,,Tên hiển thị
+User,Phone,string,Có,Unique (nếu có),
+User,AvatarUrl,string,Có,,URL Cloudinary
+User,Role,enum(OWNER/STAFF/TENANT),Không,,
+User,Status,enum(ACTIVE/DEACTIVATED),Không,,DEACTIVATED → 403 khi đăng nhập
+User,RefreshToken,string,Có,,Refresh token hiện tại
+User,RefreshTokenExpiry,DateTime,Có,,
+User,CreatedAt,DateTime,Không,,
+User,UpdatedAt,DateTime,Không,,
+User,DeletedAt,DateTime,Có,,Xóa mềm
+Building,Id,int,Không,PK,
+Building,OwnerId,int,Không,FK→User,
+Building,Name,string,Không,,
+Building,Address,string,Không,,
+Building,Description,string,Có,,
+Building,TotalFloors,int,Không,,
+Building,InvoiceDueDay,int,Không,,"Ngày trong tháng (1-28) hạn thanh toán HĐ. Mặc định: 10"
+Building,CreatedAt,DateTime,Không,,
+Building,UpdatedAt,DateTime,Không,,
+Building,DeletedAt,DateTime,Có,,Xóa mềm
+BuildingStaff,BuildingId,int,Không,"Composite PK, FK→Building",Bảng liên kết
+BuildingStaff,StaffId,int,Không,"Composite PK, FK→User",
+BuildingStaff,AssignedAt,DateTime,Không,,
+Room,Id,int,Không,PK,
+Room,BuildingId,int,Không,FK→Building,
+Room,RoomNumber,string,Không,Unique(BuildingId+RoomNumber),"VD: ""301"""
+Room,Floor,int,Không,,Phải ≤ Building.TotalFloors
+Room,Area,decimal,Không,,m²
+Room,Price,decimal,Không,,"Giá niêm yết hàng tháng (VND). Không phải giá hợp đồng"
+Room,MaxOccupants,int,Không,,
+Room,Description,string,Có,,
+Room,Status,enum(AVAILABLE/BOOKED/OCCUPIED/MAINTENANCE),Không,,Mặc định AVAILABLE
+Room,RowVersion,byte[],Không,,Concurrency cho thay đổi trạng thái
+Room,CreatedAt,DateTime,Không,,
+Room,UpdatedAt,DateTime,Không,,
+Room,DeletedAt,DateTime,Có,,Xóa mềm
+Service,Id,int,Không,PK,Cấu hình phí theo tòa nhà
+Service,BuildingId,int,Không,FK→Building,
+Service,Name,string,Không,,"VD: Tiền điện, Tiền nước, Internet, Rác, Gửi xe"
+Service,Unit,string,Không,,"VD: kWh, m³, tháng, người/tháng"
+Service,UnitPrice,decimal,Không,,Đơn giá VND hiện tại
+Service,PreviousUnitPrice,decimal,Có,,Giá trước khi đổi (lưu vết)
+Service,PriceUpdatedAt,DateTime,Có,,Lần đổi UnitPrice gần nhất
+Service,IsMetered,bool,Không,,true = cần nhập chỉ số (điện/nước). false = phí cố định
+Service,IsActive,bool,Không,,
+Service,CreatedAt,DateTime,Không,,
+Service,UpdatedAt,DateTime,Không,,
+RoomService,Id,int,Không,PK,Override phí riêng cho từng phòng
+RoomService,RoomId,int,Không,"FK→Room, Unique(RoomId+ServiceId)",
+RoomService,ServiceId,int,Không,"FK→Service, Unique(RoomId+ServiceId)",
+RoomService,IsEnabled,bool,Không,,false = phòng không dùng DV này
+RoomService,OverrideUnitPrice,decimal,Có,,null = dùng Service.UnitPrice của tòa nhà
+RoomService,OverrideQuantity,decimal,Có,,null = tự tính. Có giá trị = số lượng cố định
+TenantProfile,Id,int,Không,PK,1:1 với User. Tự tạo khi tạo tài khoản KT
+TenantProfile,UserId,int,Không,FK→User (Unique),
+TenantProfile,IdNumber,string,Có,,Số CCCD
+TenantProfile,IdFrontUrl,string,Có,,Ảnh mặt trước CCCD (Cloudinary)
+TenantProfile,IdBackUrl,string,Có,,Ảnh mặt sau CCCD (Cloudinary)
+TenantProfile,DateOfBirth,DateOnly,Có,,
+TenantProfile,Gender,string,Có,,
+TenantProfile,PermanentAddress,string,Có,,Quê quán
+TenantProfile,IssuedDate,DateOnly,Có,,Ngày cấp
+TenantProfile,IssuedPlace,string,Có,,Nơi cấp
+TenantProfile,CreatedAt,DateTime,Không,,
+TenantProfile,UpdatedAt,DateTime,Không,,
+Reservation,Id,int,Không,PK,
+Reservation,RoomId,int,Không,FK→Room,
+Reservation,TenantUserId,int,Không,FK→User,
+Reservation,DepositAmount,decimal,Không,,"Số tiền cọc, mặc định 500k"
+Reservation,Status,enum(PENDING/CONFIRMED/CONVERTED/CANCELLED/EXPIRED),Không,,
+Reservation,ExpiresAt,DateTime,Không,,Hạn đặt cọc (mặc định +7 ngày)
+Reservation,RefundAmount,decimal,Có,,Số tiền hoàn cọc khi hủy
+Reservation,RefundNote,string,Có,,
+Reservation,RefundedAt,DateTime,Có,,
+Reservation,Note,string,Có,,
+Reservation,CreatedAt,DateTime,Không,,
+Reservation,UpdatedAt,DateTime,Không,,
+Contract,Id,int,Không,PK,
+Contract,RoomId,int,Không,"FK→Room, Unique WHERE Status='ACTIVE'",Chỉ 1 HĐ ACTIVE mỗi phòng
+Contract,TenantUserId,int,Không,FK→User,Khách thuê chính
+Contract,ReservationId,int,Có,FK→Reservation,
+Contract,StartDate,DateOnly,Không,,
+Contract,EndDate,DateOnly,Không,,
+Contract,MoveInDate,DateOnly,Không,,Ngày dọn vào thực tế (có thể khác StartDate)
+Contract,MonthlyRent,decimal,Không,,Khóa khi ký — đổi giá phòng không ảnh hưởng HĐ cũ
+Contract,DepositAmount,decimal,Không,,Tiền cọc
+Contract,DepositStatus,enum(HELD/PARTIALLY_REFUNDED/REFUNDED/FORFEITED),Không,,Trạng thái cọc — set trong các transaction phối hợp
+Contract,Status,enum(ACTIVE/TERMINATED),Không,,KHÔNG tự hết hạn. Quá EndDate vẫn ACTIVE cho đến khi thanh lý
+Contract,TerminationDate,DateOnly,Có,,
+Contract,TerminationNote,string,Có,,
+Contract,RefundAmount,decimal,Có,,
+Contract,Note,string,Có,,
+Contract,CreatedBy,int,Không,FK→User,Ai tạo/ký HĐ này
+Contract,CreatedAt,DateTime,Không,,
+Contract,UpdatedAt,DateTime,Không,,
+ContractTenant,Id,int,Không,PK,Bảng liên kết người ở ghép
+ContractTenant,ContractId,int,Không,FK→Contract,
+ContractTenant,TenantUserId,int,Không,FK→User,
+ContractTenant,IsMainTenant,bool,Không,,Không thể gỡ qua DELETE
+ContractTenant,MoveInDate,DateOnly,Không,,
+ContractTenant,MoveOutDate,DateOnly,Có,,Set khi gỡ mềm. KT vẫn còn trong lịch sử
+MeterReading,Id,int,Không,PK,
+MeterReading,RoomId,int,Không,"FK→Room, Unique(RoomId+ServiceId+BillingYear+BillingMonth)",
+MeterReading,ServiceId,int,Không,FK→Service,
+MeterReading,BillingYear,int,Không,,VD: 2026
+MeterReading,BillingMonth,int,Không,,VD: 2 (tháng 2)
+MeterReading,PreviousReading,decimal,Không,,Tự lấy từ tháng trước nếu có
+MeterReading,CurrentReading,decimal,Không,,CurrentReading ≥ PreviousReading
+MeterReading,Consumption,decimal (computed),Không,,= CurrentReading - PreviousReading
+MeterReading,CreatedAt,DateTime,Không,,
+MeterReading,UpdatedAt,DateTime,Không,,
+Invoice,Id,int,Không,PK,
+Invoice,ContractId,int,Không,"FK→Contract, Unique(ContractId+BillingYear+BillingMonth)",Chống tạo HĐơn trùng
+Invoice,BillingYear,int,Không,,
+Invoice,BillingMonth,int,Không,,
+Invoice,RentAmount,decimal,Không,,Có thể prorate tháng đầu/cuối
+Invoice,ServiceAmount,decimal,Không,,Tổng DV đồng hồ + cố định
+Invoice,PenaltyAmount,decimal,Không,,Mặc định 0
+Invoice,DiscountAmount,decimal,Không,,Mặc định 0
+Invoice,TotalAmount,decimal,Không,,= Rent + Service + Penalty - Discount
+Invoice,Status,enum(DRAFT/SENT/PARTIALLY_PAID/PAID/OVERDUE/VOID),Không,,
+Invoice,DueDate,DateOnly,Không,,Từ Building.InvoiceDueDay
+Invoice,Note,string,Có,,
+Invoice,CreatedBy,int,Không,FK→User,Ai tạo HĐơn này
+Invoice,CreatedAt,DateTime,Không,,
+Invoice,UpdatedAt,DateTime,Không,,
+Invoice,(computed) PaidAmount,decimal,—,—,"SUM(Payment.Amount) — trả trong DTO, KHÔNG lưu DB"
+InvoiceDetail,Id,int,Không,PK,Từng dòng trên hóa đơn
+InvoiceDetail,InvoiceId,int,Không,FK→Invoice,
+InvoiceDetail,ServiceId,int,Có,FK→Service,Null cho dòng tiền phòng
+InvoiceDetail,Description,string,Không,,"VD: ""Tiền phòng"" hoặc ""Tiền điện (150 kWh)"""
+InvoiceDetail,Quantity,decimal,Không,,
+InvoiceDetail,UnitPrice,decimal,Không,,Chụp đơn giá tại thời điểm tạo
+InvoiceDetail,Amount,decimal,Không,,= Quantity × UnitPrice
+InvoiceDetail,PreviousReading,decimal,Có,,Chỉ DV đồng hồ: chỉ số đầu kỳ
+InvoiceDetail,CurrentReading,decimal,Có,,Chỉ DV đồng hồ: chỉ số cuối kỳ
+Payment,Id,int,Không,PK,
+Payment,InvoiceId,int,Có,FK→Invoice,Null cho thanh toán tiền cọc
+Payment,ContractId,int,Có,FK→Contract,Để theo dõi tiền cọc
+Payment,Type,enum(RENT_PAYMENT/DEPOSIT_IN/DEPOSIT_REFUND),Không,,"RENT_PAYMENT/DEPOSIT_IN = tiền vào. DEPOSIT_REFUND = tiền ra"
+Payment,Amount,decimal,Không,,Luôn dương. Type quyết định chiều tiền
+Payment,PaymentMethod,string,Có,,"VD: Tiền mặt, Chuyển khoản, Momo"
+Payment,Note,string,Có,,
+Payment,PaidAt,DateTime,Không,,
+Payment,RecordedBy,int,Không,FK→User,
+Payment,CreatedAt,DateTime,Không,,
+Expense,Id,int,Không,PK,
+Expense,BuildingId,int,Không,FK→Building,
+Expense,RoomId,int,Có,FK→Room,Tùy chọn — theo dõi chi phí theo phòng
+Expense,Category,string,Không,,
+Expense,Description,string,Không,,
+Expense,Amount,decimal,Không,,
+Expense,ReceiptUrl,string,Có,,Ảnh biên lai (Cloudinary)
+Expense,ExpenseDate,DateOnly,Không,,
+Expense,RecordedBy,int,Không,FK→User,
+Expense,CreatedAt,DateTime,Không,,
+Expense,UpdatedAt,DateTime,Không,,
+Issue,Id,int,Không,PK,
+Issue,RoomId,int,Có,FK→Room,
+Issue,BuildingId,int,Không,FK→Building,"Bắt buộc. KT: tự lấy từ HĐ→phòng→tòa nhà"
+Issue,ReportedBy,int,Không,FK→User,
+Issue,AssignedTo,int,Có,FK→User,
+Issue,Title,string,Không,,
+Issue,Description,string,Không,,
+Issue,ImageUrls,string,Có,,JSON array tối đa 3 URL Cloudinary
+Issue,Status,enum(NEW/IN_PROGRESS/RESOLVED/CLOSED),Không,,
+Issue,Priority,enum(LOW/MEDIUM/HIGH),Không,,
+Issue,CreatedAt,DateTime,Không,,
+Issue,UpdatedAt,DateTime,Không,,
+Notification,Id,int,Không,PK,
+Notification,UserId,int,Không,FK→User,Người nhận
+Notification,Title,string,Không,,
+Notification,Message,string,Không,,
+Notification,IsRead,bool,Không,,Mặc định false
+Notification,Type,string,Không,,"INVOICE, CONTRACT, ISSUE, SYSTEM"
+Notification,ReferenceId,int,Có,,Liên kết đến entity liên quan
+Notification,CreatedAt,DateTime,Không,,
