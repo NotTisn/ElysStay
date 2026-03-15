@@ -1,6 +1,8 @@
 # Hệ thống Quản lý Nhà trọ — Tài liệu dự án
 
-> **Cập nhật:** 01-03-2026 (v3.0)
+> **Cập nhật:** 15-03-2026 (v3.1)
+> 
+> **Lưu ý quan trọng:** Bộ `docs/` mô tả **tầm nhìn sản phẩm (target)**. Không phải mọi endpoint/tính năng trong tài liệu đều đã được triển khai đầy đủ trong code hiện tại.
 
 ---
 
@@ -8,7 +10,8 @@
 
 API quản lý nhà trọ cho chủ nhà: tòa nhà, phòng, khách thuê, hợp đồng, chỉ số điện/nước, hóa đơn hàng tháng, thanh toán, chi phí, sự cố bảo trì, và báo cáo tài chính.
 
-**Tech stack:** ASP.NET Core 8, C#, EF Core 8, PostgreSQL, JWT  
+**Tech stack hiện tại (implementation):** ASP.NET Core .NET 10, C#, EF Core 10, PostgreSQL, Keycloak (JWT bearer validation)  
+**Phạm vi tài liệu (vision):** 84 endpoint, 17 entity, 5 sprint
 **Đội:** 3 dev (A, B, C) — 84 endpoint, 17 entity, 5 sprint
 
 ---
@@ -50,7 +53,7 @@ API quản lý nhà trọ cho chủ nhà: tòa nhà, phòng, khách thuê, hợp
 
 | Sprint | Tên | Endpoint | Trọng tâm |
 |--------|-----|----------|-----------|
-| 1 | Xác thực & Người dùng | 16 | Đăng nhập/đăng ký, JWT, profile, dashboard |
+| 1 | Xác thực & Người dùng | 16 | Xác thực/ủy quyền, profile, dashboard |
 | 2 | Tòa nhà & Phòng | 22 | CRUD tòa nhà, phòng, dịch vụ, phân công NV, cấu hình phí |
 | 3 | Hồ sơ & Hợp đồng | 13 | CCCD/OCR, đặt cọc, hợp đồng, thanh lý/gia hạn |
 | 4 | Chỉ số & Hóa đơn | 15 | Nhập chỉ số điện/nước, tạo/gửi hóa đơn, xuất PDF |
@@ -89,6 +92,14 @@ api-spec.md (thiết kế) > endpoints.csv / entities.csv / business-rules.csv
 ```
 
 Nếu CSV nói khác api-spec.md → **sửa CSV** cho khớp api-spec.md.
+
+Khi tài liệu khác code hiện tại:
+
+```
+api-spec.md (vision) > CSV docs > implemented code (để hiểu current behavior)
+```
+
+Không giả định vision đã được implement nếu chưa kiểm tra controller/handler/migration tương ứng.
 
 ---
 
