@@ -908,7 +908,7 @@ Write-Host ""
 Write-Host "  Useful URLs:" -ForegroundColor White
 Write-Host "    Health check:  http://localhost:$BACKEND_PORT/healthz" -ForegroundColor DarkCyan
 Write-Host "    OpenAPI:       http://localhost:$BACKEND_PORT/openapi/v1.json" -ForegroundColor DarkCyan
-Write-Host "    Keycloak:      http://localhost:$($INFRA_PORTS.Keycloak)/admin (admin/admin123)" -ForegroundColor DarkCyan
+Write-Host "    Keycloak:      http://localhost:$($INFRA_PORTS.Keycloak)/admin" -ForegroundColor DarkCyan
 Write-Host ""
 Write-Host "  Logs folder:     $LOG_DIR" -ForegroundColor Cyan
 Write-Host ""

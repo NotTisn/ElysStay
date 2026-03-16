@@ -116,13 +116,14 @@ dotnet run --project API --verbosity minimal
 ```
 
 The API will be available at the port configured in the project (default: 5000/5001 for Kestrel with HTTPS). A health endpoint is available at `/healthz`.
+The API is configured for local development at `http://localhost:5027`. A health endpoint is available at `/healthz`.
 
 ## Notes about connection strings (docker vs local)
-- `API/appsettings.json` currently contains a `DefaultConnection` pointing at `Host=localhost;Port=5432;...`.
+- `API/appsettings.json` currently contains a `DefaultConnection` pointing at `Host=localhost;Port=5433;...`.
 - If you run Postgres in Docker and run the API locally, use `host.docker.internal` as the DB host or run the API inside Docker. Example connection string for local dev connecting to containerized DB:
 
 ```
-Host=host.docker.internal;Port=5432;Database=ElysStay;Username=postgres;Password=supersecretpassword
+Host=host.docker.internal;Port=5433;Database=ElysStay;Username=postgres;Password=supersecretpassword
 ```
 
 - If running the API in a container with `docker compose`, set the DB host to `db` (service name) in the container environment so it can resolve the Postgres container.
@@ -156,7 +157,7 @@ docker compose logs -f elys_stay_keycloak
   - If running API locally, adjust the connection string to `host.docker.internal`.
   - If running API in container, ensure the connection string host is `db`.
 
-- Common port conflicts: Keycloak uses 8080 and Postgres 5432 by default. Change ports in `docker-compose.yml` if needed.
+- Common port conflicts: Keycloak uses 8080 and Postgres 5433 on the host by default. Change ports in `docker-compose.yml` if needed.
 
 ## Security notes
 - The provided docker-compose file and appsettings contain secrets for local development only. Move secrets to `.env` files, Docker secrets, or your secret store for staging/production.
@@ -181,14 +182,3 @@ docker compose logs -f elys_stay_keycloak
   3. Run `docker compose up -d`
   4. Run `dotnet run --project API` (or use the provided script)
   5. Open API root and `/healthz` to confirm
-
----
-
-Requirements coverage for this task:
-- Create a full README describing clone → docker → migrations → run: Done
-
-If you want, I can next:
-- Add `.env.example` and a `scripts/` PowerShell helper (start-dev.ps1) that runs docker compose, waits for DB health, runs migrations, and launches the API.
-- Or add a minimal seed routine and a `seed` command.
-
-Which of those would you like me to add next?

@@ -47,8 +47,8 @@ builder.Services.AddCors(options =>
             ?? ["http://localhost:3000", "http://localhost:3001"];
 
         policy.WithOrigins(allowedOrigins)
-              .AllowAnyMethod()
-              .AllowAnyHeader()
+              .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+              .WithHeaders("Content-Type", "Authorization", "Accept", "X-Requested-With")
               .AllowCredentials();
     });
 });
@@ -91,14 +91,14 @@ builder.Services.AddRateLimiter(options =>
     options.OnRejected = async (context, _) =>
     {
         context.HttpContext.Response.Headers.RetryAfter = "60";
-        Log.Warning("Rate limit exceeded for {IP}", context.HttpContext.Connection.RemoteIpAddress);
+        Log.Warning("Rate limit exceeded for {IP}", GetClientIp(context.HttpContext));
         await Task.CompletedTask;
     };
 
     // "sensitive" policy: password changes, user creation — 5 req/min per IP
     options.AddPolicy("sensitive", context =>
         RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            GetClientIp(context),
             _ => new FixedWindowRateLimiterOptions
             {
                 Window = TimeSpan.FromMinutes(1),
@@ -109,7 +109,7 @@ builder.Services.AddRateLimiter(options =>
     // Global limiter: 100 req/min per IP
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
         RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            GetClientIp(context),
             _ => new FixedWindowRateLimiterOptions
             {
                 Window = TimeSpan.FromMinutes(1),
@@ -117,6 +117,19 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 });
+
+// F25: Helper to extract real client IP behind reverse proxies
+static string GetClientIp(HttpContext context)
+{
+    // Check X-Forwarded-For first (set by reverse proxies)
+    var forwarded = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+    if (!string.IsNullOrEmpty(forwarded))
+    {
+        // Take the first IP (original client)
+        return forwarded.Split(',', StringSplitOptions.TrimEntries)[0];
+    }
+    return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+}
 
 var app = builder.Build();
 
@@ -137,13 +150,14 @@ if (app.Environment.IsDevelopment())
 // Global error handling — must be first in pipeline
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
-// Security headers
+// Security headers (F24: added Content-Security-Policy)
 app.Use(async (context, next) =>
 {
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
     await next();
 });
 
