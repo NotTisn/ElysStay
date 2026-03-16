@@ -98,7 +98,8 @@ public class GlobalExceptionHandlingMiddleware
         }
         else
         {
-            _logger.LogWarning(exception, "Handled exception ({StatusCode}) on {Method} {Path}: {Message}",
+            // F27: Only log message, not full exception, for client errors to avoid PII leaks
+            _logger.LogWarning("Handled {StatusCode} on {Method} {Path}: {Message}",
                 statusCode, context.Request.Method, context.Request.Path, exception.Message);
         }
 
