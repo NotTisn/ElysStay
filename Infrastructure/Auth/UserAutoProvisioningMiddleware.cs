@@ -82,6 +82,28 @@ public class UserAutoProvisioningMiddleware
             _logger.LogInformation("Auto-provisioned user {UserId} for Keycloak subject {KeycloakId} with role {Role}",
                 user.Id, keycloakId, role);
         }
+        else if (user.DeletedAt is not null)
+        {
+            // F22: Soft-deleted users must not be allowed to operate
+            _logger.LogWarning("Blocked soft-deleted user {UserId} (Keycloak: {KeycloakId}) from accessing API",
+                user.Id, keycloakId);
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync("{\"message\":\"Account has been deactivated.\",\"errorCode\":\"ACCOUNT_DEACTIVATED\"}");
+            return;
+        }
+        else
+        {
+            // F28: Sync role from current Keycloak claims if it changed
+            var currentRole = ResolveRole(context.User);
+            if (user.Role != currentRole)
+            {
+                _logger.LogInformation("Syncing role for user {UserId}: {OldRole} → {NewRole}",
+                    user.Id, user.Role, currentRole);
+                user.Role = currentRole;
+                await dbContext.SaveChangesAsync(context.RequestAborted);
+            }
+        }
 
         // Cache the resolved UserId for this request
         currentUserService.UserId = user.Id;
