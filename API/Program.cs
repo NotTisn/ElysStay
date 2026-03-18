@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Threading.RateLimiting;
 using API.Middleware;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -121,15 +122,14 @@ builder.Services.AddRateLimiter(options =>
 // F25: Helper to extract real client IP behind reverse proxies
 static string GetClientIp(HttpContext context)
 {
-    // Check X-Forwarded-For first (set by reverse proxies)
-    var forwarded = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-    if (!string.IsNullOrEmpty(forwarded))
-    {
-        // Take the first IP (original client)
-        return forwarded.Split(',', StringSplitOptions.TrimEntries)[0];
-    }
+    // Use the framework-validated RemoteIpAddress (safe when using ForwardedHeaders middleware)
     return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 }
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 
 var app = builder.Build();
 
@@ -149,6 +149,9 @@ if (app.Environment.IsDevelopment())
 
 // Global error handling — must be first in pipeline
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+
+// Forward proxy headers so rate limiter uses real client IP
+app.UseForwardedHeaders();
 
 // Security headers (F24: added Content-Security-Policy)
 app.Use(async (context, next) =>

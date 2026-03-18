@@ -132,6 +132,7 @@ public class UsersController : BaseApiController
     /// </summary>
     [HttpPost("tenants")]
     [Authorize(Roles = "Owner,Staff")]
+    [EnableRateLimiting("sensitive")]
     public async Task<IActionResult> CreateTenant([FromBody] CreateTenantCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
@@ -144,6 +145,7 @@ public class UsersController : BaseApiController
     /// </summary>
     [HttpPost("staff")]
     [Authorize(Roles = "Owner")]
+    [EnableRateLimiting("sensitive")]
     public async Task<IActionResult> CreateStaff([FromBody] CreateStaffCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
