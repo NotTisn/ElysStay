@@ -16,6 +16,7 @@ public class RoomConfiguration : IEntityTypeConfiguration<Room>
         builder.Property(r => r.Area).HasColumnType("numeric(10,2)");
         builder.Property(r => r.Price).HasColumnType("numeric(18,2)");
         builder.Property(r => r.Description).HasMaxLength(2000);
+        builder.Property(r => r.Images).HasMaxLength(4000);
         builder.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(r => r.RowVersion).IsRowVersion();
 

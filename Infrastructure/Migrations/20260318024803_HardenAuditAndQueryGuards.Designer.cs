@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260318024803_HardenAuditAndQueryGuards")]
+    partial class HardenAuditAndQueryGuards
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -294,8 +297,7 @@ namespace Infrastructure.Migrations
                     b.HasIndex("ContractId", "Status");
 
                     b.HasIndex("ContractId", "BillingYear", "BillingMonth")
-                        .IsUnique()
-                        .HasFilter("\"Status\" <> 'Void'");
+                        .IsUnique();
 
                     b.ToTable("Invoices");
                 });
@@ -529,9 +531,6 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<Guid?>("ReservationId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -546,8 +545,6 @@ namespace Infrastructure.Migrations
                     b.HasIndex("PaidAt");
 
                     b.HasIndex("RecordedBy");
-
-                    b.HasIndex("ReservationId");
 
                     b.ToTable("Payments");
                 });
@@ -1100,18 +1097,11 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.RoomReservation", "Reservation")
-                        .WithMany("Payments")
-                        .HasForeignKey("ReservationId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.Navigation("Contract");
 
                     b.Navigation("Invoice");
 
                     b.Navigation("Recorder");
-
-                    b.Navigation("Reservation");
                 });
 
             modelBuilder.Entity("Domain.Entities.Room", b =>
@@ -1247,8 +1237,6 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.RoomReservation", b =>
                 {
                     b.Navigation("Contracts");
-
-                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("Domain.Entities.Service", b =>

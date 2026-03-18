@@ -20,5 +20,6 @@ public class RoomReservation
     // Navigation properties
     public Room? Room { get; set; }
     public User? TenantUser { get; set; }
+    public ICollection<Payment> Payments { get; set; } = new List<Payment>();
     public ICollection<Contract> Contracts { get; set; } = new List<Contract>();
 }

@@ -11,6 +11,7 @@ public class ContractTenantConfiguration : IEntityTypeConfiguration<ContractTena
         builder.HasKey(ct => ct.Id);
 
         builder.HasIndex(ct => new { ct.ContractId, ct.TenantUserId }).IsUnique();
+        builder.HasIndex(ct => ct.TenantUserId);
 
         builder.HasOne(ct => ct.Contract)
             .WithMany(c => c.ContractTenants)

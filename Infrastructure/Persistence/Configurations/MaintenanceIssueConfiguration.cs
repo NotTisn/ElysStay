@@ -12,6 +12,7 @@ public class MaintenanceIssueConfiguration : IEntityTypeConfiguration<Maintenanc
 
         builder.Property(m => m.Title).IsRequired().HasMaxLength(200);
         builder.Property(m => m.Description).IsRequired().HasMaxLength(5000);
+        builder.Property(m => m.ImageUrls).HasMaxLength(4000);
         builder.Property(m => m.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(m => m.Priority).HasConversion<string>().HasMaxLength(20);
 

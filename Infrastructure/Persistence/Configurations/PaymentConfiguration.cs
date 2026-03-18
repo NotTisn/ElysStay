@@ -26,9 +26,19 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             .HasForeignKey(p => p.ContractId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.HasOne(p => p.Reservation)
+            .WithMany(r => r.Payments)
+            .HasForeignKey(p => p.ReservationId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasOne(p => p.Recorder)
             .WithMany()
             .HasForeignKey(p => p.RecordedBy)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(p => p.InvoiceId);
+        builder.HasIndex(p => p.ContractId);
+        builder.HasIndex(p => p.ReservationId);
+        builder.HasIndex(p => p.PaidAt);
     }
 }
