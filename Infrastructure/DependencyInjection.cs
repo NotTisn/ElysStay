@@ -2,6 +2,7 @@ using Application.Common.Interfaces;
 using Infrastructure.Auth;
 using Infrastructure.BackgroundJobs;
 using Infrastructure.Configuration;
+using Infrastructure.Email;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -57,6 +58,9 @@ public static class DependencyInjection
         {
             client.BaseAddress = new Uri(keycloakOptions.BaseUrl.TrimEnd('/') + "/");
         });
+
+        // Email (Resend free tier — no-op if Email:ApiKey is not set)
+        services.AddHttpClient<IEmailService, ResendEmailService>();
 
         // Background jobs (BG-01, BG-02, BG-03)
         services.AddHostedService<ReservationExpiryBackgroundService>();

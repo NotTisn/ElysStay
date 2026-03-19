@@ -26,15 +26,18 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public CreateIssueCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<MaintenanceIssueDto> Handle(CreateIssueCommand request, CancellationToken ct)
@@ -91,8 +94,9 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
             }
         }
 
-        // Load building BEFORE saving — needed for notification message
+        // Load building + owner BEFORE saving — needed for notification + email
         var building = await _db.Buildings.AsNoTracking()
+            .Include(b => b.Owner)
             .FirstAsync(b => b.Id == buildingId, ct);
 
         var issue = new Domain.Entities.MaintenanceIssue
@@ -112,14 +116,24 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
         _db.Notifications.Add(new Domain.Entities.Notification
         {
             UserId = building.OwnerId,
-            Title = "New Maintenance Issue",
-            Message = $"A new issue \"{request.Title}\" has been reported in {building.Name}.",
+            Title = "Sự cố mới",
+            Message = $"Sự cố mới \"{request.Title}\" đã được báo cáo tại {building.Name}.",
             Type = "ISSUE",
             ReferenceId = issue.Id
         });
 
         // Single SaveChangesAsync — atomic: issue + notification saved together
         await _db.SaveChangesAsync(ct);
+
+        // Best-effort email to building owner
+        var reporter = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (building.Owner != null)
+        {
+            var (subject, html) = Application.Common.Email.EmailTemplates.IssueCreated(
+                building.Owner.FullName, reporter?.FullName ?? "Khách thuê",
+                request.Title, building.Name, null);
+            await _emailService.TrySendAsync(building.Owner.Email, building.Owner.FullName, subject, html, ct);
+        }
 
         // Reload with nav
         var loaded = await _db.MaintenanceIssues

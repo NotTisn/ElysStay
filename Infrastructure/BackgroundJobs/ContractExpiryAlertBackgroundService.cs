@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using Application.Common.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
+using Application.Common.Email;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -60,13 +62,15 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
         var sw = Stopwatch.StartNew();
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var threshold = today.AddDays(30);
 
         var contracts = await db.Contracts
             .Include(c => c.Room)
-                .ThenInclude(r => r!.Building)
+                .ThenInclude(r => r!.Building!)
+                    .ThenInclude(b => b.Owner)
             .Include(c => c.TenantUser)
             .Where(c => c.Status == ContractStatus.Active && c.EndDate <= threshold)
             .ToListAsync(ct);
@@ -125,6 +129,33 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
         }
 
         await db.SaveChangesAsync(ct);
+
+        // Best-effort emails (after successful save)
+        foreach (var contract in contracts)
+        {
+            var tenant = contract.TenantUser;
+            var room = contract.Room;
+            var building = room?.Building;
+            if (tenant != null && room != null && building != null)
+            {
+                // Email tenant
+                if (!notifiedSet.Contains((tenant.Id, contract.Id)))
+                {
+                    var (s1, h1) = EmailTemplates.ContractExpiryTenant(
+                        tenant.FullName, room.RoomNumber, building.Name, contract.EndDate);
+                    await emailService.TrySendAsync(tenant.Email, tenant.FullName, s1, h1, ct);
+                }
+
+                // Email owner
+                if (building.Owner != null && !notifiedSet.Contains((building.OwnerId, contract.Id)))
+                {
+                    var (s2, h2) = EmailTemplates.ContractExpiryOwner(
+                        building.Owner.FullName, tenant.FullName,
+                        room.RoomNumber, building.Name, contract.EndDate);
+                    await emailService.TrySendAsync(building.Owner.Email, building.Owner.FullName, s2, h2, ct);
+                }
+            }
+        }
 
         _logger.LogInformation("BG-03 ContractExpiryAlertJob: alerted for {Count} expiring contracts in {ElapsedMs}ms", contracts.Count, sw.ElapsedMilliseconds);
     }

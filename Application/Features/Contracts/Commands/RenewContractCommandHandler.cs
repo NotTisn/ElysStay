@@ -13,15 +13,18 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public RenewContractCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<ContractDto> Handle(RenewContractCommand request, CancellationToken cancellationToken)
@@ -144,6 +147,12 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
         {
             throw new ConflictException("Phòng này đã có hợp đồng đang hoạt động. Phát hiện gia hạn đồng thời.");
         }
+
+        // Best-effort email to tenant (after successful save)
+        var (subject, html) = Application.Common.Email.EmailTemplates.ContractRenewed(
+            oldContract.TenantUser!.FullName, oldContract.Room!.RoomNumber,
+            oldContract.Room.Building!.Name, request.NewEndDate);
+        await _emailService.TrySendAsync(oldContract.TenantUser.Email, oldContract.TenantUser.FullName, subject, html, cancellationToken);
 
         return new ContractDto
         {

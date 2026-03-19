@@ -25,15 +25,18 @@ public class ChangeIssueStatusCommandHandler : IRequestHandler<ChangeIssueStatus
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public ChangeIssueStatusCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<MaintenanceIssueDto> Handle(ChangeIssueStatusCommand request, CancellationToken ct)
@@ -79,6 +82,14 @@ public class ChangeIssueStatusCommandHandler : IRequestHandler<ChangeIssueStatus
         _db.Notifications.Add(notification);
 
         await _db.SaveChangesAsync(ct);
+
+        // Best-effort email to reporter
+        if (issue.Reporter != null)
+        {
+            var (subject, html) = Application.Common.Email.EmailTemplates.IssueStatusChanged(
+                issue.Reporter.FullName, issue.Title, oldStatus.ToString(), request.Status.ToString());
+            await _emailService.TrySendAsync(issue.Reporter.Email, issue.Reporter.FullName, subject, html, ct);
+        }
 
         return new MaintenanceIssueDto(
             issue.Id,

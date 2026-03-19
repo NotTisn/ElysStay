@@ -13,15 +13,18 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public CreateContractCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<ContractDto> Handle(CreateContractCommand request, CancellationToken cancellationToken)
@@ -196,6 +199,12 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
                 "Room was modified by another user. Please retry.",
                 "CONCURRENCY_CONFLICT");
         }
+
+        // Best-effort email to tenant (after successful save)
+        var (subject, html) = Application.Common.Email.EmailTemplates.ContractCreated(
+            tenantUser.FullName, room.RoomNumber, room.Building!.Name,
+            request.StartDate, request.EndDate, request.MonthlyRent);
+        await _emailService.TrySendAsync(tenantUser.Email, tenantUser.FullName, subject, html, cancellationToken);
 
         return new ContractDto
         {

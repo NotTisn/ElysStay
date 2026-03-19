@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using Application.Common.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
+using Application.Common.Email;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -60,10 +62,12 @@ public class ReservationExpiryBackgroundService : BackgroundService
         var sw = Stopwatch.StartNew();
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
 
         var now = DateTime.UtcNow;
         var expiredReservations = await db.RoomReservations
-            .Include(r => r.Room)
+            .Include(r => r.Room).ThenInclude(r => r!.Building!)
+            .Include(r => r.TenantUser)
             .Where(r => (r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Confirmed)
                         && r.ExpiresAt <= now)
             .ToListAsync(ct);
@@ -98,6 +102,19 @@ public class ReservationExpiryBackgroundService : BackgroundService
         }
 
         await db.SaveChangesAsync(ct);
+
+        // Best-effort emails to tenants (after successful save)
+        foreach (var reservation in expiredReservations)
+        {
+            var tenant = reservation.TenantUser;
+            var room = reservation.Room;
+            if (tenant != null && room != null)
+            {
+                var (subject, html) = EmailTemplates.ReservationExpired(
+                    tenant.FullName, room.RoomNumber, room.Building?.Name ?? "N/A");
+                await emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, ct);
+            }
+        }
 
         _logger.LogInformation("BG-01 ReservationExpiryJob: expired {Count} reservations in {ElapsedMs}ms", expiredReservations.Count, sw.ElapsedMilliseconds);
     }

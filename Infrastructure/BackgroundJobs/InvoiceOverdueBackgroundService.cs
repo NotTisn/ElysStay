@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using Application.Common.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
+using Application.Common.Email;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -60,13 +62,15 @@ public class InvoiceOverdueBackgroundService : BackgroundService
         var sw = Stopwatch.StartNew();
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         // Include PartiallyPaid — a tenant who pays $1 on a $1000 invoice
         // should still transition to Overdue after the due date passes.
         var overdueInvoices = await db.Invoices
-            .Include(i => i.Contract)
+            .Include(i => i.Contract).ThenInclude(c => c!.Room!).ThenInclude(r => r.Building!)
+            .Include(i => i.Contract).ThenInclude(c => c!.TenantUser!)
             .Where(i => (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid)
                         && i.DueDate < today)
             .ToListAsync(ct);
@@ -96,6 +100,20 @@ public class InvoiceOverdueBackgroundService : BackgroundService
         }
 
         await db.SaveChangesAsync(ct);
+
+        // Best-effort emails to tenants (after successful save)
+        foreach (var invoice in overdueInvoices)
+        {
+            var tenant = invoice.Contract!.TenantUser;
+            var room = invoice.Contract!.Room;
+            if (tenant != null && room != null)
+            {
+                var (subject, html) = EmailTemplates.InvoiceOverdue(
+                    tenant.FullName, room.RoomNumber, room.Building!.Name,
+                    invoice.BillingMonth, invoice.BillingYear, invoice.TotalAmount);
+                await emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, ct);
+            }
+        }
 
         _logger.LogInformation("BG-02 InvoiceOverdueJob: marked {Count} invoices overdue in {ElapsedMs}ms", overdueInvoices.Count, sw.ElapsedMilliseconds);
     }

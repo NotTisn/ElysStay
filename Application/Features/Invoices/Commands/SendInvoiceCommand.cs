@@ -17,12 +17,14 @@ public class SendInvoiceCommandHandler : IRequestHandler<SendInvoiceCommand, Uni
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
-    public SendInvoiceCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser, IBuildingScopeService buildingScope)
+    public SendInvoiceCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser, IBuildingScopeService buildingScope, IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<Unit> Handle(SendInvoiceCommand request, CancellationToken cancellationToken)
@@ -30,7 +32,8 @@ public class SendInvoiceCommandHandler : IRequestHandler<SendInvoiceCommand, Uni
         _currentUser.GetRequiredUserId();
 
         var invoice = await _db.Invoices
-            .Include(i => i.Contract!).ThenInclude(c => c.Room!)
+            .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
+            .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Hóa đơn", request.Id);
 
@@ -53,6 +56,14 @@ public class SendInvoiceCommandHandler : IRequestHandler<SendInvoiceCommand, Uni
         });
 
         await _db.SaveChangesAsync(cancellationToken);
+
+        // Best-effort email to tenant (after successful save)
+        var tenant = invoice.Contract!.TenantUser!;
+        var room = invoice.Contract!.Room!;
+        var (subject, html) = Application.Common.Email.EmailTemplates.InvoiceSent(
+            tenant.FullName, room.RoomNumber, room.Building!.Name,
+            invoice.BillingMonth, invoice.BillingYear, invoice.TotalAmount, invoice.DueDate);
+        await _emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, cancellationToken);
 
         return Unit.Value;
     }

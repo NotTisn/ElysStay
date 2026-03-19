@@ -30,15 +30,18 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public BatchRecordPaymentsCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<IReadOnlyList<PaymentDto>> Handle(BatchRecordPaymentsCommand request, CancellationToken cancellationToken)
@@ -56,7 +59,8 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
 
         var invoices = await _db.Invoices
             .Include(i => i.Payments)
-            .Include(i => i.Contract!).ThenInclude(c => c.Room!)
+            .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
+            .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
             .Where(i => invoiceIds.Contains(i.Id))
             .ToDictionaryAsync(i => i.Id, cancellationToken);
 
@@ -152,6 +156,22 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
         // PAY-06: All-or-nothing
         await _db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+
+        // Best-effort emails to tenants (after successful commit)
+        foreach (var result in results)
+        {
+            if (result.InvoiceId.HasValue && invoices.TryGetValue(result.InvoiceId.Value, out var inv))
+            {
+                var tenant = inv.Contract!.TenantUser!;
+                var room = inv.Contract!.Room!;
+                var totalPaid = inv.Payments.Where(p => p.Type == PaymentType.RentPayment).Sum(p => p.Amount) + result.Amount;
+                var (subject, html) = Application.Common.Email.EmailTemplates.PaymentRecorded(
+                    tenant.FullName, room.RoomNumber, room.Building!.Name,
+                    inv.BillingMonth, inv.BillingYear,
+                    result.Amount, inv.TotalAmount, totalPaid);
+                await _emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, cancellationToken);
+            }
+        }
 
         return results;
 

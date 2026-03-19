@@ -13,15 +13,18 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public TerminateContractCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<ContractDto> Handle(TerminateContractCommand request, CancellationToken cancellationToken)
@@ -144,6 +147,12 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
         {
             throw new ConflictException("Phòng đã bị thay đổi bởi thao tác khác. Vui lòng thử lại.");
         }
+
+        // Best-effort email to tenant (after successful save)
+        var (subject, html) = Application.Common.Email.EmailTemplates.ContractTerminated(
+            contract.TenantUser!.FullName, contract.Room.RoomNumber,
+            contract.Room.Building!.Name, refundAmount);
+        await _emailService.TrySendAsync(contract.TenantUser.Email, contract.TenantUser.FullName, subject, html, cancellationToken);
 
         return new ContractDto
         {

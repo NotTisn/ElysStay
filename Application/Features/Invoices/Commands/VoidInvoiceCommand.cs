@@ -18,15 +18,18 @@ public class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceCommand, Uni
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public VoidInvoiceCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<Unit> Handle(VoidInvoiceCommand request, CancellationToken cancellationToken)
@@ -38,6 +41,7 @@ public class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceCommand, Uni
 
         var invoice = await _db.Invoices
             .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
+            .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
             .Include(i => i.Payments)
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Hóa đơn", request.Id);
@@ -66,6 +70,12 @@ public class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceCommand, Uni
         });
 
         await _db.SaveChangesAsync(cancellationToken);
+
+        // Best-effort email to tenant
+        var tenant = invoice.Contract!.TenantUser!;
+        var (subject, html) = Application.Common.Email.EmailTemplates.InvoiceVoided(
+            tenant.FullName, invoice.BillingMonth, invoice.BillingYear, invoice.Contract!.Room!.Building!.Name);
+        await _emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, cancellationToken);
 
         return Unit.Value;
     }
