@@ -57,6 +57,15 @@ public class BulkUpsertMeterReadingsCommandHandler : IRequestHandler<BulkUpsertM
 
         // Validate all room IDs belong to this building
         var requestedRoomIds = request.Readings.Select(r => r.RoomId).Distinct().ToList();
+
+        // Detect duplicate (RoomId, ServiceId) pairs within the request
+        var duplicates = request.Readings
+            .GroupBy(r => (r.RoomId, r.ServiceId))
+            .Where(g => g.Count() > 1)
+            .Select(g => $"Room {g.Key.RoomId} + Service {g.Key.ServiceId}")
+            .ToList();
+        if (duplicates.Count > 0)
+            throw new BadRequestException($"Duplicate meter reading entries: {string.Join("; ", duplicates)}.");
         var validRoomIds = await _db.Rooms
             .Where(r => r.BuildingId == request.BuildingId && requestedRoomIds.Contains(r.Id))
             .Select(r => r.Id)

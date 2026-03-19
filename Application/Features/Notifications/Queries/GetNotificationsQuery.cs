@@ -12,6 +12,7 @@ namespace Application.Features.Notifications.Queries;
 /// </summary>
 public class GetNotificationsQuery : PagedQuery, IRequest<PagedResult<NotificationDto>>
 {
+    public bool? IsRead { get; set; }
 }
 
 public class GetNotificationsQueryHandler : IRequestHandler<GetNotificationsQuery, PagedResult<NotificationDto>>
@@ -31,8 +32,12 @@ public class GetNotificationsQueryHandler : IRequestHandler<GetNotificationsQuer
 
         var query = _db.Notifications
             .AsNoTracking()
-            .Where(n => n.UserId == userId)
-            .OrderByDescending(n => n.CreatedAt);
+            .Where(n => n.UserId == userId);
+
+        if (request.IsRead.HasValue)
+            query = query.Where(n => n.IsRead == request.IsRead.Value);
+
+        query = query.OrderByDescending(n => n.CreatedAt);
 
         var pagedResult = await query
             .Select(n => new NotificationDto(

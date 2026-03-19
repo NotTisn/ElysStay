@@ -77,3 +77,12 @@ public class CreateStaffCommandValidator : AbstractValidator<CreateStaffCommand>
             .MinimumLength(8).WithMessage("Password must be at least 8 characters.");
     }
 }
+
+public class ChangeUserStatusCommandValidator : AbstractValidator<ChangeUserStatusCommand>
+{
+    public ChangeUserStatusCommandValidator()
+    {
+        RuleFor(x => x.UserId)
+            .NotEmpty().WithMessage("User ID is required.");
+    }
+}

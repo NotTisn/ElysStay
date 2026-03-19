@@ -26,20 +26,48 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto
 
     public async Task<UserDto> Handle(GetUserByIdQuery request, CancellationToken ct)
     {
+        var callerId = _currentUser.GetRequiredUserId();
+
         var user = await _db.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == request.Id, ct)
             ?? throw new NotFoundException("User", request.Id);
 
-        var callerId = _currentUser.GetRequiredUserId();
-
         // Tenant: self only
         if (_currentUser.IsTenant && user.Id != callerId)
             throw new ForbiddenException("Tenants can only view their own profile.");
 
-        // Staff: tenants + self
-        if (_currentUser.IsStaff && user.Id != callerId && user.Role != UserRole.Tenant)
-            throw new ForbiddenException("Staff can only view tenant details.");
+        if (_currentUser.IsStaff && user.Id != callerId)
+        {
+            if (user.Role != UserRole.Tenant)
+                throw new ForbiddenException("Staff can only view their own profile and tenants in assigned buildings.");
+
+            var canViewTenant = await _db.Contracts
+                .AnyAsync(c => (c.TenantUserId == user.Id
+                        || c.ContractTenants.Any(ctn => ctn.TenantUserId == user.Id && ctn.MoveOutDate == null))
+                    && c.Room!.Building!.BuildingStaffs.Any(bs => bs.StaffId == callerId), ct);
+
+            if (!canViewTenant)
+                throw new ForbiddenException("This tenant does not belong to any of your assigned buildings.");
+        }
+
+        if (_currentUser.IsOwner && user.Id != callerId)
+        {
+            var canViewUser = user.Role switch
+            {
+                UserRole.Owner => false,
+                UserRole.Staff => await _db.StaffAssignments
+                    .AnyAsync(sa => sa.StaffId == user.Id && sa.Building!.OwnerId == callerId, ct),
+                UserRole.Tenant => await _db.Contracts
+                    .AnyAsync(c => (c.TenantUserId == user.Id
+                            || c.ContractTenants.Any(ctn => ctn.TenantUserId == user.Id && ctn.MoveOutDate == null))
+                        && c.Room!.Building!.OwnerId == callerId, ct),
+                _ => false
+            };
+
+            if (!canViewUser)
+                throw new ForbiddenException("This user does not belong to any of your buildings.");
+        }
 
         return new UserDto
         {

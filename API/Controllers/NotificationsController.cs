@@ -27,12 +27,14 @@ public class NotificationsController : BaseApiController
     public async Task<IActionResult> GetNotifications(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
+        [FromQuery] bool? isRead = null,
         CancellationToken ct = default)
     {
         var query = new GetNotificationsQuery
         {
             Page = page,
-            PageSize = pageSize
+            PageSize = pageSize,
+            IsRead = isRead
         };
 
         var result = await _mediator.Send(query, ct);

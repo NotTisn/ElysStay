@@ -54,7 +54,8 @@ public class UpdateTenantProfileCommandHandler : IRequestHandler<UpdateTenantPro
         if (_currentUser.IsOwner)
         {
             var hasTenantInBuildings = await _db.Contracts
-                .AnyAsync(c => c.TenantUserId == request.UserId
+                .AnyAsync(c => (c.TenantUserId == request.UserId
+                        || c.ContractTenants.Any(ctn => ctn.TenantUserId == request.UserId && ctn.MoveOutDate == null))
                     && c.Room!.Building!.OwnerId == userId, ct);
             if (!hasTenantInBuildings)
                 throw new ForbiddenException("This tenant does not belong to any of your buildings.");
@@ -62,7 +63,8 @@ public class UpdateTenantProfileCommandHandler : IRequestHandler<UpdateTenantPro
         else if (_currentUser.IsStaff)
         {
             var hasTenantInBuildings = await _db.Contracts
-                .AnyAsync(c => c.TenantUserId == request.UserId
+                .AnyAsync(c => (c.TenantUserId == request.UserId
+                        || c.ContractTenants.Any(ctn => ctn.TenantUserId == request.UserId && ctn.MoveOutDate == null))
                     && c.Room!.Building!.BuildingStaffs.Any(s => s.StaffId == userId), ct);
             if (!hasTenantInBuildings)
                 throw new ForbiddenException("This tenant does not belong to any of your assigned buildings.");

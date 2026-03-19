@@ -17,5 +17,17 @@ public class UpdateTenantProfileCommandValidator : AbstractValidator<UpdateTenan
             .Matches(@"^\d{12}$")
             .When(x => x.IdNumber is not null)
             .WithMessage("IdNumber must be exactly 12 digits.");
+
+        RuleFor(x => x.Gender)
+            .MaximumLength(20)
+            .When(x => x.Gender is not null);
+
+        RuleFor(x => x.PermanentAddress)
+            .MaximumLength(500)
+            .When(x => x.PermanentAddress is not null);
+
+        RuleFor(x => x.IssuedPlace)
+            .MaximumLength(200)
+            .When(x => x.IssuedPlace is not null);
     }
 }

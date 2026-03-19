@@ -50,6 +50,13 @@ public class AssignStaffCommandHandler : IRequestHandler<AssignStaffCommand, Sta
         if (staffUser.Role != UserRole.Staff)
             throw new BadRequestException("User is not a staff member.");
 
+        // Staff must be active and not soft-deleted
+        if (staffUser.Status != UserStatus.Active)
+            throw new BadRequestException("Cannot assign a deactivated staff member.");
+
+        if (staffUser.DeletedAt != null)
+            throw new BadRequestException("Cannot assign a deleted staff member.");
+
         // UQ-06: Check uniqueness
         var alreadyAssigned = await _db.StaffAssignments
             .AnyAsync(sa => sa.BuildingId == request.BuildingId && sa.StaffId == request.StaffId, cancellationToken);
