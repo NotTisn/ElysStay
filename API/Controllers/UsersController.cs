@@ -46,6 +46,24 @@ public class UsersController : BaseApiController
     }
 
     /// <summary>
+    /// POST /users/me/avatar — Upload avatar image (max 2 MB, JPEG/PNG).
+    /// </summary>
+    [HttpPost("me/avatar")]
+    [RequestSizeLimit(2 * 1024 * 1024)]
+    public async Task<IActionResult> UploadAvatar(IFormFile file, CancellationToken ct)
+    {
+        var command = new UploadAvatarCommand
+        {
+            FileStream = file.OpenReadStream(),
+            FileName = file.FileName,
+            ContentType = file.ContentType,
+            FileSize = file.Length
+        };
+        var url = await _mediator.Send(command, ct);
+        return OkResponse(new { avatarUrl = url }, "Cập nhật ảnh đại diện thành công");
+    }
+
+    /// <summary>
     /// PUT /users/me/password — Change the authenticated user's password.
     /// Verifies current password before setting new one.
     /// </summary>

@@ -154,6 +154,16 @@ public class InvoicesController : BaseApiController
         var result = await _mediator.Send(command, ct);
         return CreatedResponse(result, message: "Payment recorded successfully");
     }
+
+    /// <summary>
+    /// GET /invoices/{id}/export — Download invoice as PDF.
+    /// </summary>
+    [HttpGet("{id:guid}/export")]
+    public async Task<IActionResult> ExportPdf(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new ExportInvoicePdfQuery(id), ct);
+        return File(result.PdfBytes, "application/pdf", result.FileName);
+    }
 }
 
 // ── Request DTOs ──────────────────────────────────────────────

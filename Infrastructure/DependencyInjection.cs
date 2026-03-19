@@ -3,6 +3,9 @@ using Infrastructure.Auth;
 using Infrastructure.BackgroundJobs;
 using Infrastructure.Configuration;
 using Infrastructure.Email;
+using Infrastructure.FileUpload;
+using Infrastructure.Ocr;
+using Infrastructure.Pdf;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -61,6 +64,15 @@ public static class DependencyInjection
 
         // Email (Resend free tier — no-op if Email:ApiKey is not set)
         services.AddHttpClient<IEmailService, ResendEmailService>();
+
+        // File uploads (Cloudinary free tier — no-op if Cloudinary section is not set)
+        services.AddSingleton<IFileUploadService, CloudinaryUploadService>();
+
+        // Invoice PDF generation (QuestPDF Community)
+        services.AddSingleton<IInvoicePdfService, InvoicePdfService>();
+
+        // OCR (FPT.AI free tier — no-op if FptAi:ApiKey is not set)
+        services.AddHttpClient<IOcrService, FptAiOcrService>();
 
         // Background jobs (BG-01, BG-02, BG-03)
         services.AddHostedService<ReservationExpiryBackgroundService>();

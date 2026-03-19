@@ -51,8 +51,48 @@ public class TenantProfilesController : BaseApiController
         return OkResponse(result, "Tenant profile updated successfully");
     }
 
-    // Note: OCR endpoint (POST /{userId}/ocr) and image upload (POST /{userId}/upload-id-images)
-    // require Cloudinary/file storage integration — deferred until infra is wired.
+    /// <summary>
+    /// POST /tenant-profiles/{userId}/upload-id-images — Upload front and back CCCD images (max 5 MB each, JPEG/PNG).
+    /// </summary>
+    [HttpPost("{userId:guid}/upload-id-images")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<IActionResult> UploadIdImages(Guid userId, IFormFile frontImage, IFormFile backImage, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new UploadCccdImagesCommand
+        {
+            UserId = userId,
+            FrontStream = frontImage.OpenReadStream(),
+            FrontFileName = frontImage.FileName,
+            FrontContentType = frontImage.ContentType,
+            FrontSize = frontImage.Length,
+            BackStream = backImage.OpenReadStream(),
+            BackFileName = backImage.FileName,
+            BackContentType = backImage.ContentType,
+            BackSize = backImage.Length
+        }, ct);
+        return OkResponse(result, "Tải ảnh CCCD lên thành công");
+    }
+
+    /// <summary>
+    /// POST /tenant-profiles/{userId}/ocr — Parse CCCD images via FPT.AI OCR. Returns data only (does not save).
+    /// </summary>
+    [HttpPost("{userId:guid}/ocr")]
+    [Authorize(Roles = "Owner,Staff")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<IActionResult> ParseCccdOcr(Guid userId, IFormFile frontImage, IFormFile backImage, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new ParseCccdOcrQuery
+        {
+            UserId = userId,
+            FrontStream = frontImage.OpenReadStream(),
+            FrontContentType = frontImage.ContentType,
+            FrontSize = frontImage.Length,
+            BackStream = backImage.OpenReadStream(),
+            BackContentType = backImage.ContentType,
+            BackSize = backImage.Length
+        }, ct);
+        return OkResponse(result, "Phân tích CCCD thành công");
+    }
 }
 
 // --- Request records ---

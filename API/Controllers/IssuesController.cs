@@ -112,7 +112,29 @@ public class IssuesController : BaseApiController
         return OkResponse(result, "Issue status updated successfully");
     }
 
-    // Note: POST /{id}/images requires file upload/Cloudinary — deferred.
+    /// <summary>
+    /// POST /issues/{id}/images — Upload up to 3 images (max 3 MB each, JPEG/PNG).
+    /// </summary>
+    [HttpPost("{id:guid}/images")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<IActionResult> UploadImages(Guid id, [FromForm] List<IFormFile> files, CancellationToken ct)
+    {
+        var items = files.Select(f => new FileUploadItem
+        {
+            FileStream = f.OpenReadStream(),
+            FileName = f.FileName,
+            ContentType = f.ContentType,
+            FileSize = f.Length
+        }).ToList();
+
+        var command = new UploadIssueImagesCommand
+        {
+            IssueId = id,
+            Files = items
+        };
+        var urls = await _mediator.Send(command, ct);
+        return OkResponse(new { imageUrls = urls }, "Tải ảnh lên thành công");
+    }
 }
 
 // --- Request records ---

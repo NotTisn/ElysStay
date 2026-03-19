@@ -140,7 +140,25 @@ public class ExpensesController : BaseApiController
         return NoContent();
     }
 
-    // Note: POST /{id}/receipt requires Cloudinary/file storage integration — deferred.
+    /// <summary>
+    /// POST /expenses/{id}/receipt — Upload receipt (max 5 MB, JPEG/PNG/PDF).
+    /// </summary>
+    [HttpPost("{id:guid}/receipt")]
+    [Authorize(Roles = "Owner,Staff")]
+    [RequestSizeLimit(5 * 1024 * 1024)]
+    public async Task<IActionResult> UploadReceipt(Guid id, IFormFile file, CancellationToken ct)
+    {
+        var command = new UploadExpenseReceiptCommand
+        {
+            ExpenseId = id,
+            FileStream = file.OpenReadStream(),
+            FileName = file.FileName,
+            ContentType = file.ContentType,
+            FileSize = file.Length
+        };
+        var url = await _mediator.Send(command, ct);
+        return OkResponse(new { receiptUrl = url }, "Tải biên lai lên thành công");
+    }
 }
 
 // --- Request records ---
