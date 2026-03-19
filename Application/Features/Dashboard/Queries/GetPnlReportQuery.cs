@@ -51,9 +51,9 @@ public class GetPnlReportQueryHandler : IRequestHandler<GetPnlReportQuery, PnlRe
         var yearStart = new DateTime(request.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var yearEnd = yearStart.AddYears(1);
 
-        // Load all payments for the year in these buildings
-        // PNL-04: Exclude payments tied to VOID invoices
-        var payments = await _db.Payments
+        // Aggregate payments by month/type in SQL.
+        // PNL-04: Exclude payments tied to VOID invoices.
+        var paymentBuckets = await _db.Payments
             .AsNoTracking()
             .Where(p => p.PaidAt >= yearStart && p.PaidAt < yearEnd)
             .Where(p =>
@@ -62,67 +62,45 @@ public class GetPnlReportQueryHandler : IRequestHandler<GetPnlReportQuery, PnlRe
                 ||
                 // Invoice-level payments (rent)
                 (p.InvoiceId != null && p.Invoice!.Status != InvoiceStatus.Void
-                    && buildingIds.Contains(p.Invoice.Contract!.Room!.BuildingId)))
-            .Select(p => new
+                    && buildingIds.Contains(p.Invoice.Contract!.Room!.BuildingId))
+                ||
+                // Reservation-level payments (cancelled reservation deposit in/refund)
+                (p.ReservationId != null && buildingIds.Contains(p.Reservation!.Room!.BuildingId)))
+            .GroupBy(p => new { Month = p.PaidAt.Month, p.Type })
+            .Select(g => new
             {
-                Month = p.PaidAt.Month,
-                p.Type,
-                p.Amount
+                g.Key.Month,
+                g.Key.Type,
+                Amount = g.Sum(p => p.Amount)
             })
             .ToListAsync(ct);
 
-        // Include orphan deposit payments from cancelled reservations (ContractId=null, InvoiceId=null)
-        // These are DEPOSIT_IN/DEPOSIT_REFUND payments that belong to rooms in these buildings
-        var orphanDepositPayments = await _db.Payments
-            .AsNoTracking()
-            .Where(p => p.PaidAt >= yearStart && p.PaidAt < yearEnd)
-            .Where(p => p.ContractId == null && p.InvoiceId == null)
-            .Where(p => p.Type == PaymentType.DepositIn || p.Type == PaymentType.DepositRefund)
-            .Where(p => p.Note != null && p.Note.Contains("reservation"))
-            .Select(p => new
-            {
-                Month = p.PaidAt.Month,
-                p.Type,
-                p.Amount
-            })
-            .ToListAsync(ct);
+        var paymentByMonthType = paymentBuckets
+            .ToDictionary(x => (x.Month, x.Type), x => x.Amount);
 
-        // Merge orphan payments into the main payments list
-        payments.AddRange(orphanDepositPayments);
-
-        // Load expenses for the year
-        var expenses = await _db.Expenses
+        // Aggregate expenses by month in SQL.
+        var expenseBuckets = await _db.Expenses
             .AsNoTracking()
             .Where(e => buildingIds.Contains(e.BuildingId))
             .Where(e => e.ExpenseDate.Year == request.Year)
-            .Select(e => new
+            .GroupBy(e => e.ExpenseDate.Month)
+            .Select(g => new
             {
-                Month = e.ExpenseDate.Month,
-                e.Amount
+                Month = g.Key,
+                Amount = g.Sum(e => e.Amount)
             })
             .ToListAsync(ct);
+
+        var expenseByMonth = expenseBuckets.ToDictionary(x => x.Month, x => x.Amount);
 
         // Build monthly breakdown
         var months = new List<PnlMonthDto>();
         for (var month = 1; month <= 12; month++)
         {
-            var monthPayments = payments.Where(p => p.Month == month).ToList();
-
-            var operationalIncome = monthPayments
-                .Where(p => p.Type == PaymentType.RentPayment)
-                .Sum(p => p.Amount);
-
-            var depositsReceived = monthPayments
-                .Where(p => p.Type == PaymentType.DepositIn)
-                .Sum(p => p.Amount);
-
-            var depositsRefunded = monthPayments
-                .Where(p => p.Type == PaymentType.DepositRefund)
-                .Sum(p => p.Amount);
-
-            var monthExpenses = expenses
-                .Where(e => e.Month == month)
-                .Sum(e => e.Amount);
+            var operationalIncome = paymentByMonthType.GetValueOrDefault((month, PaymentType.RentPayment));
+            var depositsReceived = paymentByMonthType.GetValueOrDefault((month, PaymentType.DepositIn));
+            var depositsRefunded = paymentByMonthType.GetValueOrDefault((month, PaymentType.DepositRefund));
+            var monthExpenses = expenseByMonth.GetValueOrDefault(month);
 
             // PNL-02: Net operational = operational income - expenses
             var netOperational = operationalIncome - monthExpenses;

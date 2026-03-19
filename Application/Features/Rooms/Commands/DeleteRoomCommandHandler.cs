@@ -10,11 +10,13 @@ public class DeleteRoomCommandHandler : IRequestHandler<DeleteRoomCommand>
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IBuildingScopeService _buildingScope;
 
-    public DeleteRoomCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    public DeleteRoomCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser, IBuildingScopeService buildingScope)
     {
         _db = db;
         _currentUser = currentUser;
+        _buildingScope = buildingScope;
     }
 
     public async Task Handle(DeleteRoomCommand request, CancellationToken cancellationToken)
@@ -24,29 +26,24 @@ public class DeleteRoomCommandHandler : IRequestHandler<DeleteRoomCommand>
             throw new ForbiddenException("Only the owner can delete rooms.");
 
         var room = await _db.Rooms
-            .Include(r => r.Contracts)
-            .Include(r => r.Reservations)
-            .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken)
+            .FirstOrDefaultAsync(r => r.Id == request.Id && r.DeletedAt == null, cancellationToken)
             ?? throw new NotFoundException($"Room {request.Id} not found.");
 
-        // Verify ownership through building
-        var building = await _db.Buildings
-            .AsNoTracking()
-            .FirstOrDefaultAsync(b => b.Id == room.BuildingId, cancellationToken);
-
-        if (building is null || building.OwnerId != _currentUser.GetRequiredUserId())
-            throw new ForbiddenException("You do not own this building.");
+        // Building scope auth — consistent with CreateRoom/UpdateRoom
+        await _buildingScope.AuthorizeAsync(room.BuildingId, cancellationToken);
 
         // SD-04: Block if active contract
-        var hasActiveContract = room.Contracts.Any(c => c.Status == ContractStatus.Active);
+        var hasActiveContract = await _db.Contracts
+            .AnyAsync(c => c.RoomId == room.Id && c.Status == ContractStatus.Active, cancellationToken);
         if (hasActiveContract)
             throw new ConflictException(
                 "Cannot delete room: it has an active contract.",
                 "ACTIVE_CONTRACT_EXISTS");
 
         // Block if pending/confirmed reservations
-        var hasActiveReservation = room.Reservations
-            .Any(r => r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Confirmed);
+        var hasActiveReservation = await _db.RoomReservations
+            .AnyAsync(r => r.RoomId == room.Id
+                && (r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Confirmed), cancellationToken);
         if (hasActiveReservation)
             throw new ConflictException(
                 "Cannot delete room: it has active reservations.",

@@ -20,7 +20,7 @@ public class UpdateRoomCommandHandler : IRequestHandler<UpdateRoomCommand, RoomD
     public async Task<RoomDto> Handle(UpdateRoomCommand request, CancellationToken cancellationToken)
     {
         var room = await _db.Rooms
-            .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken)
+            .FirstOrDefaultAsync(r => r.Id == request.Id && r.DeletedAt == null, cancellationToken)
             ?? throw new NotFoundException($"Room {request.Id} not found.");
 
         // AUTH-05: Building-scope check
@@ -44,7 +44,8 @@ public class UpdateRoomCommandHandler : IRequestHandler<UpdateRoomCommand, RoomD
             var exists = await _db.Rooms
                 .AnyAsync(r => r.BuildingId == room.BuildingId
                             && r.RoomNumber == request.RoomNumber
-                            && r.Id != room.Id, cancellationToken);
+                            && r.Id != room.Id
+                            && r.DeletedAt == null, cancellationToken);
             if (exists)
                 throw new ConflictException(
                     $"Room number '{request.RoomNumber}' already exists in this building.",

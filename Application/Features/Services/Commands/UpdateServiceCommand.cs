@@ -40,7 +40,20 @@ public class UpdateServiceCommandHandler : IRequestHandler<UpdateServiceCommand,
             throw new ForbiddenException("You do not own this building.");
 
         if (request.Name is not null)
-            service.Name = request.Name.Trim();
+        {
+            // UQ-05: Duplicate service name check within building (same as CreateServiceCommand)
+            var trimmedName = request.Name.Trim();
+            if (!string.Equals(service.Name, trimmedName, StringComparison.OrdinalIgnoreCase))
+            {
+                var duplicateExists = await _db.Services
+                    .AnyAsync(s => s.BuildingId == service.BuildingId
+                        && s.Id != service.Id
+                        && s.Name.ToLower() == trimmedName.ToLower(), cancellationToken);
+                if (duplicateExists)
+                    throw new ConflictException($"A service named '{trimmedName}' already exists in this building.", "DUPLICATE_SERVICE_NAME");
+            }
+            service.Name = trimmedName;
+        }
 
         if (request.Unit is not null)
             service.Unit = request.Unit.Trim();

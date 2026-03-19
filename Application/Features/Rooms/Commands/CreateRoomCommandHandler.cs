@@ -33,9 +33,9 @@ public class CreateRoomCommandHandler : IRequestHandler<CreateRoomCommand, RoomD
         if (request.Floor < 1 || request.Floor > building.TotalFloors)
             throw new BadRequestException($"Floor must be between 1 and {building.TotalFloors}.");
 
-        // UQ-04: room number unique within building
+        // UQ-04: room number unique within building (exclude soft-deleted rooms)
         var exists = await _db.Rooms
-            .AnyAsync(r => r.BuildingId == request.BuildingId && r.RoomNumber == request.RoomNumber, cancellationToken);
+            .AnyAsync(r => r.BuildingId == request.BuildingId && r.RoomNumber == request.RoomNumber && r.DeletedAt == null, cancellationToken);
         if (exists)
             throw new ConflictException(
                 $"Room number '{request.RoomNumber}' already exists in this building.",
