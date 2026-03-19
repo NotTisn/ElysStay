@@ -3,6 +3,7 @@ using Application.Common.Models;
 using Application.Features.Reservations.DTOs;
 using Domain.Enums;
 using MediatR;
+using Application.Common.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Reservations.Queries;
@@ -35,8 +36,6 @@ public class GetReservationsQueryHandler : IRequestHandler<GetReservationsQuery,
 
         var query = _db.RoomReservations
             .AsNoTracking()
-            .Include(r => r.Room).ThenInclude(r => r!.Building)
-            .Include(r => r.TenantUser)
             .AsQueryable();
 
         // Role-scope
@@ -50,6 +49,10 @@ public class GetReservationsQueryHandler : IRequestHandler<GetReservationsQuery,
                 .Where(sa => sa.StaffId == userId)
                 .Select(sa => sa.BuildingId);
             query = query.Where(r => assignedBuildingIds.Contains(r.Room!.BuildingId));
+        }
+        else
+        {
+            throw new ForbiddenException("Only owners and staff can access reservations.");
         }
 
         // Filters

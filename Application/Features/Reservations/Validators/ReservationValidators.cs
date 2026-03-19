@@ -16,6 +16,9 @@ public class CreateReservationCommandValidator : AbstractValidator<CreateReserva
             .Must(d => d > DateTime.UtcNow)
             .When(x => x.ExpiresAt.HasValue)
             .WithMessage("Expiry date must be in the future.");
+        RuleFor(x => x.Note)
+            .MaximumLength(500).When(x => x.Note is not null)
+            .WithMessage("Note cannot exceed 500 characters.");
     }
 }
 

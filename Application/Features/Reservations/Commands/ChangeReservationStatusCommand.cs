@@ -104,6 +104,11 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
                 $"Cannot confirm reservation in {reservation.Status} status. Only PENDING can be confirmed.",
                 "INVALID_STATUS_TRANSITION");
 
+        if (reservation.ExpiresAt <= DateTime.UtcNow)
+            throw new ConflictException(
+                "Cannot confirm an expired reservation.",
+                "RESERVATION_EXPIRED");
+
         reservation.Status = ReservationStatus.Confirmed;
     }
 
@@ -122,6 +127,9 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
                 $"Cannot cancel reservation in {reservation.Status} status.",
                 "INVALID_STATUS_TRANSITION");
 
+        // Capture previous status before mutation — needed for deposit logic
+        var wasConfirmed = reservation.Status == ReservationStatus.Confirmed;
+
         // Validate refund amount
         var refundAmount = request.RefundAmount ?? 0m;
         if (refundAmount < 0 || refundAmount > reservation.DepositAmount)
@@ -133,31 +141,38 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
         reservation.RefundNote = request.RefundNote;
         reservation.RefundedAt = refundAmount > 0 ? DateTime.UtcNow : null;
 
-        // Record deposit-in (money was received at booking time)
-        _db.Payments.Add(new Domain.Entities.Payment
+        // Only record deposit payments when reservation was Confirmed (deposit actually received).
+        // Pending reservations may not have received the deposit yet.
+        if (wasConfirmed && reservation.DepositAmount > 0)
         {
-            ContractId = null,
-            InvoiceId = null,
-            Type = PaymentType.DepositIn,
-            Amount = reservation.DepositAmount,
-            Note = $"Deposit received for reservation (cancelled)",
-            RecordedBy = userId,
-            PaidAt = reservation.CreatedAt // Was originally received at reservation creation
-        });
-
-        // Record refund if applicable (DEP-05)
-        if (refundAmount > 0)
-        {
+            // Record deposit-in (money was received at confirmation time)
             _db.Payments.Add(new Domain.Entities.Payment
             {
                 ContractId = null,
                 InvoiceId = null,
-                Type = PaymentType.DepositRefund,
-                Amount = refundAmount,
-                Note = request.RefundNote ?? "Deposit refund for cancelled reservation",
+                ReservationId = reservation.Id,
+                Type = PaymentType.DepositIn,
+                Amount = reservation.DepositAmount,
+                Note = $"Deposit received for reservation (cancelled)",
                 RecordedBy = userId,
-                PaidAt = DateTime.UtcNow
+                PaidAt = reservation.CreatedAt // Was originally received at reservation creation
             });
+
+            // Record refund if applicable (DEP-05)
+            if (refundAmount > 0)
+            {
+                _db.Payments.Add(new Domain.Entities.Payment
+                {
+                    ContractId = null,
+                    InvoiceId = null,
+                    ReservationId = reservation.Id,
+                    Type = PaymentType.DepositRefund,
+                    Amount = refundAmount,
+                    Note = request.RefundNote ?? "Deposit refund for cancelled reservation",
+                    RecordedBy = userId,
+                    PaidAt = DateTime.UtcNow
+                });
+            }
         }
 
         // SM-03: Room BOOKED → AVAILABLE (only if currently Booked)
