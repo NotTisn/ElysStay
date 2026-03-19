@@ -2,6 +2,9 @@
 # Usage:
 #   1. Copy .env.example to .env and set secure values
 #   2. docker compose -f docker-compose.prod.yml up -d --build
+#   3. Apply EF migrations: docker exec elys_prod_api dotnet API.dll --migrate
+#      (or connect and run: dotnet ef database update)
+#   4. Optional demo data: docker exec -i elys_prod_db psql -U postgres -d ElysStay < seed/demo-data.sql
 #
 # The API and Frontend images are built from local Dockerfiles.
 # For a VPS deployment, push images to a registry and use image: instead of build:.
