@@ -71,7 +71,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
         options.Authority = keycloak["Authority"];
         options.Audience = keycloak["ClientId"];
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+
+        // Allow override for reverse-proxy deployments (internal HTTP to Keycloak)
+        var requireHttps = keycloak["RequireHttpsMetadata"];
+        options.RequireHttpsMetadata = requireHttps != null
+            ? bool.Parse(requireHttps)
+            : !builder.Environment.IsDevelopment();
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -79,6 +84,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuer = true,
             ValidateLifetime = true
         };
+
+        // Reverse-proxy support: token issuer (public URL) may differ from Authority (internal URL)
+        var validIssuer = keycloak["ValidIssuer"];
+        if (!string.IsNullOrEmpty(validIssuer))
+            options.TokenValidationParameters.ValidIssuer = validIssuer;
     });
 
 builder.Services.AddAuthorization();
@@ -129,6 +139,9 @@ static string GetClientIp(HttpContext context)
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Trust Docker network proxies (API is only reachable through Caddy in production)
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
 });
 
 var app = builder.Build();

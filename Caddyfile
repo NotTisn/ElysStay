@@ -1,0 +1,37 @@
+# Replace {$DOMAIN} with your domain or use :80 for HTTP-only local testing.
+# Caddy auto-provisions HTTPS certificates when a real domain is used.
+#
+# Example: DOMAIN=elysstay.example.com docker compose -f docker-compose.prod.yml up -d
+
+{$DOMAIN:localhost} {
+	# Backend API
+	handle /api/* {
+		reverse_proxy api:8081
+	}
+
+	# API health check
+	handle /healthz {
+		reverse_proxy api:8081
+	}
+
+	# Keycloak — auth, resources, scripts
+	handle /realms/* {
+		reverse_proxy keycloak:8080
+	}
+	handle /resources/* {
+		reverse_proxy keycloak:8080
+	}
+	handle /js/* {
+		reverse_proxy keycloak:8080
+	}
+
+	# Keycloak admin console (restrict via firewall or remove in production)
+	handle /admin/* {
+		reverse_proxy keycloak:8080
+	}
+
+	# Frontend — catch-all (must be last)
+	handle {
+		reverse_proxy frontend:3000
+	}
+}
