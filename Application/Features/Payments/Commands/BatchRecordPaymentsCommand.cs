@@ -61,7 +61,7 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
             .ToDictionaryAsync(i => i.Id, cancellationToken);
 
         if (invoices.Count != invoiceIds.Count)
-            throw new NotFoundException("Some invoices were not found.");
+            throw new NotFoundException("Một số hóa đơn không được tìm thấy.");
 
         // Authorize all distinct buildings
         var buildingIds = invoices.Values
@@ -82,11 +82,11 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
 
             // PAY-04: Cannot pay DRAFT or VOID or already PAID
             if (invoice.Status == InvoiceStatus.Draft)
-                throw new ConflictException($"Cannot record payment on DRAFT invoice {invoice.Id}.");
+                throw new ConflictException($"Không thể ghi nhận thanh toán cho hóa đơn Nháp {invoice.Id}.");
             if (invoice.Status == InvoiceStatus.Void)
-                throw new ConflictException($"Cannot record payment on VOID invoice {invoice.Id}.");
+                throw new ConflictException($"Không thể ghi nhận thanh toán cho hóa đơn đã hủy {invoice.Id}.");
             if (invoice.Status == InvoiceStatus.Paid)
-                throw new ConflictException($"Invoice {invoice.Id} is already fully paid.");
+                throw new ConflictException($"Hóa đơn {invoice.Id} đã được thanh toán đầy đủ.");
 
             // Overpayment guard (accounting for in-batch running total)
             var dbPaid = invoice.Payments

@@ -9,6 +9,6 @@ public class GetPnlReportQueryValidator : AbstractValidator<GetPnlReportQuery>
     {
         RuleFor(x => x.Year)
             .InclusiveBetween(2020, 2100)
-            .WithMessage("Year must be between 2020 and 2100.");
+            .WithMessage("Năm phải từ 2020 đến 2100.");
     }
 }

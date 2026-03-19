@@ -34,7 +34,7 @@ public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordComman
         // Verify current password via Keycloak Direct Access Grant
         var isValid = await _keycloak.VerifyPasswordAsync(email, request.CurrentPassword, ct);
         if (!isValid)
-            throw new BadRequestException("Current password is incorrect.");
+            throw new BadRequestException("Mật khẩu hiện tại không đúng.");
 
         // Set new password via Keycloak Admin API
         await _keycloak.ChangePasswordAsync(keycloakId, request.NewPassword, ct);

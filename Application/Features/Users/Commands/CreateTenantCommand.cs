@@ -41,14 +41,14 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, C
 
         // Auth: Owner or Staff
         if (_currentUser.IsTenant)
-            throw new ForbiddenException("Tenants cannot create other tenants.");
+            throw new ForbiddenException("Khách thuê không thể tạo khách thuê khác.");
 
         // UQ-07: Check email uniqueness in local DB
         var emailExists = await _db.Users
             .IgnoreQueryFilters()
             .AnyAsync(u => u.Email.ToLower() == normalizedEmail, ct);
         if (emailExists)
-            throw new ConflictException("A user with this email already exists.", "DUPLICATE_EMAIL");
+            throw new ConflictException("Email này đã được sử dụng.", "DUPLICATE_EMAIL");
 
         // Generate random password if not provided (spec: "Không có password → tạo ngẫu nhiên")
         var password = request.Password ?? GenerateRandomPassword();

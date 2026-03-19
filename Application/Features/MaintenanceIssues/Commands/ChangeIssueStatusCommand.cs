@@ -46,7 +46,7 @@ public class ChangeIssueStatusCommandHandler : IRequestHandler<ChangeIssueStatus
             .Include(i => i.Reporter)
             .Include(i => i.Assignee)
             .FirstOrDefaultAsync(i => i.Id == request.Id, ct)
-            ?? throw new NotFoundException($"Issue {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy sự cố {request.Id}.");
 
         await _buildingScope.AuthorizeAsync(issue.BuildingId, ct);
 

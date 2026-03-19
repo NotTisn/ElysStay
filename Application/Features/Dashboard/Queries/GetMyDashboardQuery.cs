@@ -35,7 +35,7 @@ public class GetMyDashboardQueryHandler : IRequestHandler<GetMyDashboardQuery, o
         if (_currentUser.IsTenant)
             return await GetTenantDashboard(userId, ct);
 
-        throw new ForbiddenException("Unknown role.");
+        throw new ForbiddenException("Vai trò không xác định.");
     }
 
     private async Task<OwnerDashboardDto> GetOwnerDashboard(Guid userId, CancellationToken ct)

@@ -94,8 +94,8 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
                 db.Notifications.Add(new Notification
                 {
                     UserId = contract.TenantUserId,
-                    Title = "Canh bao hop dong sap het han",
-                    Message = $"Hop dong phong {contract.Room!.RoomNumber} se het han vao {contract.EndDate:yyyy-MM-dd}.",
+                    Title = "Cảnh báo hợp đồng sắp hết hạn",
+                    Message = $"Hợp đồng phòng {contract.Room!.RoomNumber} sẽ hết hạn vào {contract.EndDate:yyyy-MM-dd}.",
                     Type = "CONTRACT_EXPIRY_ALERT",
                     ReferenceId = contract.Id,
                     CreatedAt = now
@@ -108,8 +108,8 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
                 db.Notifications.Add(new Notification
                 {
                     UserId = ownerId,
-                    Title = "Canh bao hop dong sap het han",
-                    Message = $"Hop dong phong {contract.Room.RoomNumber} cua khach {contract.TenantUser!.FullName} se het han vao {contract.EndDate:yyyy-MM-dd}.",
+                    Title = "Cảnh báo hợp đồng sắp hết hạn",
+                    Message = $"Hợp đồng phòng {contract.Room.RoomNumber} của khách {contract.TenantUser!.FullName} sẽ hết hạn vào {contract.EndDate:yyyy-MM-dd}.",
                     Type = "CONTRACT_EXPIRY_ALERT",
                     ReferenceId = contract.Id,
                     CreatedAt = now

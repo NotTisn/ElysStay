@@ -82,8 +82,8 @@ public class ReservationExpiryBackgroundService : BackgroundService
             db.Notifications.Add(new Notification
             {
                 UserId = reservation.TenantUserId,
-                Title = "Dat phong da het han",
-                Message = $"Dat phong {reservation.Room?.RoomNumber ?? "N/A"} da het han va bi huy tu dong.",
+                Title = "Đặt phòng đã hết hạn",
+                Message = $"Đặt phòng {reservation.Room?.RoomNumber ?? "N/A"} đã hết hạn và bị hủy tự động.",
                 Type = "RESERVATION_EXPIRED",
                 ReferenceId = reservation.Id,
                 CreatedAt = now

@@ -68,7 +68,7 @@ public class GetPaymentsQueryHandler : IRequestHandler<GetPaymentsQuery, PagedRe
         }
         else
         {
-            throw new ForbiddenException("Current role is not allowed to access payments.");
+            throw new ForbiddenException("Vai trò hiện tại không được phép truy cập thanh toán.");
         }
 
         // Filters

@@ -24,15 +24,15 @@ public class DeactivateServiceCommandHandler : IRequestHandler<DeactivateService
     public async Task Handle(DeactivateServiceCommand request, CancellationToken cancellationToken)
     {
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only the owner can deactivate services.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể ngừng dịch vụ.");
 
         var service = await _db.Services
             .Include(s => s.Building)
             .FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException($"Service {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy dịch vụ {request.Id}.");
 
         if (service.Building?.OwnerId != _currentUser.GetRequiredUserId())
-            throw new ForbiddenException("You do not own this building.");
+            throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
 
         service.IsActive = false;
         service.UpdatedAt = DateTime.UtcNow;

@@ -33,14 +33,14 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
             .Include(c => c.TenantUser!)
             .Include(c => c.ContractTenants)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException("Contract", request.Id);
+            ?? throw new NotFoundException("Hợp đồng", request.Id);
 
         if (oldContract.Status != ContractStatus.Active)
-            throw new ConflictException("Only active contracts can be renewed.");
+            throw new ConflictException("Chỉ có thể gia hạn hợp đồng đang hoạt động.");
 
         // Deposit must still be held to carry over
         if (oldContract.DepositStatus != DepositStatus.Held)
-            throw new ConflictException("Cannot renew: deposit is no longer held (current status: " + oldContract.DepositStatus + ").");
+            throw new ConflictException("Không thể gia hạn: tiền cọc không còn được giữ (trạng thái hiện tại: " + oldContract.DepositStatus + ").");
 
         // Building scope auth
         await _buildingScope.AuthorizeAsync(oldContract.Room!.BuildingId, cancellationToken);
@@ -49,7 +49,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
         var newStartDate = oldContract.EndDate.AddDays(1);
 
         if (request.NewEndDate <= newStartDate)
-            throw new BadRequestException($"New end date must be after {newStartDate}.");
+            throw new BadRequestException($"Ngày kết thúc mới phải sau {newStartDate}.");
 
         // 1. Terminate old contract (administrative — no deposit refund, no room change)
         var boundaryDate = newStartDate.AddDays(-1);
@@ -142,7 +142,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
         }
         catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_Contracts_RoomId_Active") == true)
         {
-            throw new ConflictException("An active contract already exists for this room. Concurrent renewal detected.");
+            throw new ConflictException("Phòng này đã có hợp đồng đang hoạt động. Phát hiện gia hạn đồng thời.");
         }
 
         return new ContractDto

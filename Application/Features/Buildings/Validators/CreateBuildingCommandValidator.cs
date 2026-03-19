@@ -8,23 +8,23 @@ public class CreateBuildingCommandValidator : AbstractValidator<CreateBuildingCo
     public CreateBuildingCommandValidator()
     {
         RuleFor(x => x.Name)
-            .NotEmpty().WithMessage("Building name is required.")
-            .MaximumLength(200).WithMessage("Building name must not exceed 200 characters.");
+            .NotEmpty().WithMessage("Tên tòa nhà là bắt buộc.")
+            .MaximumLength(200).WithMessage("Tên tòa nhà không được vượt quá 200 ký tự.");
 
         RuleFor(x => x.Address)
-            .NotEmpty().WithMessage("Address is required.")
-            .MaximumLength(500).WithMessage("Address must not exceed 500 characters.");
+            .NotEmpty().WithMessage("Địa chỉ là bắt buộc.")
+            .MaximumLength(500).WithMessage("Địa chỉ không được vượt quá 500 ký tự.");
 
         RuleFor(x => x.Description)
-            .MaximumLength(2000).WithMessage("Description must not exceed 2000 characters.")
+            .MaximumLength(2000).WithMessage("Mô tả không được vượt quá 2000 ký tự.")
             .When(x => x.Description is not null);
 
         RuleFor(x => x.TotalFloors)
-            .GreaterThanOrEqualTo(1).WithMessage("Total floors must be at least 1.")
-            .LessThanOrEqualTo(200).WithMessage("Total floors must not exceed 200.");
+            .GreaterThanOrEqualTo(1).WithMessage("Số tầng phải ít nhất là 1.")
+            .LessThanOrEqualTo(200).WithMessage("Số tầng không được vượt quá 200.");
 
         // BD-02: invoiceDueDay range 1-28
         RuleFor(x => x.InvoiceDueDay)
-            .InclusiveBetween(1, 28).WithMessage("Invoice due day must be between 1 and 28.");
+            .InclusiveBetween(1, 28).WithMessage("Ngày đến hạn hóa đơn phải từ 1 đến 28.");
     }
 }

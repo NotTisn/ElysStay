@@ -21,15 +21,15 @@ public class ChangeRoomStatusCommandHandler : IRequestHandler<ChangeRoomStatusCo
     public async Task<RoomDto> Handle(ChangeRoomStatusCommand request, CancellationToken cancellationToken)
     {
         if (!Enum.TryParse<RoomStatus>(request.Status, true, out var targetStatus))
-            throw new BadRequestException($"Invalid status: '{request.Status}'. Must be 'Available' or 'Maintenance'.");
+            throw new BadRequestException($"Trạng thái không hợp lệ: '{request.Status}'. Phải là 'Available' hoặc 'Maintenance'.");
 
         // SM-05: Only Available and Maintenance are valid targets for manual PATCH
         if (targetStatus is not (RoomStatus.Available or RoomStatus.Maintenance))
-            throw new BadRequestException("Manual status change only supports Available or Maintenance.");
+            throw new BadRequestException("Thay đổi trạng thái thủ công chỉ hỗ trợ Trống hoặc Bảo trì.");
 
         var room = await _db.Rooms
             .FirstOrDefaultAsync(r => r.Id == request.Id && r.DeletedAt == null, cancellationToken)
-            ?? throw new NotFoundException($"Room {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy phòng {request.Id}.");
 
         // AUTH-05
         await _buildingScope.AuthorizeAsync(room.BuildingId, cancellationToken);
@@ -41,7 +41,7 @@ public class ChangeRoomStatusCommandHandler : IRequestHandler<ChangeRoomStatusCo
                 "INVALID_STATUS_TRANSITION");
 
         if (room.Status == targetStatus)
-            throw new BadRequestException($"Room is already {targetStatus}.");
+            throw new BadRequestException($"Phòng đã ở trạng thái {targetStatus}.");
 
         room.Status = targetStatus;
         room.UpdatedAt = DateTime.UtcNow;

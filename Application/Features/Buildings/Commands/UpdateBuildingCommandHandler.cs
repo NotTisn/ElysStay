@@ -23,11 +23,11 @@ public class UpdateBuildingCommandHandler : IRequestHandler<UpdateBuildingComman
 
         var building = await _db.Buildings
             .FirstOrDefaultAsync(b => b.Id == request.Id && b.DeletedAt == null, cancellationToken)
-            ?? throw new NotFoundException($"Building {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy tòa nhà {request.Id}.");
 
         // Only the owner of this building can update it
         if (building.OwnerId != userId)
-            throw new ForbiddenException("You do not own this building.");
+            throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
 
         // Partial update: apply only non-null fields
         if (request.Name is not null)

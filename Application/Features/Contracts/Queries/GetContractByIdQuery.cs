@@ -38,7 +38,7 @@ public class GetContractByIdQueryHandler : IRequestHandler<GetContractByIdQuery,
             .Include(c => c.TenantUser!)
             .Include(c => c.ContractTenants).ThenInclude(ct => ct.Tenant!)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException("Contract", request.Id);
+            ?? throw new NotFoundException("Hợp đồng", request.Id);
 
         // TENANT: can only view their own contracts
         if (_currentUser.IsTenant)
@@ -47,7 +47,7 @@ public class GetContractByIdQueryHandler : IRequestHandler<GetContractByIdQuery,
                 contract.ContractTenants.Any(ct => ct.TenantUserId == userId);
 
             if (!isTenantOnContract)
-                throw new ForbiddenException("You can only view your own contracts.");
+                throw new ForbiddenException("Bạn chỉ có thể xem hợp đồng của mình.");
         }
         else
         {

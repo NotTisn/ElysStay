@@ -28,7 +28,7 @@ public class AssignStaffCommandHandler : IRequestHandler<AssignStaffCommand, Sta
     public async Task<StaffAssignmentDto> Handle(AssignStaffCommand request, CancellationToken cancellationToken)
     {
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only the owner can assign staff.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể phân công nhân viên.");
 
         var userId = _currentUser.GetRequiredUserId();
 
@@ -36,26 +36,26 @@ public class AssignStaffCommandHandler : IRequestHandler<AssignStaffCommand, Sta
         var building = await _db.Buildings
             .AsNoTracking()
             .FirstOrDefaultAsync(b => b.Id == request.BuildingId, cancellationToken)
-            ?? throw new NotFoundException($"Building {request.BuildingId} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy tòa nhà {request.BuildingId}.");
 
         if (building.OwnerId != userId)
-            throw new ForbiddenException("You do not own this building.");
+            throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
 
         // Verify staff user exists and has Staff role
         var staffUser = await _db.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == request.StaffId, cancellationToken)
-            ?? throw new NotFoundException($"User {request.StaffId} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy người dùng {request.StaffId}.");
 
         if (staffUser.Role != UserRole.Staff)
-            throw new BadRequestException("User is not a staff member.");
+            throw new BadRequestException("Người dùng không phải là nhân viên.");
 
         // Staff must be active and not soft-deleted
         if (staffUser.Status != UserStatus.Active)
-            throw new BadRequestException("Cannot assign a deactivated staff member.");
+            throw new BadRequestException("Không thể phân công nhân viên đã bị vô hiệu hóa.");
 
         if (staffUser.DeletedAt != null)
-            throw new BadRequestException("Cannot assign a deleted staff member.");
+            throw new BadRequestException("Không thể phân công nhân viên đã bị xóa.");
 
         // UQ-06: Check uniqueness
         var alreadyAssigned = await _db.StaffAssignments

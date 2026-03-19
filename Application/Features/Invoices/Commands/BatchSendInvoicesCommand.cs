@@ -41,7 +41,7 @@ public class BatchSendInvoicesCommandHandler : IRequestHandler<BatchSendInvoices
             .ToListAsync(cancellationToken);
 
         if (invoices.Count != request.InvoiceIds.Count)
-            throw new NotFoundException("Some invoices were not found.");
+            throw new NotFoundException("Một số hóa đơn không được tìm thấy.");
 
         // Authorize all distinct buildings
         var buildingIds = invoices

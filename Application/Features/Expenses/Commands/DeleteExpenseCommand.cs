@@ -28,16 +28,16 @@ public class DeleteExpenseCommandHandler : IRequestHandler<DeleteExpenseCommand,
         var userId = _currentUser.GetRequiredUserId();
 
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only owners can delete expenses.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể xóa chi phí.");
 
         var expense = await _db.Expenses
             .Include(e => e.Building)
             .FirstOrDefaultAsync(e => e.Id == request.Id, ct)
-            ?? throw new NotFoundException($"Expense {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy chi phí {request.Id}.");
 
         // Verify ownership
         if (expense.Building!.OwnerId != userId)
-            throw new ForbiddenException("You can only delete expenses for your own buildings.");
+            throw new ForbiddenException("Bạn chỉ có thể xóa chi phí của tòa nhà mình.");
 
         // Soft-delete: preserve financial audit trail
         expense.DeletedAt = DateTime.UtcNow;

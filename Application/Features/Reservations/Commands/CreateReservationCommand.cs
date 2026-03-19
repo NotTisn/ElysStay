@@ -46,30 +46,30 @@ public class CreateReservationCommandHandler : IRequestHandler<CreateReservation
         var room = await _db.Rooms
             .Include(r => r.Building)
             .FirstOrDefaultAsync(r => r.Id == request.RoomId && r.DeletedAt == null, ct)
-            ?? throw new NotFoundException($"Room {request.RoomId} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy phòng {request.RoomId}.");
 
         await _buildingScope.AuthorizeAsync(room.BuildingId, ct);
 
         // SM-01: Room must be AVAILABLE
         if (room.Status != RoomStatus.Available)
             throw new ConflictException(
-                $"Room is currently {room.Status}. Only AVAILABLE rooms can be reserved.",
+                $"Phòng hiện đang ở trạng thái {room.Status}. Chỉ phòng Trống mới có thể đặt.",
                 "ROOM_NOT_AVAILABLE");
 
         // Validate tenant user exists and has Tenant role
         var tenantUser = await _db.Users
             .FirstOrDefaultAsync(u => u.Id == request.TenantUserId, ct)
-            ?? throw new NotFoundException($"User {request.TenantUserId} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy người dùng {request.TenantUserId}.");
 
         if (tenantUser.Role != UserRole.Tenant)
-            throw new BadRequestException("Only users with Tenant role can be assigned to a reservation.");
+            throw new BadRequestException("Chỉ người dùng có vai trò Khách thuê mới có thể được gán vào đặt phòng.");
 
         // Tenant must be active and not soft-deleted
         if (tenantUser.Status != UserStatus.Active)
-            throw new BadRequestException("Cannot create a reservation for a deactivated tenant.");
+            throw new BadRequestException("Không thể tạo đặt phòng cho khách thuê đã bị vô hiệu hóa.");
 
         if (tenantUser.DeletedAt != null)
-            throw new BadRequestException("Cannot create a reservation for a deleted tenant.");
+            throw new BadRequestException("Không thể tạo đặt phòng cho khách thuê đã bị xóa.");
 
         // Check tenant doesn't already have a pending/confirmed reservation
         var hasActiveReservation = await _db.RoomReservations
@@ -77,7 +77,7 @@ public class CreateReservationCommandHandler : IRequestHandler<CreateReservation
                 && (r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Confirmed), ct);
         if (hasActiveReservation)
             throw new ConflictException(
-                "This tenant already has an active reservation.",
+                "Khách thuê này đã có đặt phòng đang hoạt động.",
                 "TENANT_HAS_ACTIVE_RESERVATION");
 
         // Create reservation (DEP-02: deposit on reservation only, no Payment yet)
@@ -104,7 +104,7 @@ public class CreateReservationCommandHandler : IRequestHandler<CreateReservation
         catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
         {
             throw new ConflictException(
-                "Room was modified by another user. Please retry.",
+                "Phòng đã bị thay đổi bởi người dùng khác. Vui lòng thử lại.",
                 "CONCURRENCY_CONFLICT");
         }
 

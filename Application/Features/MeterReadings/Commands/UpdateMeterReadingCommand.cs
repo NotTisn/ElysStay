@@ -41,7 +41,7 @@ public class UpdateMeterReadingCommandHandler : IRequestHandler<UpdateMeterReadi
             .Include(mr => mr.Room!).ThenInclude(r => r.Building!)
             .Include(mr => mr.Service!)
             .FirstOrDefaultAsync(mr => mr.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException("Meter reading", request.Id);
+            ?? throw new NotFoundException("Chỉ số", request.Id);
 
         await _buildingScope.AuthorizeAsync(reading.Room!.BuildingId, cancellationToken);
 
@@ -53,7 +53,7 @@ public class UpdateMeterReadingCommandHandler : IRequestHandler<UpdateMeterReadi
 
         // VAL-04: CurrentReading >= PreviousReading
         if (reading.CurrentReading < reading.PreviousReading)
-            throw new BadRequestException("CurrentReading must be >= PreviousReading.");
+            throw new BadRequestException("Chỉ số hiện tại phải lớn hơn hoặc bằng chỉ số trước.");
 
         reading.Consumption = reading.CurrentReading - reading.PreviousReading;
         reading.UpdatedAt = DateTime.UtcNow;

@@ -80,8 +80,8 @@ public class InvoiceOverdueBackgroundService : BackgroundService
             db.Notifications.Add(new Notification
             {
                 UserId = invoice.Contract!.TenantUserId,
-                Title = "Hoa don qua han",
-                Message = $"Hoa don thang {invoice.BillingMonth}/{invoice.BillingYear} da qua han thanh toan.",
+                Title = "Hóa đơn quá hạn",
+                Message = $"Hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear} đã quá hạn thanh toán.",
                 Type = "INVOICE_OVERDUE",
                 ReferenceId = invoice.Id,
                 CreatedAt = now

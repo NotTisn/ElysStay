@@ -40,21 +40,21 @@ public class AddContractTenantCommandHandler : IRequestHandler<AddContractTenant
         _currentUser.GetRequiredUserId();
 
         if (_currentUser.IsTenant)
-            throw new ForbiddenException("Only owners or staff can manage roommates.");
+            throw new ForbiddenException("Chỉ chủ nhà hoặc nhân viên mới có thể quản lý người ở ghép.");
 
         var contract = await _db.Contracts
             .Include(c => c.Room!)
             .FirstOrDefaultAsync(c => c.Id == request.ContractId, cancellationToken)
-            ?? throw new NotFoundException("Contract", request.ContractId);
+            ?? throw new NotFoundException("Hợp đồng", request.ContractId);
 
         if (contract.Status != ContractStatus.Active)
-            throw new ConflictException("Roommates can only be added to active contracts.");
+            throw new ConflictException("Chỉ có thể thêm người ở ghép vào hợp đồng đang hoạt động.");
 
         if (request.MoveInDate < contract.StartDate)
-            throw new BadRequestException("MoveInDate cannot be before contract start date.");
+            throw new BadRequestException("Ngày dọn vào không được trước ngày bắt đầu hợp đồng.");
 
         if (request.MoveInDate > contract.EndDate)
-            throw new BadRequestException("MoveInDate cannot be after contract end date.");
+            throw new BadRequestException("Ngày dọn vào không được sau ngày kết thúc hợp đồng.");
 
         // Building scope auth
         await _buildingScope.AuthorizeAsync(contract.Room!.BuildingId, cancellationToken);
@@ -62,13 +62,13 @@ public class AddContractTenantCommandHandler : IRequestHandler<AddContractTenant
         // Verify tenant user exists, has Tenant role, is active, and not soft-deleted
         var tenantUser = await _db.Users
             .FirstOrDefaultAsync(u => u.Id == request.TenantUserId && u.Role == UserRole.Tenant, cancellationToken)
-            ?? throw new NotFoundException("Tenant user", request.TenantUserId);
+            ?? throw new NotFoundException("Khách thuê", request.TenantUserId);
 
         if (tenantUser.Status != UserStatus.Active)
-            throw new BadRequestException("Cannot add a deactivated tenant as a roommate.");
+            throw new BadRequestException("Không thể thêm khách thuê đã bị vô hiệu hóa làm người ở ghép.");
 
         if (tenantUser.DeletedAt != null)
-            throw new BadRequestException("Cannot add a deleted tenant as a roommate.");
+            throw new BadRequestException("Không thể thêm khách thuê đã bị xóa làm người ở ghép.");
 
         // Check if already on contract (active — no MoveOutDate)
         var alreadyOnContract = await _db.ContractTenants
@@ -77,7 +77,7 @@ public class AddContractTenantCommandHandler : IRequestHandler<AddContractTenant
                            ct.MoveOutDate == null, cancellationToken);
 
         if (alreadyOnContract)
-            throw new ConflictException("This tenant is already an active roommate on this contract.");
+            throw new ConflictException("Khách thuê này đã là người ở ghép đang hoạt động trong hợp đồng.");
 
         // Validate MaxOccupants — don't exceed room capacity
         var activeTenantsCount = await _db.ContractTenants

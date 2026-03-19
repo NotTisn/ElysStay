@@ -35,7 +35,7 @@ public class GetInvoiceByIdQueryHandler : IRequestHandler<GetInvoiceByIdQuery, I
             .Include(i => i.InvoiceDetails)
             .Include(i => i.Payments).ThenInclude(p => p.Recorder!)
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException("Invoice", request.Id);
+            ?? throw new NotFoundException("Hóa đơn", request.Id);
 
         // Authorization
         if (_currentUser.IsTenant)
@@ -45,19 +45,19 @@ public class GetInvoiceByIdQueryHandler : IRequestHandler<GetInvoiceByIdQuery, I
                 await _db.ContractTenants.AnyAsync(
                     ct => ct.ContractId == contract.Id && ct.TenantUserId == userId, cancellationToken);
             if (!isOnContract)
-                throw new ForbiddenException("You can only view your own invoices.");
+                throw new ForbiddenException("Bạn chỉ có thể xem hóa đơn của mình.");
         }
         else if (_currentUser.IsOwner)
         {
             if (invoice.Contract!.Room!.Building!.OwnerId != userId)
-                throw new ForbiddenException("You do not own this building.");
+                throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
         }
         else if (_currentUser.IsStaff)
         {
             var isAssigned = await _db.StaffAssignments
                 .AnyAsync(sa => sa.BuildingId == invoice.Contract!.Room!.BuildingId && sa.StaffId == userId, cancellationToken);
             if (!isAssigned)
-                throw new ForbiddenException("You are not assigned to this building.");
+                throw new ForbiddenException("Bạn không được phân công cho tòa nhà này.");
         }
 
         var paidAmount = invoice.Payments

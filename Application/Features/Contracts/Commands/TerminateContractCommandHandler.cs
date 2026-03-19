@@ -33,25 +33,25 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
             .Include(c => c.TenantUser!)
             .Include(c => c.ContractTenants)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException("Contract", request.Id);
+            ?? throw new NotFoundException("Hợp đồng", request.Id);
 
         // Must be active (SM-10)
         if (contract.Status != ContractStatus.Active)
-            throw new ConflictException("Only active contracts can be terminated.");
+            throw new ConflictException("Chỉ có thể chấm dứt hợp đồng đang hoạt động.");
 
         // Building scope auth
         await _buildingScope.AuthorizeAsync(contract.Room!.BuildingId, cancellationToken);
 
         // Validate termination date is not before contract start
         if (request.TerminationDate < contract.StartDate)
-            throw new BadRequestException("Termination date cannot be before the contract start date.");
+            throw new BadRequestException("Ngày chấm dứt không được trước ngày bắt đầu hợp đồng.");
 
         // Validate deductions
         if (request.Deductions < 0)
-            throw new BadRequestException("Deductions cannot be negative.");
+            throw new BadRequestException("Khoản khấu trừ không được âm.");
 
         if (request.Deductions > contract.DepositAmount)
-            throw new BadRequestException("Deductions cannot exceed deposit amount.");
+            throw new BadRequestException("Khoản khấu trừ không được vượt quá tiền đặt cọc.");
 
         // Calculate refund (DEP-04)
         var refundAmount = contract.DepositAmount - request.Deductions;
@@ -142,7 +142,7 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
         }
         catch (DbUpdateConcurrencyException)
         {
-            throw new ConflictException("The room was modified by another operation. Please retry.");
+            throw new ConflictException("Phòng đã bị thay đổi bởi thao tác khác. Vui lòng thử lại.");
         }
 
         return new ContractDto

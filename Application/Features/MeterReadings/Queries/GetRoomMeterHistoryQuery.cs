@@ -34,20 +34,20 @@ public class GetRoomMeterHistoryQueryHandler : IRequestHandler<GetRoomMeterHisto
             .AsNoTracking()
             .Include(r => r.Building!)
             .FirstOrDefaultAsync(r => r.Id == request.RoomId, cancellationToken)
-            ?? throw new NotFoundException("Room", request.RoomId);
+            ?? throw new NotFoundException("Phòng", request.RoomId);
 
         // Authorization
         if (_currentUser.IsOwner)
         {
             if (room.Building!.OwnerId != userId)
-                throw new ForbiddenException("You do not own this building.");
+                throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
         }
         else if (_currentUser.IsStaff)
         {
             var isAssigned = await _db.StaffAssignments
                 .AnyAsync(sa => sa.BuildingId == room.BuildingId && sa.StaffId == userId, cancellationToken);
             if (!isAssigned)
-                throw new ForbiddenException("You are not assigned to this building.");
+                throw new ForbiddenException("Bạn không được phân công cho tòa nhà này.");
         }
         else if (_currentUser.IsTenant)
         {
@@ -57,7 +57,7 @@ public class GetRoomMeterHistoryQueryHandler : IRequestHandler<GetRoomMeterHisto
                               (c.TenantUserId == userId || c.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null)),
                           cancellationToken);
             if (!hasTenantAccess)
-                throw new ForbiddenException("You do not have access to this room's meter readings.");
+                throw new ForbiddenException("Bạn không có quyền truy cập chỉ số của phòng này.");
         }
 
         return await _db.MeterReadings

@@ -34,23 +34,23 @@ public class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceCommand, Uni
         _currentUser.GetRequiredUserId();
 
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only owners can void invoices.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể hủy hóa đơn.");
 
         var invoice = await _db.Invoices
             .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
             .Include(i => i.Payments)
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException("Invoice", request.Id);
+            ?? throw new NotFoundException("Hóa đơn", request.Id);
 
         // Use building scope service for consistent auth
         await _buildingScope.AuthorizeAsync(invoice.Contract!.Room!.BuildingId, cancellationToken);
 
         // SM-12: Any status except PAID → VOID (PartiallyPaid allowed — owner accepts write-off)
         if (invoice.Status == InvoiceStatus.Paid)
-            throw new ConflictException("Cannot void a fully paid invoice.");
+            throw new ConflictException("Không thể hủy hóa đơn đã thanh toán đầy đủ.");
 
         if (invoice.Status == InvoiceStatus.Void)
-            throw new ConflictException("Invoice is already voided.");
+            throw new ConflictException("Hóa đơn đã bị hủy.");
 
         invoice.Status = InvoiceStatus.Void;
         invoice.UpdatedAt = DateTime.UtcNow;

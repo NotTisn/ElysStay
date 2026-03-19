@@ -37,7 +37,7 @@ public class UpdateExpenseCommandHandler : IRequestHandler<UpdateExpenseCommand,
             .Include(e => e.Room)
             .Include(e => e.Recorder)
             .FirstOrDefaultAsync(e => e.Id == request.Id, ct)
-            ?? throw new NotFoundException($"Expense {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy chi phí {request.Id}.");
 
         await _buildingScope.AuthorizeAsync(expense.BuildingId, ct);
 

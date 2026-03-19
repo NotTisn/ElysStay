@@ -60,7 +60,7 @@ public class GetPaymentSummaryQueryHandler : IRequestHandler<GetPaymentSummaryQu
         }
         else
         {
-            throw new ForbiddenException("Current role is not allowed to access payment summaries.");
+            throw new ForbiddenException("Vai trò hiện tại không được phép truy cập tổng hợp thanh toán.");
         }
 
         if (request.BuildingId.HasValue)

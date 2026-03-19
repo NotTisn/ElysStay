@@ -36,21 +36,21 @@ public class ChangeUserStatusCommandHandler : IRequestHandler<ChangeUserStatusCo
     public async Task Handle(ChangeUserStatusCommand request, CancellationToken ct)
     {
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only the owner can change user status.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể thay đổi trạng thái người dùng.");
 
         var user = await _db.Users
             .FirstOrDefaultAsync(u => u.Id == request.UserId, ct)
-            ?? throw new NotFoundException("User", request.UserId);
+            ?? throw new NotFoundException("Người dùng", request.UserId);
 
         var callerId = _currentUser.GetRequiredUserId();
 
         // Guard: can't deactivate yourself
         if (user.Id == callerId)
-            throw new BadRequestException("You cannot change your own status.");
+            throw new BadRequestException("Bạn không thể thay đổi trạng thái của chính mình.");
 
         // Guard: can't change status of another owner
         if (user.Role == UserRole.Owner)
-            throw new ForbiddenException("Cannot change the status of another owner.");
+            throw new ForbiddenException("Không thể thay đổi trạng thái của chủ nhà khác.");
 
         // Update local DB
         user.Status = request.Status;

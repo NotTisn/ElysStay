@@ -32,10 +32,10 @@ public class SendInvoiceCommandHandler : IRequestHandler<SendInvoiceCommand, Uni
         var invoice = await _db.Invoices
             .Include(i => i.Contract!).ThenInclude(c => c.Room!)
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException("Invoice", request.Id);
+            ?? throw new NotFoundException("Hóa đơn", request.Id);
 
         if (invoice.Status != InvoiceStatus.Draft)
-            throw new ConflictException("Only DRAFT invoices can be sent.");
+            throw new ConflictException("Chỉ có thể gửi hóa đơn ở trạng thái Nháp.");
 
         await _buildingScope.AuthorizeAsync(invoice.Contract!.Room!.BuildingId, cancellationToken);
 

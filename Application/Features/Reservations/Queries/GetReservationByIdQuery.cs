@@ -32,25 +32,25 @@ public class GetReservationByIdQueryHandler : IRequestHandler<GetReservationById
             .Include(r => r.Room).ThenInclude(r => r!.Building)
             .Include(r => r.TenantUser)
             .FirstOrDefaultAsync(r => r.Id == request.Id, ct)
-            ?? throw new NotFoundException("RoomReservation", request.Id);
+            ?? throw new NotFoundException("Đặt phòng", request.Id);
 
         // Role-scoped authorization
         if (_currentUser.IsOwner)
         {
             if (reservation.Room!.Building!.OwnerId != userId)
-                throw new ForbiddenException("You do not own this building.");
+                throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
         }
         else if (_currentUser.IsStaff)
         {
             var isAssigned = await _db.StaffAssignments
                 .AnyAsync(sa => sa.BuildingId == reservation.Room!.BuildingId && sa.StaffId == userId, ct);
             if (!isAssigned)
-                throw new ForbiddenException("You are not assigned to this building.");
+                throw new ForbiddenException("Bạn không được phân công cho tòa nhà này.");
         }
         else
         {
             // Tenants cannot view reservations (Owner/Staff only feature)
-            throw new ForbiddenException("Tenants cannot access reservations.");
+            throw new ForbiddenException("Khách thuê không thể truy cập đặt phòng.");
         }
 
         return new ReservationDto(

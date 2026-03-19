@@ -41,14 +41,14 @@ public class CreateStaffCommandHandler : IRequestHandler<CreateStaffCommand, Cre
 
         // Auth: Owner only
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only the owner can create staff accounts.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể tạo tài khoản nhân viên.");
 
         // UQ-07: Email uniqueness
         var emailExists = await _db.Users
             .IgnoreQueryFilters()
             .AnyAsync(u => u.Email.ToLower() == normalizedEmail, ct);
         if (emailExists)
-            throw new ConflictException("A user with this email already exists.", "DUPLICATE_EMAIL");
+            throw new ConflictException("Email này đã được sử dụng.", "DUPLICATE_EMAIL");
 
         // Create in Keycloak first
         var keycloakId = await _keycloak.CreateUserAsync(

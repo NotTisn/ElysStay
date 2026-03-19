@@ -38,15 +38,15 @@ public class RemoveContractTenantCommandHandler : IRequestHandler<RemoveContract
         _currentUser.GetRequiredUserId();
 
         if (_currentUser.IsTenant)
-            throw new ForbiddenException("Only owners or staff can manage roommates.");
+            throw new ForbiddenException("Chỉ chủ nhà hoặc nhân viên mới có thể quản lý người ở ghép.");
 
         var contract = await _db.Contracts
             .Include(c => c.Room!)
             .FirstOrDefaultAsync(c => c.Id == request.ContractId, cancellationToken)
-            ?? throw new NotFoundException("Contract", request.ContractId);
+            ?? throw new NotFoundException("Hợp đồng", request.ContractId);
 
         if (contract.Status != ContractStatus.Active)
-            throw new ConflictException("Roommates can only be removed from active contracts.");
+            throw new ConflictException("Chỉ có thể xóa người ở ghép khỏi hợp đồng đang hoạt động.");
 
         // Building scope auth
         await _buildingScope.AuthorizeAsync(contract.Room!.BuildingId, cancellationToken);
@@ -55,11 +55,11 @@ public class RemoveContractTenantCommandHandler : IRequestHandler<RemoveContract
             .FirstOrDefaultAsync(ct => ct.ContractId == request.ContractId &&
                                        ct.TenantUserId == request.TenantId &&
                                        ct.MoveOutDate == null, cancellationToken)
-            ?? throw new NotFoundException("Active contract tenant", request.TenantId);
+            ?? throw new NotFoundException("Khách thuê đang hoạt động", request.TenantId);
 
         // SD-02: Cannot remove main tenant
         if (contractTenant.IsMainTenant)
-            throw new ConflictException("Cannot remove the main tenant from a contract. Terminate the contract instead.");
+            throw new ConflictException("Không thể xóa khách thuê chính khỏi hợp đồng. Hãy chấm dứt hợp đồng thay thế.");
 
         // Soft remove: set MoveOutDate
         contractTenant.MoveOutDate = DateOnly.FromDateTime(DateTime.UtcNow);

@@ -24,11 +24,11 @@ public class DeleteBuildingCommandHandler : IRequestHandler<DeleteBuildingComman
         var building = await _db.Buildings
             .Include(b => b.Rooms.Where(r => r.DeletedAt == null))
             .FirstOrDefaultAsync(b => b.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException($"Building {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy tòa nhà {request.Id}.");
 
         // Only the owner can delete
         if (building.OwnerId != userId)
-            throw new ForbiddenException("You do not own this building.");
+            throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
 
         // SD-04: Block if any non-deleted room has an active contract (use AnyAsync to avoid loading all)
         var hasActiveContract = await _db.Contracts

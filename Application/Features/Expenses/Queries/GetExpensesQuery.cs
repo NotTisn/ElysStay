@@ -56,7 +56,7 @@ public class GetExpensesQueryHandler : IRequestHandler<GetExpensesQuery, PagedRe
         }
         else
         {
-            throw new ForbiddenException("Only owners and staff can access expenses.");
+            throw new ForbiddenException("Chỉ chủ nhà và nhân viên mới có thể truy cập chi phí.");
         }
 
         // Filters

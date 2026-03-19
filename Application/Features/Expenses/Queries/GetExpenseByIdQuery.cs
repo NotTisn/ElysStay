@@ -33,25 +33,25 @@ public class GetExpenseByIdQueryHandler : IRequestHandler<GetExpenseByIdQuery, E
             .Include(e => e.Room)
             .Include(e => e.Recorder)
             .FirstOrDefaultAsync(e => e.Id == request.Id, ct)
-            ?? throw new NotFoundException("Expense", request.Id);
+            ?? throw new NotFoundException("Chi phí", request.Id);
 
         // Role-scoped authorization
         if (_currentUser.IsOwner)
         {
             if (expense.Building!.OwnerId != userId)
-                throw new ForbiddenException("You do not own this building.");
+                throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
         }
         else if (_currentUser.IsStaff)
         {
             var isAssigned = await _db.StaffAssignments
                 .AnyAsync(sa => sa.BuildingId == expense.BuildingId && sa.StaffId == userId, ct);
             if (!isAssigned)
-                throw new ForbiddenException("You are not assigned to this building.");
+                throw new ForbiddenException("Bạn không được phân công cho tòa nhà này.");
         }
         else
         {
             // Tenants cannot view expenses
-            throw new ForbiddenException("Tenants cannot access expense records.");
+            throw new ForbiddenException("Khách thuê không thể truy cập hồ sơ chi phí.");
         }
 
         return new ExpenseDto(

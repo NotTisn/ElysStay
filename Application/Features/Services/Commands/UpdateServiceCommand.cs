@@ -29,15 +29,15 @@ public class UpdateServiceCommandHandler : IRequestHandler<UpdateServiceCommand,
     public async Task<ServiceDto> Handle(UpdateServiceCommand request, CancellationToken cancellationToken)
     {
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only the owner can update services.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể cập nhật dịch vụ.");
 
         var service = await _db.Services
             .Include(s => s.Building)
             .FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException($"Service {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy dịch vụ {request.Id}.");
 
         if (service.Building?.OwnerId != _currentUser.GetRequiredUserId())
-            throw new ForbiddenException("You do not own this building.");
+            throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
 
         if (request.Name is not null)
         {
@@ -50,7 +50,7 @@ public class UpdateServiceCommandHandler : IRequestHandler<UpdateServiceCommand,
                         && s.Id != service.Id
                         && s.Name.ToLower() == trimmedName.ToLower(), cancellationToken);
                 if (duplicateExists)
-                    throw new ConflictException($"A service named '{trimmedName}' already exists in this building.", "DUPLICATE_SERVICE_NAME");
+                    throw new ConflictException($"Dịch vụ tên '{trimmedName}' đã tồn tại trong tòa nhà này.", "DUPLICATE_SERVICE_NAME");
             }
             service.Name = trimmedName;
         }

@@ -7,10 +7,10 @@ public class CreateServiceCommandValidator : AbstractValidator<CreateServiceComm
 {
     public CreateServiceCommandValidator()
     {
-        RuleFor(x => x.BuildingId).NotEmpty();
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
-        RuleFor(x => x.Unit).NotEmpty().MaximumLength(50);
-        RuleFor(x => x.UnitPrice).GreaterThan(0).WithMessage("UnitPrice must be greater than 0.");
+        RuleFor(x => x.BuildingId).NotEmpty().WithMessage("Mã tòa nhà là bắt buộc.");
+        RuleFor(x => x.Name).NotEmpty().WithMessage("Tên dịch vụ là bắt buộc.").MaximumLength(100).WithMessage("Tên dịch vụ không được vượt quá 100 ký tự.");
+        RuleFor(x => x.Unit).NotEmpty().WithMessage("Đơn vị là bắt buộc.").MaximumLength(50).WithMessage("Đơn vị không được vượt quá 50 ký tự.");
+        RuleFor(x => x.UnitPrice).GreaterThan(0).WithMessage("Đơn giá phải lớn hơn 0.");
     }
 }
 
@@ -18,9 +18,9 @@ public class UpdateServiceCommandValidator : AbstractValidator<UpdateServiceComm
 {
     public UpdateServiceCommandValidator()
     {
-        RuleFor(x => x.Id).NotEmpty();
-        RuleFor(x => x.Name).MaximumLength(100).When(x => x.Name is not null);
-        RuleFor(x => x.Unit).MaximumLength(50).When(x => x.Unit is not null);
-        RuleFor(x => x.UnitPrice).GreaterThan(0).When(x => x.UnitPrice.HasValue).WithMessage("UnitPrice must be greater than 0.");
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Mã dịch vụ là bắt buộc.");
+        RuleFor(x => x.Name).MaximumLength(100).WithMessage("Tên dịch vụ không được vượt quá 100 ký tự.").When(x => x.Name is not null);
+        RuleFor(x => x.Unit).MaximumLength(50).WithMessage("Đơn vị không được vượt quá 50 ký tự.").When(x => x.Unit is not null);
+        RuleFor(x => x.UnitPrice).GreaterThan(0).When(x => x.UnitPrice.HasValue).WithMessage("Đơn giá phải lớn hơn 0.");
     }
 }

@@ -30,22 +30,22 @@ public class CreateServiceCommandHandler : IRequestHandler<CreateServiceCommand,
     public async Task<ServiceDto> Handle(CreateServiceCommand request, CancellationToken cancellationToken)
     {
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only the owner can create services.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể tạo dịch vụ.");
 
         var building = await _db.Buildings
             .AsNoTracking()
             .FirstOrDefaultAsync(b => b.Id == request.BuildingId, cancellationToken)
-            ?? throw new NotFoundException($"Building {request.BuildingId} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy tòa nhà {request.BuildingId}.");
 
         if (building.OwnerId != _currentUser.GetRequiredUserId())
-            throw new ForbiddenException("You do not own this building.");
+            throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
 
         // UQ-05: Duplicate service name check within building
         var duplicateExists = await _db.Services
             .AnyAsync(s => s.BuildingId == request.BuildingId
                 && s.Name.ToLower() == request.Name.Trim().ToLower(), cancellationToken);
         if (duplicateExists)
-            throw new ConflictException($"A service named '{request.Name.Trim()}' already exists in this building.", "DUPLICATE_SERVICE_NAME");
+            throw new ConflictException($"Dịch vụ tên '{request.Name.Trim()}' đã tồn tại trong tòa nhà này.", "DUPLICATE_SERVICE_NAME");
 
         var service = new Service
         {

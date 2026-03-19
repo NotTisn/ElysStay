@@ -44,13 +44,13 @@ public class UpdateIssueCommandHandler : IRequestHandler<UpdateIssueCommand, Mai
             .Include(i => i.Reporter)
             .Include(i => i.Assignee)
             .FirstOrDefaultAsync(i => i.Id == request.Id, ct)
-            ?? throw new NotFoundException($"Issue {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy sự cố {request.Id}.");
 
         // Auth
         if (_currentUser.IsTenant)
         {
             if (issue.ReportedBy != userId)
-                throw new ForbiddenException("Tenants can only edit their own issues.");
+                throw new ForbiddenException("Khách thuê chỉ có thể sửa sự cố của mình.");
         }
         else
         {
@@ -59,7 +59,7 @@ public class UpdateIssueCommandHandler : IRequestHandler<UpdateIssueCommand, Mai
 
         // Block editing closed/resolved issues — they are immutable records
         if (issue.Status == Domain.Enums.IssueStatus.Resolved || issue.Status == Domain.Enums.IssueStatus.Closed)
-            throw new ConflictException($"Cannot edit a {issue.Status} issue. Reopen it first.");
+            throw new ConflictException($"Không thể chỉnh sửa sự cố ở trạng thái {issue.Status}. Hãy mở lại trước.");
 
         // Partial update
         if (request.Title is not null)

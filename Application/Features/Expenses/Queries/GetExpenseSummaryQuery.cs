@@ -48,7 +48,7 @@ public class GetExpenseSummaryQueryHandler : IRequestHandler<GetExpenseSummaryQu
         }
         else
         {
-            throw new ForbiddenException("Tenants cannot access expense summaries.");
+            throw new ForbiddenException("Khách thuê không thể truy cập tổng hợp chi phí.");
         }
 
         if (request.BuildingId.HasValue)

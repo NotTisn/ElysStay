@@ -51,7 +51,7 @@ public class GenerateInvoicesCommandHandler : IRequestHandler<GenerateInvoicesCo
         var building = await _db.Buildings
             .AsNoTracking()
             .FirstOrDefaultAsync(b => b.Id == request.BuildingId, cancellationToken)
-            ?? throw new NotFoundException("Building", request.BuildingId);
+            ?? throw new NotFoundException("Tòa nhà", request.BuildingId);
 
         // Get all active contracts for rooms in this building
         var contracts = await _db.Contracts

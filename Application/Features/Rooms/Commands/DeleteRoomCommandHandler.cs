@@ -23,11 +23,11 @@ public class DeleteRoomCommandHandler : IRequestHandler<DeleteRoomCommand>
     {
         // Only Owner can delete
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only the owner can delete rooms.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể xóa phòng.");
 
         var room = await _db.Rooms
             .FirstOrDefaultAsync(r => r.Id == request.Id && r.DeletedAt == null, cancellationToken)
-            ?? throw new NotFoundException($"Room {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy phòng {request.Id}.");
 
         // Building scope auth — consistent with CreateRoom/UpdateRoom
         await _buildingScope.AuthorizeAsync(room.BuildingId, cancellationToken);

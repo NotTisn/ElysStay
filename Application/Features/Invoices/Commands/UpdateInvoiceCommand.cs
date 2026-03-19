@@ -44,10 +44,10 @@ public class UpdateInvoiceCommandHandler : IRequestHandler<UpdateInvoiceCommand,
             .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
             .Include(i => i.Payments)
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException("Invoice", request.Id);
+            ?? throw new NotFoundException("Hóa đơn", request.Id);
 
         if (invoice.Status != InvoiceStatus.Draft && invoice.Status != InvoiceStatus.Sent)
-            throw new ConflictException("Only DRAFT or SENT invoices can be edited.");
+            throw new ConflictException("Chỉ có thể chỉnh sửa hóa đơn ở trạng thái Nháp hoặc Đã gửi.");
 
         await _buildingScope.AuthorizeAsync(invoice.Contract!.Room!.BuildingId, cancellationToken);
 
@@ -81,7 +81,7 @@ public class UpdateInvoiceCommandHandler : IRequestHandler<UpdateInvoiceCommand,
 
             // Guard: TotalAmount cannot go negative
             if (newTotalAmount < 0)
-                throw new BadRequestException("Discount exceeds invoice total. TotalAmount cannot be negative.");
+                throw new BadRequestException("Giảm giá vượt quá tổng hóa đơn. Tổng tiền không thể âm.");
 
             if (newTotalAmount < paidAmount)
                 throw new BadRequestException(

@@ -9,10 +9,10 @@ public class GetNotificationsQueryValidator : AbstractValidator<GetNotifications
     {
         RuleFor(x => x.Page)
             .GreaterThanOrEqualTo(1)
-            .WithMessage("Page must be greater than or equal to 1.");
+            .WithMessage("Trang phải lớn hơn hoặc bằng 1.");
 
         RuleFor(x => x.PageSize)
             .InclusiveBetween(1, 100)
-            .WithMessage("PageSize must be between 1 and 100.");
+            .WithMessage("Số mục mỗi trang phải từ 1 đến 100.");
     }
 }

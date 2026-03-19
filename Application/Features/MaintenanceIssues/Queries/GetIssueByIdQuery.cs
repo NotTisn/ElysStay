@@ -35,26 +35,26 @@ public class GetIssueByIdQueryHandler : IRequestHandler<GetIssueByIdQuery, Maint
             .Include(i => i.Reporter)
             .Include(i => i.Assignee)
             .FirstOrDefaultAsync(i => i.Id == request.Id, ct)
-            ?? throw new NotFoundException("MaintenanceIssue", request.Id);
+            ?? throw new NotFoundException("Sự cố", request.Id);
 
         // Role-scoped authorization
         if (_currentUser.IsOwner)
         {
             if (issue.Building!.OwnerId != userId)
-                throw new ForbiddenException("You do not own this building.");
+                throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
         }
         else if (_currentUser.IsStaff)
         {
             var isAssigned = await _db.StaffAssignments
                 .AnyAsync(sa => sa.BuildingId == issue.BuildingId && sa.StaffId == userId, ct);
             if (!isAssigned)
-                throw new ForbiddenException("You are not assigned to this building.");
+                throw new ForbiddenException("Bạn không được phân công cho tòa nhà này.");
         }
         else if (_currentUser.IsTenant)
         {
             // AUTH-06: Tenant sees only own issues
             if (issue.ReportedBy != userId)
-                throw new ForbiddenException("You can only view your own issues.");
+                throw new ForbiddenException("Bạn chỉ có thể xem sự cố của mình.");
         }
 
         return new MaintenanceIssueDto(

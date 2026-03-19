@@ -47,7 +47,7 @@ public class GetDashboardStatsQueryHandler : IRequestHandler<GetDashboardStatsQu
         }
         else
         {
-            throw new ForbiddenException("Only Owner and Staff can access dashboard stats.");
+            throw new ForbiddenException("Chỉ Chủ nhà và Nhân viên mới có thể xem thống kê bảng điều khiển.");
         }
 
         // Filter to specific building if requested

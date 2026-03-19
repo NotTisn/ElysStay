@@ -31,11 +31,11 @@ public class UpdateContractCommandHandler : IRequestHandler<UpdateContractComman
             .Include(c => c.Room!).ThenInclude(r => r.Building!)
             .Include(c => c.TenantUser!)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException("Contract", request.Id);
+            ?? throw new NotFoundException("Hợp đồng", request.Id);
 
         // Must be active
         if (contract.Status != ContractStatus.Active)
-            throw new ConflictException("Only active contracts can be updated.");
+            throw new ConflictException("Chỉ có thể cập nhật hợp đồng đang hoạt động.");
 
         // Building scope auth
         await _buildingScope.AuthorizeAsync(contract.Room!.BuildingId, cancellationToken);
@@ -46,7 +46,7 @@ public class UpdateContractCommandHandler : IRequestHandler<UpdateContractComman
         if (request.EndDate.HasValue)
         {
             if (request.EndDate.Value <= contract.StartDate)
-                throw new BadRequestException("EndDate must be after StartDate.");
+                throw new BadRequestException("Ngày kết thúc phải sau ngày bắt đầu.");
 
             contract.EndDate = request.EndDate.Value;
             changed = true;
@@ -55,7 +55,7 @@ public class UpdateContractCommandHandler : IRequestHandler<UpdateContractComman
         if (request.MonthlyRent.HasValue)
         {
             if (request.MonthlyRent.Value <= 0)
-                throw new BadRequestException("MonthlyRent must be greater than zero.");
+                throw new BadRequestException("Tiền thuê hàng tháng phải lớn hơn 0.");
 
             contract.MonthlyRent = request.MonthlyRent.Value;
             changed = true;

@@ -27,11 +27,11 @@ public class CreateRoomCommandHandler : IRequestHandler<CreateRoomCommand, RoomD
         var building = await _db.Buildings
             .AsNoTracking()
             .FirstOrDefaultAsync(b => b.Id == request.BuildingId, cancellationToken)
-            ?? throw new NotFoundException($"Building {request.BuildingId} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy tòa nhà {request.BuildingId}.");
 
         // VAL-03: floor range
         if (request.Floor < 1 || request.Floor > building.TotalFloors)
-            throw new BadRequestException($"Floor must be between 1 and {building.TotalFloors}.");
+            throw new BadRequestException($"Tầng phải từ 1 đến {building.TotalFloors}.");
 
         // UQ-04: room number unique within building (exclude soft-deleted rooms)
         var exists = await _db.Rooms

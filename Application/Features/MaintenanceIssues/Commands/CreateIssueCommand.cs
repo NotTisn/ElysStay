@@ -50,7 +50,7 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
                 .Where(c => c.Status == ContractStatus.Active)
                 .Where(c => c.ContractTenants.Any(ct2 => ct2.TenantUserId == userId && ct2.MoveOutDate == null))
                 .FirstOrDefaultAsync(ct)
-                ?? throw new BadRequestException("No active contract found. Cannot determine building.");
+                ?? throw new BadRequestException("Không tìm thấy hợp đồng đang hoạt động. Không thể xác định tòa nhà.");
 
             buildingId = activeContract.Room!.BuildingId;
 
@@ -61,7 +61,7 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
                     .AnyAsync(r => r.Id == request.RoomId.Value && r.BuildingId == buildingId && r.DeletedAt == null, ct);
 
                 if (!roomExists)
-                    throw new NotFoundException($"Room {request.RoomId} not found in your building.");
+                    throw new NotFoundException($"Không tìm thấy phòng {request.RoomId} trong tòa nhà của bạn.");
             }
             else
             {
@@ -73,7 +73,7 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
         {
             // Owner/Staff must provide buildingId
             if (!request.BuildingId.HasValue)
-                throw new BadRequestException("BuildingId is required for Owner/Staff.");
+                throw new BadRequestException("Mã tòa nhà là bắt buộc cho Chủ nhà/Nhân viên.");
 
             buildingId = request.BuildingId.Value;
 
@@ -87,7 +87,7 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
                     .AnyAsync(r => r.Id == request.RoomId.Value && r.BuildingId == buildingId && r.DeletedAt == null, ct);
 
                 if (!roomExists)
-                    throw new NotFoundException($"Room {request.RoomId} not found in building {buildingId}.");
+                    throw new NotFoundException($"Không tìm thấy phòng {request.RoomId} trong tòa nhà {buildingId}.");
             }
         }
 
