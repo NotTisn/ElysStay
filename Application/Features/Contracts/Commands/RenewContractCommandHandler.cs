@@ -38,6 +38,10 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
         if (oldContract.Status != ContractStatus.Active)
             throw new ConflictException("Only active contracts can be renewed.");
 
+        // Deposit must still be held to carry over
+        if (oldContract.DepositStatus != DepositStatus.Held)
+            throw new ConflictException("Cannot renew: deposit is no longer held (current status: " + oldContract.DepositStatus + ").");
+
         // Building scope auth
         await _buildingScope.AuthorizeAsync(oldContract.Room!.BuildingId, cancellationToken);
 
@@ -48,8 +52,9 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
             throw new BadRequestException($"New end date must be after {newStartDate}.");
 
         // 1. Terminate old contract (administrative — no deposit refund, no room change)
+        var boundaryDate = newStartDate.AddDays(-1);
         oldContract.Status = ContractStatus.Terminated;
-        oldContract.TerminationDate = DateOnly.FromDateTime(DateTime.UtcNow); // Actual renewal date
+        oldContract.TerminationDate = boundaryDate;
         oldContract.TerminationNote = "Administratively terminated for renewal";
         oldContract.UpdatedAt = DateTime.UtcNow;
         // Deposit carries over — deposit status stays Held on old contract
@@ -72,9 +77,22 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
         };
         _db.Contracts.Add(newContract);
 
-        // Create deposit audit trail for the renewed contract
+        // Create balanced deposit audit trail for renewal carry-over:
+        // 1. DEPOSIT_REFUND on old contract (closes out old deposit liability)
+        // 2. DEPOSIT_IN on new contract (opens new deposit liability)
+        // Without both sides, PnL double-counts the deposit.
         if (newContract.DepositAmount > 0)
         {
+            _db.Payments.Add(new Payment
+            {
+                ContractId = oldContract.Id,
+                Type = PaymentType.DepositRefund,
+                Amount = newContract.DepositAmount,
+                Note = $"Deposit carried over to renewed contract (renewal)",
+                RecordedBy = userId,
+                PaidAt = DateTime.UtcNow
+            });
+
             _db.Payments.Add(new Payment
             {
                 ContractId = newContract.Id,
@@ -86,8 +104,9 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
             });
         }
 
-        // 3. Copy contract tenants to new contract
-        foreach (var ct in oldContract.ContractTenants.Where(ct => ct.MoveOutDate == null))
+        // 3. Copy active contract tenants to new contract, then mark old ones with MoveOutDate (SD-02)
+        var activeTenants = oldContract.ContractTenants.Where(ct => ct.MoveOutDate == null).ToList();
+        foreach (var ct in activeTenants)
         {
             var newTenant = new ContractTenant
             {
@@ -98,6 +117,22 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
             };
             _db.ContractTenants.Add(newTenant);
         }
+
+        // SD-02: Set MoveOutDate on old contract tenants
+        foreach (var ct in activeTenants)
+        {
+            ct.MoveOutDate = boundaryDate;
+        }
+
+        // Notify tenant about contract renewal
+        _db.Notifications.Add(new Notification
+        {
+            UserId = oldContract.TenantUserId,
+            Title = "Hợp đồng đã gia hạn",
+            Message = $"Hợp đồng phòng {oldContract.Room!.RoomNumber} tại {oldContract.Room.Building!.Name} đã được gia hạn đến {request.NewEndDate:dd/MM/yyyy}.",
+            Type = "CONTRACT_RENEWED",
+            ReferenceId = newContract.Id,
+        });
 
         // Room stays OCCUPIED — no status change (CT-01)
 

@@ -42,6 +42,13 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             .FirstOrDefaultAsync(u => u.Id == request.TenantUserId && u.Role == UserRole.Tenant, cancellationToken)
             ?? throw new NotFoundException("Tenant user", request.TenantUserId);
 
+        // Tenant must be active and not soft-deleted
+        if (tenantUser.Status != UserStatus.Active)
+            throw new BadRequestException("Cannot create a contract with a deactivated tenant.");
+
+        if (tenantUser.DeletedAt != null)
+            throw new BadRequestException("Cannot create a contract with a deleted tenant.");
+
         // UQ-01: Only 1 ACTIVE contract per room
         var hasActiveContract = await _db.Contracts
             .AnyAsync(c => c.RoomId == request.RoomId && c.Status == ContractStatus.Active, cancellationToken);
@@ -61,11 +68,21 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             if (reservation.RoomId != request.RoomId)
                 throw new BadRequestException("Reservation does not belong to the specified room.");
 
+            if (reservation.TenantUserId != request.TenantUserId)
+                throw new BadRequestException("Reservation tenant does not match the specified tenant.");
+
             if (reservation.Status != ReservationStatus.Confirmed)
                 throw new ConflictException("Reservation must be Confirmed before creating a contract. Current: " + reservation.Status);
 
+            if (reservation.ExpiresAt <= DateTime.UtcNow)
+                throw new ConflictException("Cannot create a contract from an expired reservation.", "RESERVATION_EXPIRED");
+
             if (room.Status != RoomStatus.Booked)
                 throw new ConflictException($"Room must be in Booked status to create a contract from reservation. Current: {room.Status}");
+
+            if (request.DepositAmount < reservation.DepositAmount)
+                throw new BadRequestException(
+                    $"Contract deposit ({request.DepositAmount}) cannot be lower than existing reservation deposit ({reservation.DepositAmount}).");
         }
         else
         {
@@ -102,6 +119,16 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             MoveInDate = request.MoveInDate
         };
         _db.ContractTenants.Add(mainTenant);
+
+        // Notify tenant about new contract
+        _db.Notifications.Add(new Notification
+        {
+            UserId = request.TenantUserId,
+            Title = "Hợp đồng mới",
+            Message = $"Bạn đã có hợp đồng thuê phòng {room.RoomNumber} tại {room.Building!.Name}.",
+            Type = "CONTRACT_CREATED",
+            ReferenceId = contract.Id,
+        });
 
         // Room status transition
         room.Status = RoomStatus.Occupied;
