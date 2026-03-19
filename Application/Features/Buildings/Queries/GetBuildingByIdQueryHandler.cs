@@ -20,18 +20,24 @@ public class GetBuildingByIdQueryHandler : IRequestHandler<GetBuildingByIdQuery,
 
     public async Task<BuildingDetailDto> Handle(GetBuildingByIdQuery request, CancellationToken cancellationToken)
     {
-        var building = await _db.Buildings
+        var data = await _db.Buildings
             .AsNoTracking()
-            .Include(b => b.Rooms)
-            .FirstOrDefaultAsync(b => b.Id == request.Id, cancellationToken)
+            .Where(b => b.Id == request.Id)
+            .Select(b => new
+            {
+                Building = b,
+                TotalRooms = b.Rooms.Count(),
+                OccupiedRooms = b.Rooms.Count(r => r.Status == RoomStatus.Occupied)
+            })
+            .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException($"Building {request.Id} not found.");
+
+        var building = data.Building;
 
         // AUTH-05: Building-scoped check
         await _buildingScope.AuthorizeAsync(building.Id, cancellationToken);
 
-        var totalRooms = building.Rooms.Count;
-        var occupiedRooms = building.Rooms.Count(r => r.Status == RoomStatus.Occupied);
-        var occupancyRate = totalRooms > 0 ? (double)occupiedRooms / totalRooms : 0;
+        var occupancyRate = data.TotalRooms > 0 ? (double)data.OccupiedRooms / data.TotalRooms : 0;
 
         return new BuildingDetailDto
         {
@@ -42,7 +48,7 @@ public class GetBuildingByIdQueryHandler : IRequestHandler<GetBuildingByIdQuery,
             Description = building.Description,
             TotalFloors = building.TotalFloors,
             InvoiceDueDay = building.InvoiceDueDay,
-            TotalRooms = totalRooms,
+            TotalRooms = data.TotalRooms,
             OccupancyRate = Math.Round(occupancyRate, 2),
             CreatedAt = building.CreatedAt,
             UpdatedAt = building.UpdatedAt

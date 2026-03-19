@@ -22,7 +22,7 @@ public class UpdateBuildingCommandHandler : IRequestHandler<UpdateBuildingComman
         var userId = _currentUser.GetRequiredUserId();
 
         var building = await _db.Buildings
-            .FirstOrDefaultAsync(b => b.Id == request.Id, cancellationToken)
+            .FirstOrDefaultAsync(b => b.Id == request.Id && b.DeletedAt == null, cancellationToken)
             ?? throw new NotFoundException($"Building {request.Id} not found.");
 
         // Only the owner of this building can update it
@@ -40,7 +40,19 @@ public class UpdateBuildingCommandHandler : IRequestHandler<UpdateBuildingComman
             building.Description = request.Description.Trim();
 
         if (request.TotalFloors.HasValue)
+        {
+            // Prevent reducing TotalFloors below existing rooms' Floor values
+            var maxFloorInUse = await _db.Rooms
+                .Where(r => r.BuildingId == request.Id && r.DeletedAt == null)
+                .Select(r => (int?)r.Floor)
+                .MaxAsync(cancellationToken);
+
+            if (maxFloorInUse.HasValue && request.TotalFloors.Value < maxFloorInUse.Value)
+                throw new BadRequestException(
+                    $"Cannot reduce total floors to {request.TotalFloors.Value}: room(s) exist on floor {maxFloorInUse.Value}.");
+
             building.TotalFloors = request.TotalFloors.Value;
+        }
 
         if (request.InvoiceDueDay.HasValue)
             building.InvoiceDueDay = request.InvoiceDueDay.Value;
