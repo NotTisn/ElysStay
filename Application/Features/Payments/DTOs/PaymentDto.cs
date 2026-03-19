@@ -8,6 +8,7 @@ public record PaymentDto
     public required Guid Id { get; init; }
     public Guid? InvoiceId { get; init; }
     public Guid? ContractId { get; init; }
+    public Guid? ReservationId { get; init; }
     public required string Type { get; init; }
     public required decimal Amount { get; init; }
     public string? PaymentMethod { get; init; }

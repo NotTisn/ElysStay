@@ -45,6 +45,13 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
     {
         var userId = _currentUser.GetRequiredUserId();
 
+        // Use serializable isolation to prevent concurrent overpayment (consistent with single RecordPaymentCommand)
+        await using var transaction = await _db.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable, cancellationToken);
+
+        try
+        {
+
         var invoiceIds = request.Payments.Select(p => p.InvoiceId).Distinct().ToList();
 
         var invoices = await _db.Invoices
@@ -117,6 +124,16 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
 
             invoice.UpdatedAt = DateTime.UtcNow;
 
+            // NT-05: Notify tenant that payment was recorded
+            _db.Notifications.Add(new Notification
+            {
+                UserId = invoice.Contract!.TenantUserId,
+                Title = "Thanh toán ghi nhận",
+                Message = $"Thanh toán {entry.Amount:N0}đ đã được ghi nhận cho hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear}.",
+                Type = "PAYMENT_RECORDED",
+                ReferenceId = invoice.Id,
+            });
+
             results.Add(new PaymentDto
             {
                 Id = payment.Id,
@@ -134,7 +151,15 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
 
         // PAY-06: All-or-nothing
         await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return results;
+
+        } // end try
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 }

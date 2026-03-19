@@ -51,6 +51,28 @@ public class PaymentsController : BaseApiController
     }
 
     /// <summary>
+    /// Aggregate payment totals for the active filters.
+    /// </summary>
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetPaymentSummary(
+        [FromQuery] Guid? buildingId,
+        [FromQuery] string? type,
+        [FromQuery] DateOnly? fromDate,
+        [FromQuery] DateOnly? toDate,
+        CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new GetPaymentSummaryQuery
+        {
+            BuildingId = buildingId,
+            Type = type,
+            FromDate = fromDate,
+            ToDate = toDate
+        }, ct);
+
+        return OkResponse(result);
+    }
+
+    /// <summary>
     /// Batch record payments. PAY-06: All-or-nothing.
     /// Owner/Staff only.
     /// </summary>

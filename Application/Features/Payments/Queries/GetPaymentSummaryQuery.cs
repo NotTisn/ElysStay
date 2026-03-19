@@ -1,5 +1,4 @@
 using Application.Common.Interfaces;
-using Application.Common.Models;
 using Application.Features.Payments.DTOs;
 using Domain.Enums;
 using MediatR;
@@ -9,38 +8,33 @@ using Microsoft.EntityFrameworkCore;
 namespace Application.Features.Payments.Queries;
 
 /// <summary>
-/// Lists payment history with filters and pagination.
-/// Owner/Staff see all in their buildings. Tenant sees own.
+/// Returns aggregate totals for payments using the same scope and filters as the paged list.
 /// </summary>
-public record GetPaymentsQuery : IRequest<PagedResult<PaymentDto>>
+public record GetPaymentSummaryQuery : IRequest<PaymentSummaryDto>
 {
     public Guid? BuildingId { get; init; }
     public string? Type { get; init; }
     public DateOnly? FromDate { get; init; }
     public DateOnly? ToDate { get; init; }
-    public int Page { get; init; } = 1;
-    public int PageSize { get; init; } = 20;
-    public string Sort { get; init; } = "paidAt:desc";
 }
 
-public class GetPaymentsQueryHandler : IRequestHandler<GetPaymentsQuery, PagedResult<PaymentDto>>
+public class GetPaymentSummaryQueryHandler : IRequestHandler<GetPaymentSummaryQuery, PaymentSummaryDto>
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
 
-    public GetPaymentsQueryHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    public GetPaymentSummaryQueryHandler(IApplicationDbContext db, ICurrentUserService currentUser)
     {
         _db = db;
         _currentUser = currentUser;
     }
 
-    public async Task<PagedResult<PaymentDto>> Handle(GetPaymentsQuery request, CancellationToken cancellationToken)
+    public async Task<PaymentSummaryDto> Handle(GetPaymentSummaryQuery request, CancellationToken cancellationToken)
     {
         var userId = _currentUser.GetRequiredUserId();
 
         var query = _db.Payments.AsNoTracking().AsQueryable();
 
-        // Scope by role
         if (_currentUser.IsOwner)
         {
             query = query.Where(p =>
@@ -57,21 +51,18 @@ public class GetPaymentsQueryHandler : IRequestHandler<GetPaymentsQuery, PagedRe
         }
         else if (_currentUser.IsTenant)
         {
-            // Only show payments for contracts where the tenant hasn't moved out.
-            // Without the MoveOutDate check, tenants see payments from old contracts forever.
             query = query.Where(p =>
                 (p.Invoice != null && (p.Invoice.Contract!.TenantUserId == userId ||
-                    p.Invoice.Contract!.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null))) ||
+                    p.Invoice.Contract!.ContractTenants.Any(ct => ct.TenantUserId == userId))) ||
                 (p.Contract != null && (p.Contract.TenantUserId == userId ||
-                    p.Contract.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null))) ||
+                    p.Contract.ContractTenants.Any(ct => ct.TenantUserId == userId))) ||
                 (p.Reservation != null && p.Reservation.TenantUserId == userId));
         }
         else
         {
-            throw new ForbiddenException("Current role is not allowed to access payments.");
+            throw new ForbiddenException("Current role is not allowed to access payment summaries.");
         }
 
-        // Filters
         if (request.BuildingId.HasValue)
         {
             query = query.Where(p =>
@@ -81,7 +72,9 @@ public class GetPaymentsQueryHandler : IRequestHandler<GetPaymentsQuery, PagedRe
         }
 
         if (!string.IsNullOrWhiteSpace(request.Type) && Enum.TryParse<PaymentType>(request.Type, true, out var paymentType))
+        {
             query = query.Where(p => p.Type == paymentType);
+        }
 
         if (request.FromDate.HasValue)
         {
@@ -95,41 +88,16 @@ public class GetPaymentsQueryHandler : IRequestHandler<GetPaymentsQuery, PagedRe
             query = query.Where(p => p.PaidAt <= to);
         }
 
-        // Sort
-        query = ApplySort(query, request.Sort);
+        var aggregates = await query
+            .GroupBy(_ => 1)
+            .Select(group => new PaymentSummaryDto(
+                group.Sum(p => p.Type == PaymentType.DepositRefund ? -p.Amount : p.Amount),
+                group.Where(p => p.Type == PaymentType.RentPayment).Sum(p => p.Amount),
+                group.Where(p => p.Type == PaymentType.DepositIn).Sum(p => p.Amount),
+                group.Where(p => p.Type == PaymentType.DepositRefund).Sum(p => p.Amount),
+                group.Count()))
+            .FirstOrDefaultAsync(cancellationToken);
 
-        var paging = new PagedQuery { Page = request.Page, PageSize = request.PageSize };
-
-        return await query
-            .Select(p => new PaymentDto
-            {
-                Id = p.Id,
-                InvoiceId = p.InvoiceId,
-                ContractId = p.ContractId,
-                ReservationId = p.ReservationId,
-                Type = p.Type.ToString(),
-                Amount = p.Amount,
-                PaymentMethod = p.PaymentMethod,
-                Note = p.Note,
-                PaidAt = p.PaidAt,
-                RecordedBy = p.RecordedBy,
-                RecorderName = p.Recorder!.FullName,
-                CreatedAt = p.CreatedAt
-            })
-            .ToPagedResultAsync(paging, cancellationToken);
-    }
-
-    private static IQueryable<Domain.Entities.Payment> ApplySort(IQueryable<Domain.Entities.Payment> query, string sort)
-    {
-        var parts = sort.Split(':');
-        var field = parts[0].ToLowerInvariant();
-        var desc = parts.Length > 1 && parts[1].Equals("desc", StringComparison.OrdinalIgnoreCase);
-
-        return field switch
-        {
-            "amount" => desc ? query.OrderByDescending(p => p.Amount) : query.OrderBy(p => p.Amount),
-            "type" => desc ? query.OrderByDescending(p => p.Type) : query.OrderBy(p => p.Type),
-            _ => desc ? query.OrderByDescending(p => p.PaidAt) : query.OrderBy(p => p.PaidAt)
-        };
+        return aggregates ?? new PaymentSummaryDto(0, 0, 0, 0, 0);
     }
 }

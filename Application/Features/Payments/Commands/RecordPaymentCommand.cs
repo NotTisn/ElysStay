@@ -103,7 +103,7 @@ public class RecordPaymentCommandHandler : IRequestHandler<RecordPaymentCommand,
                 Title = "Thanh toán ghi nhận",
                 Message = $"Thanh toán {request.Amount:N0}đ đã được ghi nhận cho hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear}.",
                 Type = "PAYMENT_RECORDED",
-                ReferenceId = payment.Id,
+                ReferenceId = invoice.Id,
             });
 
             await _db.SaveChangesAsync(cancellationToken);
