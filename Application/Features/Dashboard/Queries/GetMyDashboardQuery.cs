@@ -94,6 +94,21 @@ public class GetMyDashboardQueryHandler : IRequestHandler<GetMyDashboardQuery, o
                 && buildings.Contains(p.Invoice.Contract!.Room!.BuildingId))
             .SumAsync(p => p.Amount, ct);
 
+        // Pending meter readings: occupied rooms without readings for current month
+        var ownerTotalOccupied = await _db.Rooms
+            .CountAsync(r => buildings.Contains(r.BuildingId)
+                && r.DeletedAt == null
+                && r.Status == RoomStatus.Occupied, ct);
+
+        var ownerRoomsWithReadings = await _db.MeterReadings
+            .Where(mr => mr.BillingYear == now.Year && mr.BillingMonth == now.Month)
+            .Where(mr => buildings.Contains(mr.Room!.BuildingId))
+            .Select(mr => mr.RoomId)
+            .Distinct()
+            .CountAsync(ct);
+
+        var ownerPendingReadings = Math.Max(0, ownerTotalOccupied - ownerRoomsWithReadings);
+
         return new OwnerDashboardDto(
             buildings.Count,
             totalRooms,
@@ -104,7 +119,8 @@ public class GetMyDashboardQueryHandler : IRequestHandler<GetMyDashboardQuery, o
             pendingReservations,
             overdueCount,
             overdueAmount,
-            monthlyRevenue);
+            monthlyRevenue,
+            ownerPendingReadings);
     }
 
     private async Task<StaffDashboardDto> GetStaffDashboard(Guid userId, CancellationToken ct)

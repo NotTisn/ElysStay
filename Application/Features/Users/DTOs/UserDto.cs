@@ -16,6 +16,15 @@ public record UserDto
 }
 
 /// <summary>
+/// Returned after creating a user account. Includes the temporary password
+/// so the admin can communicate it to the user exactly once.
+/// </summary>
+public record CreateUserResultDto : UserDto
+{
+    public required string TemporaryPassword { get; init; }
+}
+
+/// <summary>
 /// Extended user profile for GET /users/me.
 /// Includes UpdatedAt for cache-busting and profile staleness detection.
 /// </summary>
