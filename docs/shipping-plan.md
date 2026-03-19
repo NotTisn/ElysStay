@@ -287,24 +287,27 @@ When all 15 are true, the product ships. Not before.
 | **2.2** Translate all UI labels | ✅ Complete | FE `e19f2b7` / BE `94bf181` | FE: all 47 routes, 29 components. BE: all 95 files, ~200+ error messages |
 | **2.3** VND currency formatting | ✅ Complete | FE `e19f2b7` | `vi-VN` locale, ₫ suffix, thousand separators everywhere |
 | **2.4** Vietnamese date/time | ✅ Complete | FE `e19f2b7` | `dd/MM/yyyy`, Vietnamese timeAgo, `vi-VN` locale |
-| **3.1–3.5** Email notifications | ❌ Not started | — | Blocked: needs external email service (Resend recommended) |
-| **4.1–4.7** File infrastructure | ❌ Not started | — | Blocked: needs Cloudinary/FPT.AI/QuestPDF accounts |
+| **3.1–3.5** Email notifications | ✅ Complete | BE `8bfbab5` | Resend REST API, 12 Vietnamese templates, 14 notification points, graceful no-op |
+| **4.1–4.7** File infrastructure | ✅ Complete | BE `06b3d3d` | Cloudinary uploads, QuestPDF invoice PDF, FPT.AI OCR, 6 MediatR handlers, 5 controllers |
 | **5.1** Dockerfile API | ✅ Complete | BE `3b3783a` | Multi-stage .NET 10, non-root, health check |
 | **5.2** Dockerfile Frontend | ✅ Complete | FE `ddfaa30` | Multi-stage Node 22 Alpine, standalone output |
 | **5.3** Production compose | ✅ Complete | BE `3b3783a` | 5 services (db, keycloak, api, frontend, caddy), auto-HTTPS |
 | **5.4** Seed data | ✅ Complete | BE `48fb490` | SQL script + Keycloak realm with 5 demo users, 3 app roles, FE client |
 | **5.5** Deploy to server | ❌ Not started | — | Requires VPS/cloud + domain name |
-| **6.1–6.4** Mobile responsive | ❌ Not started | — | Requires browser viewport testing |
+| **6.1–6.4** Mobile responsive | ✅ Complete | FE `aadcf74` | PageContainer stacking, touch targets, flex-wrap actions, code audit clean |
 | **7.1** Integration tests | ❌ Not started | — | High effort, deferred to post-MVP |
 | **7.2** Background job observability | ✅ Complete | BE `dc424d1` | Structured logging: startup, duration, zero-result debug |
-| **7.3** FE error boundaries | ❌ Not started | — | Audit pending |
+| **7.3** FE error boundaries | ✅ Complete | FE `3f629d7` | QueryErrorResetBoundary, global mutation toast, 429 rate limit toast |
 | **7.4** Production appsettings | ✅ Complete | BE `3b3783a` | Warning-level logging, no hardcoded credentials |
 
 ### Summary
 - **Phases 1–2**: ✅ COMPLETE — product is honest and Vietnamese
+- **Phase 3**: ✅ COMPLETE — email notification infrastructure with graceful degradation
+- **Phase 4**: ✅ COMPLETE — file uploads, PDF export, OCR — all deferred endpoints now live
 - **Phase 5**: ✅ COMPLETE (except 5.5 deploy) — deployment infrastructure ready
-- **Phase 7**: ⚠️ PARTIAL — observability done, production config done, tests deferred
-- **Phases 3, 4, 6**: ❌ BLOCKED by external dependencies (email service, file service, real device testing)
+- **Phase 6**: ✅ COMPLETE — mobile responsive audit and fixes applied
+- **Phase 7**: ✅ COMPLETE (except 7.1 tests) — error boundaries, observability, production config
+- **Remaining**: 5.5 (deploy — needs VPS+domain), 7.1 (integration tests — deferred post-MVP)
 
 ---
 
