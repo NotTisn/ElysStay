@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Application.Features.Expenses.Commands;
 
 /// <summary>
-/// DELETE /expenses/{id} — Hard delete an expense.
+/// DELETE /expenses/{id} — Soft-delete an expense (preserves financial audit trail).
 /// Auth: Owner only.
 /// </summary>
 public record DeleteExpenseCommand(Guid Id) : IRequest<Unit>;
@@ -39,7 +39,8 @@ public class DeleteExpenseCommandHandler : IRequestHandler<DeleteExpenseCommand,
         if (expense.Building!.OwnerId != userId)
             throw new ForbiddenException("You can only delete expenses for your own buildings.");
 
-        _db.Expenses.Remove(expense);
+        // Soft-delete: preserve financial audit trail
+        expense.DeletedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
         return Unit.Value;
