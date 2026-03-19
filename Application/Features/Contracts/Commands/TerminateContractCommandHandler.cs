@@ -31,6 +31,7 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
         var contract = await _db.Contracts
             .Include(c => c.Room!).ThenInclude(r => r.Building!)
             .Include(c => c.TenantUser!)
+            .Include(c => c.ContractTenants)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Contract", request.Id);
 
@@ -40,6 +41,10 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
 
         // Building scope auth
         await _buildingScope.AuthorizeAsync(contract.Room!.BuildingId, cancellationToken);
+
+        // Validate termination date is not before contract start
+        if (request.TerminationDate < contract.StartDate)
+            throw new BadRequestException("Termination date cannot be before the contract start date.");
 
         // Validate deductions
         if (request.Deductions < 0)
@@ -66,6 +71,12 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
             _ => DepositStatus.PartiallyRefunded
         };
 
+        // SD-02: Set MoveOutDate on all active contract tenants
+        foreach (var ct in contract.ContractTenants.Where(ct => ct.MoveOutDate == null))
+        {
+            ct.MoveOutDate = request.TerminationDate;
+        }
+
         // SM-04: Room → AVAILABLE (only if currently Occupied; preserve Maintenance flag)
         if (contract.Room!.Status == RoomStatus.Occupied)
         {
@@ -73,10 +84,25 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
             contract.Room.UpdatedAt = DateTime.UtcNow;
         }
 
-        // Create DEPOSIT_REFUND payment (even if refund is 0, for audit trail)
+        // Auto-void DRAFT/SENT/OVERDUE invoices for billing periods after termination
+        // These invoices are no longer applicable and should not remain outstanding
+        var futureInvoices = await _db.Invoices
+            .Where(i => i.ContractId == contract.Id
+                && (i.Status == InvoiceStatus.Draft || i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.Overdue)
+                && (i.BillingYear > request.TerminationDate.Year
+                    || (i.BillingYear == request.TerminationDate.Year && i.BillingMonth > request.TerminationDate.Month)))
+            .ToListAsync(cancellationToken);
+
+        foreach (var invoice in futureInvoices)
+        {
+            invoice.Status = InvoiceStatus.Void;
+            invoice.UpdatedAt = DateTime.UtcNow;
+        }
+
+        // Always create audit trail payment for deposit disposition
         if (refundAmount > 0)
         {
-            var refundPayment = new Payment
+            _db.Payments.Add(new Payment
             {
                 ContractId = contract.Id,
                 Type = PaymentType.DepositRefund,
@@ -84,9 +110,31 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
                 Note = request.Note ?? "Deposit refund on contract termination",
                 RecordedBy = userId,
                 PaidAt = DateTime.UtcNow
-            };
-            _db.Payments.Add(refundPayment);
+            });
         }
+        else if (contract.DepositAmount > 0)
+        {
+            // Full forfeit — still record for audit trail (DEP-04)
+            _db.Payments.Add(new Payment
+            {
+                ContractId = contract.Id,
+                Type = PaymentType.DepositRefund,
+                Amount = 0,
+                Note = request.Note ?? $"Deposit fully forfeited ({contract.DepositAmount:N0} VND deducted)",
+                RecordedBy = userId,
+                PaidAt = DateTime.UtcNow
+            });
+        }
+
+        // Notify tenant about contract termination
+        _db.Notifications.Add(new Notification
+        {
+            UserId = contract.TenantUserId,
+            Title = "Hợp đồng đã chấm dứt",
+            Message = $"Hợp đồng phòng {contract.Room!.RoomNumber} tại {contract.Room.Building!.Name} đã được chấm dứt.",
+            Type = "CONTRACT_TERMINATED",
+            ReferenceId = contract.Id,
+        });
 
         try
         {

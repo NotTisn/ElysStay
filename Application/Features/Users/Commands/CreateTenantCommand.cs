@@ -36,6 +36,9 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, U
 
     public async Task<UserDto> Handle(CreateTenantCommand request, CancellationToken ct)
     {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var normalizedFullName = request.FullName.Trim();
+
         // Auth: Owner or Staff
         if (_currentUser.IsTenant)
             throw new ForbiddenException("Tenants cannot create other tenants.");
@@ -43,7 +46,7 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, U
         // UQ-07: Check email uniqueness in local DB
         var emailExists = await _db.Users
             .IgnoreQueryFilters()
-            .AnyAsync(u => u.Email == request.Email, ct);
+            .AnyAsync(u => u.Email.ToLower() == normalizedEmail, ct);
         if (emailExists)
             throw new ConflictException("A user with this email already exists.", "DUPLICATE_EMAIL");
 
@@ -52,8 +55,8 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, U
 
         // Create in Keycloak first — if this fails, no local record is created
         var keycloakId = await _keycloak.CreateUserAsync(
-            request.Email.Trim(),
-            request.FullName.Trim(),
+            normalizedEmail,
+            normalizedFullName,
             password,
             UserRole.Tenant.ToString(),
             ct);
@@ -62,8 +65,8 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, U
         var user = new User
         {
             KeycloakId = keycloakId,
-            Email = request.Email.Trim(),
-            FullName = request.FullName.Trim(),
+            Email = normalizedEmail,
+            FullName = normalizedFullName,
             Phone = request.Phone?.Trim(),
             Role = UserRole.Tenant,
             Status = UserStatus.Active

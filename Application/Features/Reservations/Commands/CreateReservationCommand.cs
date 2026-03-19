@@ -64,6 +64,13 @@ public class CreateReservationCommandHandler : IRequestHandler<CreateReservation
         if (tenantUser.Role != UserRole.Tenant)
             throw new BadRequestException("Only users with Tenant role can be assigned to a reservation.");
 
+        // Tenant must be active and not soft-deleted
+        if (tenantUser.Status != UserStatus.Active)
+            throw new BadRequestException("Cannot create a reservation for a deactivated tenant.");
+
+        if (tenantUser.DeletedAt != null)
+            throw new BadRequestException("Cannot create a reservation for a deleted tenant.");
+
         // Check tenant doesn't already have a pending/confirmed reservation
         var hasActiveReservation = await _db.RoomReservations
             .AnyAsync(r => r.TenantUserId == request.TenantUserId

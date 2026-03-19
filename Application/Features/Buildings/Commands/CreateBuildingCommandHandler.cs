@@ -1,3 +1,4 @@
+using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using Application.Features.Buildings.DTOs;
 using Domain.Entities;
@@ -21,6 +22,10 @@ public class CreateBuildingCommandHandler : IRequestHandler<CreateBuildingComman
     public async Task<BuildingDto> Handle(CreateBuildingCommand request, CancellationToken cancellationToken)
     {
         var userId = _currentUser.GetRequiredUserId();
+
+        // Defense-in-depth: controller already requires Owner role, but enforce here too
+        if (!_currentUser.IsOwner)
+            throw new ForbiddenException("Only owners can create buildings.");
 
         var building = new Building
         {

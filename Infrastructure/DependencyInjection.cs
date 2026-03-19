@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Infrastructure.Auth;
+using Infrastructure.BackgroundJobs;
 using Infrastructure.Configuration;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
@@ -56,6 +57,11 @@ public static class DependencyInjection
         {
             client.BaseAddress = new Uri(keycloakOptions.BaseUrl.TrimEnd('/') + "/");
         });
+
+        // Background jobs (BG-01, BG-02, BG-03)
+        services.AddHostedService<ReservationExpiryBackgroundService>();
+        services.AddHostedService<InvoiceOverdueBackgroundService>();
+        services.AddHostedService<ContractExpiryAlertBackgroundService>();
 
         return services;
     }

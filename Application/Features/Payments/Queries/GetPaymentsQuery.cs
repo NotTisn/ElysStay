@@ -3,6 +3,7 @@ using Application.Common.Models;
 using Application.Features.Payments.DTOs;
 using Domain.Enums;
 using MediatR;
+using Application.Common.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Payments.Queries;
@@ -44,21 +45,30 @@ public class GetPaymentsQueryHandler : IRequestHandler<GetPaymentsQuery, PagedRe
         {
             query = query.Where(p =>
                 (p.Invoice != null && p.Invoice.Contract!.Room!.Building!.OwnerId == userId) ||
-                (p.Contract != null && p.Contract.Room!.Building!.OwnerId == userId));
+                (p.Contract != null && p.Contract.Room!.Building!.OwnerId == userId) ||
+                (p.Reservation != null && p.Reservation.Room!.Building!.OwnerId == userId));
         }
         else if (_currentUser.IsStaff)
         {
             query = query.Where(p =>
                 (p.Invoice != null && p.Invoice.Contract!.Room!.Building!.BuildingStaffs.Any(bs => bs.StaffId == userId)) ||
-                (p.Contract != null && p.Contract.Room!.Building!.BuildingStaffs.Any(bs => bs.StaffId == userId)));
+                (p.Contract != null && p.Contract.Room!.Building!.BuildingStaffs.Any(bs => bs.StaffId == userId)) ||
+                (p.Reservation != null && p.Reservation.Room!.Building!.BuildingStaffs.Any(bs => bs.StaffId == userId)));
         }
         else if (_currentUser.IsTenant)
         {
+            // Only show payments for contracts where the tenant hasn't moved out.
+            // Without the MoveOutDate check, tenants see payments from old contracts forever.
             query = query.Where(p =>
                 (p.Invoice != null && (p.Invoice.Contract!.TenantUserId == userId ||
-                    p.Invoice.Contract!.ContractTenants.Any(ct => ct.TenantUserId == userId))) ||
+                    p.Invoice.Contract!.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null))) ||
                 (p.Contract != null && (p.Contract.TenantUserId == userId ||
-                    p.Contract.ContractTenants.Any(ct => ct.TenantUserId == userId))));
+                    p.Contract.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null))) ||
+                (p.Reservation != null && p.Reservation.TenantUserId == userId));
+        }
+        else
+        {
+            throw new ForbiddenException("Current role is not allowed to access payments.");
         }
 
         // Filters
@@ -66,7 +76,8 @@ public class GetPaymentsQueryHandler : IRequestHandler<GetPaymentsQuery, PagedRe
         {
             query = query.Where(p =>
                 (p.Invoice != null && p.Invoice.Contract!.Room!.BuildingId == request.BuildingId.Value) ||
-                (p.Contract != null && p.Contract.Room!.BuildingId == request.BuildingId.Value));
+                (p.Contract != null && p.Contract.Room!.BuildingId == request.BuildingId.Value) ||
+                (p.Reservation != null && p.Reservation.Room!.BuildingId == request.BuildingId.Value));
         }
 
         if (!string.IsNullOrWhiteSpace(request.Type) && Enum.TryParse<PaymentType>(request.Type, true, out var paymentType))
@@ -95,6 +106,7 @@ public class GetPaymentsQueryHandler : IRequestHandler<GetPaymentsQuery, PagedRe
                 Id = p.Id,
                 InvoiceId = p.InvoiceId,
                 ContractId = p.ContractId,
+                ReservationId = p.ReservationId,
                 Type = p.Type.ToString(),
                 Amount = p.Amount,
                 PaymentMethod = p.PaymentMethod,

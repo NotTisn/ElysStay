@@ -43,11 +43,55 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PagedResult<U
         if (_currentUser.IsStaff && request.RoleFilter != UserRole.Tenant)
             throw new ForbiddenException("Staff can only list tenants.");
 
+        var userId = _currentUser.GetRequiredUserId();
+
         var query = _db.Users.AsNoTracking().AsQueryable();
 
         // Role filter
         if (request.RoleFilter.HasValue)
             query = query.Where(u => u.Role == request.RoleFilter.Value);
+
+        // Building-scope filtering: Owner/Staff must only see users in their buildings
+        if (_currentUser.IsOwner)
+        {
+            var ownedBuildingIds = _db.Buildings
+                .Where(b => b.OwnerId == userId)
+                .Select(b => b.Id);
+
+            // Tenants: linked via Contract.TenantUserId or ContractTenants (roommates)
+            var tenantIdsInOwnedBuildings = _db.Contracts
+                .Where(c => ownedBuildingIds.Contains(c.Room!.BuildingId))
+                .SelectMany(c => new[] { c.TenantUserId }
+                    .Concat(c.ContractTenants.Select(ct => ct.TenantUserId)))
+                .Distinct();
+
+            // Staff: linked via StaffAssignments
+            var staffIdsInOwnedBuildings = _db.StaffAssignments
+                .Where(sa => ownedBuildingIds.Contains(sa.BuildingId))
+                .Select(sa => sa.StaffId)
+                .Distinct();
+
+            query = query.Where(u =>
+                u.Role == Domain.Enums.UserRole.Owner
+                    ? u.Id == userId // Owner sees only themselves for Owner role
+                    : u.Role == Domain.Enums.UserRole.Staff
+                        ? staffIdsInOwnedBuildings.Contains(u.Id)
+                        : tenantIdsInOwnedBuildings.Contains(u.Id));
+        }
+        else if (_currentUser.IsStaff)
+        {
+            var assignedBuildingIds = _db.StaffAssignments
+                .Where(sa => sa.StaffId == userId)
+                .Select(sa => sa.BuildingId);
+
+            var tenantIdsInAssignedBuildings = _db.Contracts
+                .Where(c => assignedBuildingIds.Contains(c.Room!.BuildingId))
+                .SelectMany(c => new[] { c.TenantUserId }
+                    .Concat(c.ContractTenants.Select(ct => ct.TenantUserId)))
+                .Distinct();
+
+            query = query.Where(u => tenantIdsInAssignedBuildings.Contains(u.Id));
+        }
 
         // Search by name, email, or phone
         if (!string.IsNullOrWhiteSpace(request.Search))

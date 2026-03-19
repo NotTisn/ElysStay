@@ -9,6 +9,8 @@ public record OwnerDashboardDto(
     int OccupiedRooms,
     decimal OccupancyRate,
     int ActiveContracts,
+    int ExpiringContracts,
+    int PendingReservations,
     int OverdueInvoiceCount,
     decimal OverdueAmount,
     decimal MonthlyRevenue);

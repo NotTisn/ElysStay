@@ -91,6 +91,10 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
             }
         }
 
+        // Load building BEFORE saving — needed for notification message
+        var building = await _db.Buildings.AsNoTracking()
+            .FirstAsync(b => b.Id == buildingId, ct);
+
         var issue = new Domain.Entities.MaintenanceIssue
         {
             BuildingId = buildingId,
@@ -103,6 +107,18 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
         };
 
         _db.MaintenanceIssues.Add(issue);
+
+        // Notify building owner about the new issue
+        _db.Notifications.Add(new Domain.Entities.Notification
+        {
+            UserId = building.OwnerId,
+            Title = "New Maintenance Issue",
+            Message = $"A new issue \"{request.Title}\" has been reported in {building.Name}.",
+            Type = "ISSUE",
+            ReferenceId = issue.Id
+        });
+
+        // Single SaveChangesAsync — atomic: issue + notification saved together
         await _db.SaveChangesAsync(ct);
 
         // Reload with nav

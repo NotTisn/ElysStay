@@ -201,6 +201,9 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(1000)
@@ -291,7 +294,8 @@ namespace Infrastructure.Migrations
                     b.HasIndex("ContractId", "Status");
 
                     b.HasIndex("ContractId", "BillingYear", "BillingMonth")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"Status\" <> 'Void'");
 
                     b.ToTable("Invoices");
                 });
@@ -358,7 +362,8 @@ namespace Infrastructure.Migrations
                         .HasColumnType("character varying(5000)");
 
                     b.Property<string>("ImageUrls")
-                        .HasColumnType("text");
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
 
                     b.Property<string>("Priority")
                         .IsRequired()
@@ -524,6 +529,9 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<Guid?>("ReservationId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -535,7 +543,11 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("InvoiceId");
 
+                    b.HasIndex("PaidAt");
+
                     b.HasIndex("RecordedBy");
+
+                    b.HasIndex("ReservationId");
 
                     b.ToTable("Payments");
                 });
@@ -566,7 +578,8 @@ namespace Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("Images")
-                        .HasColumnType("text");
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
 
                     b.Property<int>("MaxOccupants")
                         .HasColumnType("integer");
@@ -1087,11 +1100,18 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.Entities.RoomReservation", "Reservation")
+                        .WithMany("Payments")
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Contract");
 
                     b.Navigation("Invoice");
 
                     b.Navigation("Recorder");
+
+                    b.Navigation("Reservation");
                 });
 
             modelBuilder.Entity("Domain.Entities.Room", b =>
@@ -1227,6 +1247,8 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.RoomReservation", b =>
                 {
                     b.Navigation("Contracts");
+
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("Domain.Entities.Service", b =>

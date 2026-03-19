@@ -17,6 +17,7 @@ public class RoomReservationConfiguration : IEntityTypeConfiguration<RoomReserva
         builder.Property(r => r.RefundNote).HasMaxLength(1000);
 
         builder.HasIndex(r => new { r.RoomId, r.Status });
+        builder.HasIndex(r => r.TenantUserId);
 
         builder.HasOne(r => r.Room)
             .WithMany(ro => ro.Reservations)

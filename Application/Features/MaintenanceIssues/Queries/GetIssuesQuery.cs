@@ -36,10 +36,6 @@ public class GetIssuesQueryHandler : IRequestHandler<GetIssuesQuery, PagedResult
 
         var query = _db.MaintenanceIssues
             .AsNoTracking()
-            .Include(i => i.Building)
-            .Include(i => i.Room)
-            .Include(i => i.Reporter)
-            .Include(i => i.Assignee)
             .AsQueryable();
 
         // Role-scoped filtering

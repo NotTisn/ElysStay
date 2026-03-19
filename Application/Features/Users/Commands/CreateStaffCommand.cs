@@ -36,6 +36,9 @@ public class CreateStaffCommandHandler : IRequestHandler<CreateStaffCommand, Use
 
     public async Task<UserDto> Handle(CreateStaffCommand request, CancellationToken ct)
     {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var normalizedFullName = request.FullName.Trim();
+
         // Auth: Owner only
         if (!_currentUser.IsOwner)
             throw new ForbiddenException("Only the owner can create staff accounts.");
@@ -43,14 +46,14 @@ public class CreateStaffCommandHandler : IRequestHandler<CreateStaffCommand, Use
         // UQ-07: Email uniqueness
         var emailExists = await _db.Users
             .IgnoreQueryFilters()
-            .AnyAsync(u => u.Email == request.Email, ct);
+            .AnyAsync(u => u.Email.ToLower() == normalizedEmail, ct);
         if (emailExists)
             throw new ConflictException("A user with this email already exists.", "DUPLICATE_EMAIL");
 
         // Create in Keycloak first
         var keycloakId = await _keycloak.CreateUserAsync(
-            request.Email.Trim(),
-            request.FullName.Trim(),
+            normalizedEmail,
+            normalizedFullName,
             request.Password,
             UserRole.Staff.ToString(),
             ct);
@@ -59,8 +62,8 @@ public class CreateStaffCommandHandler : IRequestHandler<CreateStaffCommand, Use
         var user = new User
         {
             KeycloakId = keycloakId,
-            Email = request.Email.Trim(),
-            FullName = request.FullName.Trim(),
+            Email = normalizedEmail,
+            FullName = normalizedFullName,
             Phone = request.Phone?.Trim(),
             Role = UserRole.Staff,
             Status = UserStatus.Active

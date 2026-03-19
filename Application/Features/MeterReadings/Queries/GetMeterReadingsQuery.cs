@@ -77,6 +77,7 @@ public class GetMeterReadingsQueryHandler : IRequestHandler<GetMeterReadingsQuer
                 CreatedAt = mr.CreatedAt,
                 UpdatedAt = mr.UpdatedAt
             })
+            .Take(1000)
             .ToListAsync(cancellationToken);
     }
 }

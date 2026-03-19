@@ -64,6 +64,31 @@ public class ExpensesController : BaseApiController
     }
 
     /// <summary>
+    /// Aggregate expense totals for the active filters. Owner/Staff only.
+    /// </summary>
+    [HttpGet("summary")]
+    [Authorize(Roles = "Owner,Staff")]
+    public async Task<IActionResult> GetExpenseSummary(
+        [FromQuery] Guid? buildingId,
+        [FromQuery] Guid? roomId,
+        [FromQuery] string? category,
+        [FromQuery] DateOnly? fromDate,
+        [FromQuery] DateOnly? toDate,
+        CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new GetExpenseSummaryQuery
+        {
+            BuildingId = buildingId,
+            RoomId = roomId,
+            Category = category,
+            FromDate = fromDate,
+            ToDate = toDate
+        }, ct);
+
+        return OkResponse(result);
+    }
+
+    /// <summary>
     /// Create a new expense. Owner/Staff only.
     /// </summary>
     [HttpPost]

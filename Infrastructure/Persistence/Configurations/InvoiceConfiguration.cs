@@ -18,7 +18,10 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         builder.Property(i => i.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(i => i.Note).HasMaxLength(1000);
 
-        builder.HasIndex(i => new { i.ContractId, i.BillingYear, i.BillingMonth }).IsUnique();
+        // UQ-02 + SM-12: allow re-generation after VOID by excluding voided invoices from uniqueness
+        builder.HasIndex(i => new { i.ContractId, i.BillingYear, i.BillingMonth })
+            .HasFilter("\"Status\" <> 'Void'")
+            .IsUnique();
         builder.HasIndex(i => new { i.ContractId, i.Status });
 
         builder.HasOne(i => i.Contract)

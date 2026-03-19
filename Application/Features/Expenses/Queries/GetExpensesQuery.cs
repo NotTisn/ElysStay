@@ -1,5 +1,6 @@
 using Application.Common.Interfaces;
 using Application.Common.Models;
+using Application.Common.Exceptions;
 using Application.Features.Expenses.DTOs;
 using Domain.Enums;
 using MediatR;
@@ -37,9 +38,6 @@ public class GetExpensesQueryHandler : IRequestHandler<GetExpensesQuery, PagedRe
 
         var query = _db.Expenses
             .AsNoTracking()
-            .Include(e => e.Building)
-            .Include(e => e.Room)
-            .Include(e => e.Recorder)
             .AsQueryable();
 
         // Role-scope
@@ -56,6 +54,10 @@ public class GetExpensesQueryHandler : IRequestHandler<GetExpensesQuery, PagedRe
                 .Select(sa => sa.BuildingId);
             query = query.Where(e => assignedBuildingIds.Contains(e.BuildingId));
         }
+        else
+        {
+            throw new ForbiddenException("Only owners and staff can access expenses.");
+        }
 
         // Filters
         if (request.BuildingId.HasValue)
@@ -65,7 +67,10 @@ public class GetExpensesQueryHandler : IRequestHandler<GetExpensesQuery, PagedRe
             query = query.Where(e => e.RoomId == request.RoomId.Value);
 
         if (!string.IsNullOrWhiteSpace(request.Category))
-            query = query.Where(e => e.Category == request.Category);
+        {
+            var normalizedCategory = request.Category.Trim();
+            query = query.Where(e => e.Category.ToLower() == normalizedCategory.ToLower());
+        }
 
         if (request.FromDate.HasValue)
             query = query.Where(e => e.ExpenseDate >= request.FromDate.Value);

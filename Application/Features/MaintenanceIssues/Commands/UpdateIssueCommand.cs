@@ -57,6 +57,10 @@ public class UpdateIssueCommandHandler : IRequestHandler<UpdateIssueCommand, Mai
             await _buildingScope.AuthorizeAsync(issue.BuildingId, ct);
         }
 
+        // Block editing closed/resolved issues — they are immutable records
+        if (issue.Status == Domain.Enums.IssueStatus.Resolved || issue.Status == Domain.Enums.IssueStatus.Closed)
+            throw new ConflictException($"Cannot edit a {issue.Status} issue. Reopen it first.");
+
         // Partial update
         if (request.Title is not null)
             issue.Title = request.Title;

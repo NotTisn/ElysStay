@@ -28,7 +28,7 @@ public class ChangeRoomStatusCommandHandler : IRequestHandler<ChangeRoomStatusCo
             throw new BadRequestException("Manual status change only supports Available or Maintenance.");
 
         var room = await _db.Rooms
-            .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken)
+            .FirstOrDefaultAsync(r => r.Id == request.Id && r.DeletedAt == null, cancellationToken)
             ?? throw new NotFoundException($"Room {request.Id} not found.");
 
         // AUTH-05

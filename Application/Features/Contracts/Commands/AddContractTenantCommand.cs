@@ -39,6 +39,9 @@ public class AddContractTenantCommandHandler : IRequestHandler<AddContractTenant
     {
         _currentUser.GetRequiredUserId();
 
+        if (_currentUser.IsTenant)
+            throw new ForbiddenException("Only owners or staff can manage roommates.");
+
         var contract = await _db.Contracts
             .Include(c => c.Room!)
             .FirstOrDefaultAsync(c => c.Id == request.ContractId, cancellationToken)
@@ -47,13 +50,25 @@ public class AddContractTenantCommandHandler : IRequestHandler<AddContractTenant
         if (contract.Status != ContractStatus.Active)
             throw new ConflictException("Roommates can only be added to active contracts.");
 
+        if (request.MoveInDate < contract.StartDate)
+            throw new BadRequestException("MoveInDate cannot be before contract start date.");
+
+        if (request.MoveInDate > contract.EndDate)
+            throw new BadRequestException("MoveInDate cannot be after contract end date.");
+
         // Building scope auth
         await _buildingScope.AuthorizeAsync(contract.Room!.BuildingId, cancellationToken);
 
-        // Verify tenant user exists
+        // Verify tenant user exists, has Tenant role, is active, and not soft-deleted
         var tenantUser = await _db.Users
             .FirstOrDefaultAsync(u => u.Id == request.TenantUserId && u.Role == UserRole.Tenant, cancellationToken)
             ?? throw new NotFoundException("Tenant user", request.TenantUserId);
+
+        if (tenantUser.Status != UserStatus.Active)
+            throw new BadRequestException("Cannot add a deactivated tenant as a roommate.");
+
+        if (tenantUser.DeletedAt != null)
+            throw new BadRequestException("Cannot add a deleted tenant as a roommate.");
 
         // Check if already on contract (active — no MoveOutDate)
         var alreadyOnContract = await _db.ContractTenants
@@ -63,6 +78,14 @@ public class AddContractTenantCommandHandler : IRequestHandler<AddContractTenant
 
         if (alreadyOnContract)
             throw new ConflictException("This tenant is already an active roommate on this contract.");
+
+        // Validate MaxOccupants — don't exceed room capacity
+        var activeTenantsCount = await _db.ContractTenants
+            .CountAsync(ct => ct.ContractId == request.ContractId && ct.MoveOutDate == null, cancellationToken);
+
+        if (activeTenantsCount >= contract.Room!.MaxOccupants)
+            throw new ConflictException(
+                $"Room capacity reached ({contract.Room.MaxOccupants} max). Remove a roommate before adding another.");
 
         var contractTenant = new ContractTenant
         {

@@ -58,6 +58,20 @@ public class GetMyDashboardQueryHandler : IRequestHandler<GetMyDashboardQuery, o
             .CountAsync(c => c.Status == ContractStatus.Active
                 && buildings.Contains(c.Room!.BuildingId), ct);
 
+        // Contracts expiring within 30 days
+        var expiryThreshold = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30));
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var expiringContracts = await _db.Contracts
+            .CountAsync(c => c.Status == ContractStatus.Active
+                && buildings.Contains(c.Room!.BuildingId)
+                && c.EndDate >= today
+                && c.EndDate <= expiryThreshold, ct);
+
+        // Pending reservations (Pending + Confirmed)
+        var pendingReservations = await _db.RoomReservations
+            .CountAsync(r => buildings.Contains(r.Room!.BuildingId)
+                && (r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Confirmed), ct);
+
         var overdueInvoices = await _db.Invoices
             .Where(i => i.Status == InvoiceStatus.Overdue
                 && buildings.Contains(i.Contract!.Room!.BuildingId))
@@ -86,6 +100,8 @@ public class GetMyDashboardQueryHandler : IRequestHandler<GetMyDashboardQuery, o
             occupiedRooms,
             totalRooms > 0 ? Math.Round((decimal)occupiedRooms / totalRooms, 2) : 0,
             activeContracts,
+            expiringContracts,
+            pendingReservations,
             overdueCount,
             overdueAmount,
             monthlyRevenue);

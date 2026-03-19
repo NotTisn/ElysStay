@@ -33,7 +33,7 @@ public class GetInvoiceByIdQueryHandler : IRequestHandler<GetInvoiceByIdQuery, I
             .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
             .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
             .Include(i => i.InvoiceDetails)
-            .Include(i => i.Payments)
+            .Include(i => i.Payments).ThenInclude(p => p.Recorder!)
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Invoice", request.Id);
 
@@ -100,6 +100,20 @@ public class GetInvoiceByIdQueryHandler : IRequestHandler<GetInvoiceByIdQuery, I
                     Amount = d.Amount,
                     PreviousReading = d.PreviousReading,
                     CurrentReading = d.CurrentReading
+                })
+                .ToList(),
+            Payments = invoice.Payments
+                .OrderByDescending(p => p.PaidAt)
+                .Select(p => new InvoicePaymentDto
+                {
+                    Id = p.Id,
+                    Amount = p.Amount,
+                    Type = p.Type.ToString(),
+                    PaymentMethod = p.PaymentMethod,
+                    PaidAt = p.PaidAt,
+                    ReferenceCode = p.ReferenceCode,
+                    Note = p.Note,
+                    RecordedByName = p.Recorder?.FullName ?? "Unknown"
                 })
                 .ToList()
         };

@@ -82,6 +82,7 @@ public class GetRoomMeterHistoryQueryHandler : IRequestHandler<GetRoomMeterHisto
                 CreatedAt = mr.CreatedAt,
                 UpdatedAt = mr.UpdatedAt
             })
+            .Take(500)
             .ToListAsync(cancellationToken);
     }
 }

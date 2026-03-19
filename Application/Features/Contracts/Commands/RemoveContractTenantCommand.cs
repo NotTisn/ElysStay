@@ -37,6 +37,9 @@ public class RemoveContractTenantCommandHandler : IRequestHandler<RemoveContract
     {
         _currentUser.GetRequiredUserId();
 
+        if (_currentUser.IsTenant)
+            throw new ForbiddenException("Only owners or staff can manage roommates.");
+
         var contract = await _db.Contracts
             .Include(c => c.Room!)
             .FirstOrDefaultAsync(c => c.Id == request.ContractId, cancellationToken)

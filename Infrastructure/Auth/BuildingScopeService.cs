@@ -7,7 +7,7 @@ namespace Infrastructure.Auth;
 
 /// <summary>
 /// Verifies the current user has access to a specific building.
-/// Owner: unrestricted.
+/// Owner: only own buildings.
 /// Staff: must have a StaffAssignment for the building.
 /// Tenant: denied (tenant access is handled per-endpoint).
 /// </summary>
@@ -25,7 +25,16 @@ public class BuildingScopeService : IBuildingScopeService
     public async Task AuthorizeAsync(Guid buildingId, CancellationToken ct = default)
     {
         if (_currentUser.IsOwner)
-            return; // Owners can access everything
+        {
+            var userId = _currentUser.GetRequiredUserId();
+            var ownsBuilding = await _db.Buildings
+                .AnyAsync(b => b.Id == buildingId && b.OwnerId == userId, ct);
+
+            if (!ownsBuilding)
+                throw new ForbiddenException("You do not own this building.");
+
+            return;
+        }
 
         if (_currentUser.IsStaff)
         {

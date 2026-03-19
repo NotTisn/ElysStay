@@ -20,13 +20,21 @@ public class CreateContractCommandValidator : AbstractValidator<Commands.CreateC
             .GreaterThan(x => x.StartDate).WithMessage("EndDate must be after StartDate (VAL-05).");
 
         RuleFor(x => x.MoveInDate)
-            .NotEmpty().WithMessage("MoveInDate is required.");
+            .NotEmpty().WithMessage("MoveInDate is required.")
+            .GreaterThanOrEqualTo(x => x.StartDate)
+            .WithMessage("MoveInDate cannot be before StartDate.")
+            .LessThanOrEqualTo(x => x.EndDate)
+            .WithMessage("MoveInDate cannot be after EndDate.");
 
         RuleFor(x => x.MonthlyRent)
             .GreaterThan(0).WithMessage("MonthlyRent must be greater than zero.");
 
         RuleFor(x => x.DepositAmount)
             .GreaterThanOrEqualTo(0).WithMessage("DepositAmount cannot be negative.");
+
+        RuleFor(x => x.Note)
+            .MaximumLength(2000).When(x => x.Note is not null)
+            .WithMessage("Note cannot exceed 2000 characters.");
     }
 }
 

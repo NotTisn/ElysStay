@@ -14,6 +14,7 @@ namespace Application.Features.Invoices.Queries;
 public record GetInvoicesQuery : IRequest<PagedResult<InvoiceDto>>
 {
     public Guid? BuildingId { get; init; }
+    public Guid? ContractId { get; init; }
     public int? BillingYear { get; init; }
     public int? BillingMonth { get; init; }
     public string? Status { get; init; }
@@ -50,14 +51,19 @@ public class GetInvoicesQueryHandler : IRequestHandler<GetInvoicesQuery, PagedRe
         }
         else if (_currentUser.IsTenant)
         {
+            // Only show invoices for contracts where the tenant hasn't moved out.
+            // Without the MoveOutDate check, tenants see invoices from old contracts forever.
             query = query.Where(i =>
                 i.Contract!.TenantUserId == userId ||
-                i.Contract!.ContractTenants.Any(ct => ct.TenantUserId == userId));
+                i.Contract!.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null));
         }
 
         // Filters
         if (request.BuildingId.HasValue)
             query = query.Where(i => i.Contract!.Room!.BuildingId == request.BuildingId.Value);
+
+        if (request.ContractId.HasValue)
+            query = query.Where(i => i.ContractId == request.ContractId.Value);
 
         if (request.BillingYear.HasValue)
             query = query.Where(i => i.BillingYear == request.BillingYear.Value);

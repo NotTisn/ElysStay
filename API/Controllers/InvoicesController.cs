@@ -29,6 +29,7 @@ public class InvoicesController : BaseApiController
     [HttpGet]
     public async Task<IActionResult> GetInvoices(
         [FromQuery] Guid? buildingId,
+        [FromQuery] Guid? contractId,
         [FromQuery] int? billingYear,
         [FromQuery] int? billingMonth,
         [FromQuery] string? status,
@@ -40,6 +41,7 @@ public class InvoicesController : BaseApiController
         var query = new GetInvoicesQuery
         {
             BuildingId = buildingId,
+            ContractId = contractId,
             BillingYear = billingYear,
             BillingMonth = billingMonth,
             Status = status,
