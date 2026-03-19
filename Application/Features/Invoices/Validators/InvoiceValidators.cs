@@ -20,6 +20,7 @@ public class UpdateInvoiceCommandValidator : AbstractValidator<UpdateInvoiceComm
         RuleFor(x => x.Id).NotEmpty().WithMessage("Invoice ID is required.");
         RuleFor(x => x.PenaltyAmount).GreaterThanOrEqualTo(0).When(x => x.PenaltyAmount.HasValue).WithMessage("PenaltyAmount cannot be negative.");
         RuleFor(x => x.DiscountAmount).GreaterThanOrEqualTo(0).When(x => x.DiscountAmount.HasValue).WithMessage("DiscountAmount cannot be negative.");
+        RuleFor(x => x.Note).MaximumLength(500).When(x => x.Note is not null).WithMessage("Note cannot exceed 500 characters.");
     }
 }
 
@@ -28,5 +29,12 @@ public class BatchSendInvoicesCommandValidator : AbstractValidator<BatchSendInvo
     public BatchSendInvoicesCommandValidator()
     {
         RuleFor(x => x.InvoiceIds).NotEmpty().WithMessage("At least one invoice ID is required.");
+        RuleForEach(x => x.InvoiceIds)
+            .NotEmpty().WithMessage("Invoice ID cannot be empty.");
+        RuleFor(x => x.InvoiceIds.Count).LessThanOrEqualTo(100)
+            .WithMessage("Maximum 100 invoices per batch send.");
+        RuleFor(x => x.InvoiceIds)
+            .Must(ids => ids.Distinct().Count() == ids.Count)
+            .WithMessage("Duplicate invoice IDs are not allowed.");
     }
 }

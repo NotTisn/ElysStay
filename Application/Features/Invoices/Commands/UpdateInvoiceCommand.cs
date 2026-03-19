@@ -71,20 +71,28 @@ public class UpdateInvoiceCommandHandler : IRequestHandler<UpdateInvoiceCommand,
             changed = true;
         }
 
+        var paidAmount = invoice.Payments
+            .Where(p => p.Type == PaymentType.RentPayment)
+            .Sum(p => p.Amount);
+
         if (changed)
         {
-            // Recalculate total
-            invoice.TotalAmount = invoice.RentAmount + invoice.ServiceAmount + invoice.PenaltyAmount - invoice.DiscountAmount;
+            var newTotalAmount = invoice.RentAmount + invoice.ServiceAmount + invoice.PenaltyAmount - invoice.DiscountAmount;
 
             // Guard: TotalAmount cannot go negative
-            if (invoice.TotalAmount < 0)
+            if (newTotalAmount < 0)
                 throw new BadRequestException("Discount exceeds invoice total. TotalAmount cannot be negative.");
+
+            if (newTotalAmount < paidAmount)
+                throw new BadRequestException(
+                    $"Updated total ({newTotalAmount}) cannot be less than already paid amount ({paidAmount}).");
+
+            // Recalculate total
+            invoice.TotalAmount = newTotalAmount;
 
             invoice.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync(cancellationToken);
         }
-
-        var paidAmount = invoice.Payments.Where(p => p.Type == PaymentType.RentPayment).Sum(p => p.Amount);
 
         return new InvoiceDto
         {

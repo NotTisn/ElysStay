@@ -35,6 +35,7 @@ public record InvoiceDto
 public record InvoiceDetailDto : InvoiceDto
 {
     public required IReadOnlyList<InvoiceLineItemDto> LineItems { get; init; }
+    public required IReadOnlyList<InvoicePaymentDto> Payments { get; init; }
 }
 
 /// <summary>
@@ -50,6 +51,21 @@ public record InvoiceLineItemDto
     public required decimal Amount { get; init; }
     public decimal? PreviousReading { get; init; }
     public decimal? CurrentReading { get; init; }
+}
+
+/// <summary>
+/// Payment record for an invoice.
+/// </summary>
+public record InvoicePaymentDto
+{
+    public required Guid Id { get; init; }
+    public required decimal Amount { get; init; }
+    public required string Type { get; init; }
+    public string? PaymentMethod { get; init; }
+    public required DateTime PaidAt { get; init; }
+    public string? ReferenceCode { get; init; }
+    public string? Note { get; init; }
+    public required string RecordedByName { get; init; }
 }
 
 /// <summary>

@@ -62,10 +62,12 @@ public class GenerateInvoicesCommandHandler : IRequestHandler<GenerateInvoicesCo
             .ToListAsync(cancellationToken);
 
         // Get existing invoices for this period (for idempotency check)
+        // Exclude voided invoices so re-generation is possible after voiding
         var existingInvoiceContractIds = await _db.Invoices
             .Where(i => i.BillingYear == request.BillingYear &&
                        i.BillingMonth == request.BillingMonth &&
-                       i.Contract!.Room!.BuildingId == request.BuildingId)
+                       i.Contract!.Room!.BuildingId == request.BuildingId &&
+                       i.Status != InvoiceStatus.Void)
             .Select(i => i.ContractId)
             .ToHashSetAsync(cancellationToken);
 
