@@ -273,4 +273,39 @@ When all 15 are true, the product ships. Not before.
 
 ---
 
+## PART 7: PROGRESS TRACKER
+
+> Updated: 2026-03-19
+
+| Phase | Status | Commit(s) | Notes |
+|-------|--------|-----------|-------|
+| **1.1** Reservation → Contract UX | ✅ Complete | FE `e19f2b7` | "Chuyển thành hợp đồng" button on confirmed reservations |
+| **1.2** Return generated password | ✅ Complete | FE `e19f2b7` / BE `280c88d` | One-time password display in creation dialog |
+| **1.3** Keycloak SMTP + reset | ⚠️ Partial | — | `resetPasswordAllowed=true` set; SMTP needs runtime config (external service) |
+| **1.4** E2E walkthrough | ✅ Complete | FE `e19f2b7` / BE `280c88d` | 6 critical issues, 10 product gaps, 8 friction points — all fixed |
+| **2.1** i18n infrastructure | ✅ Complete | FE `e19f2b7` | Single-language approach (Vietnamese embedded directly, no i18n framework) |
+| **2.2** Translate all UI labels | ✅ Complete | FE `e19f2b7` / BE `94bf181` | FE: all 47 routes, 29 components. BE: all 95 files, ~200+ error messages |
+| **2.3** VND currency formatting | ✅ Complete | FE `e19f2b7` | `vi-VN` locale, ₫ suffix, thousand separators everywhere |
+| **2.4** Vietnamese date/time | ✅ Complete | FE `e19f2b7` | `dd/MM/yyyy`, Vietnamese timeAgo, `vi-VN` locale |
+| **3.1–3.5** Email notifications | ❌ Not started | — | Blocked: needs external email service (Resend recommended) |
+| **4.1–4.7** File infrastructure | ❌ Not started | — | Blocked: needs Cloudinary/FPT.AI/QuestPDF accounts |
+| **5.1** Dockerfile API | ✅ Complete | BE `3b3783a` | Multi-stage .NET 10, non-root, health check |
+| **5.2** Dockerfile Frontend | ✅ Complete | FE `ddfaa30` | Multi-stage Node 22 Alpine, standalone output |
+| **5.3** Production compose | ✅ Complete | BE `3b3783a` | 5 services (db, keycloak, api, frontend, caddy), auto-HTTPS |
+| **5.4** Seed data | ✅ Complete | BE `48fb490` | SQL script + Keycloak realm with 5 demo users, 3 app roles, FE client |
+| **5.5** Deploy to server | ❌ Not started | — | Requires VPS/cloud + domain name |
+| **6.1–6.4** Mobile responsive | ❌ Not started | — | Requires browser viewport testing |
+| **7.1** Integration tests | ❌ Not started | — | High effort, deferred to post-MVP |
+| **7.2** Background job observability | ✅ Complete | BE `dc424d1` | Structured logging: startup, duration, zero-result debug |
+| **7.3** FE error boundaries | ❌ Not started | — | Audit pending |
+| **7.4** Production appsettings | ✅ Complete | BE `3b3783a` | Warning-level logging, no hardcoded credentials |
+
+### Summary
+- **Phases 1–2**: ✅ COMPLETE — product is honest and Vietnamese
+- **Phase 5**: ✅ COMPLETE (except 5.5 deploy) — deployment infrastructure ready
+- **Phase 7**: ⚠️ PARTIAL — observability done, production config done, tests deferred
+- **Phases 3, 4, 6**: ❌ BLOCKED by external dependencies (email service, file service, real device testing)
+
+---
+
 *This plan is a living document. Update it as phases complete. Never delete a finding — mark it resolved.*
