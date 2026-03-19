@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Persistence;
@@ -27,6 +28,8 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("BG-03 ContractExpiryAlertJob started — runs daily at 08:00 UTC");
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -54,6 +57,7 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
 
     private async Task RunOnceAsync(CancellationToken ct)
     {
+        var sw = Stopwatch.StartNew();
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
@@ -68,7 +72,10 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
             .ToListAsync(ct);
 
         if (contracts.Count == 0)
+        {
+            _logger.LogDebug("BG-03 ContractExpiryAlertJob: no expiring contracts found ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
             return;
+        }
 
         var now = DateTime.UtcNow;
 
@@ -119,6 +126,6 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
 
         await db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Contract expiry alert job processed {Count} contracts", contracts.Count);
+        _logger.LogInformation("BG-03 ContractExpiryAlertJob: alerted for {Count} expiring contracts in {ElapsedMs}ms", contracts.Count, sw.ElapsedMilliseconds);
     }
 }

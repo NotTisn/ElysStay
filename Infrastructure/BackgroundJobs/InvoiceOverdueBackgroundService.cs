@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Persistence;
@@ -27,6 +28,8 @@ public class InvoiceOverdueBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("BG-02 InvoiceOverdueJob started — runs daily at midnight UTC");
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -54,6 +57,7 @@ public class InvoiceOverdueBackgroundService : BackgroundService
 
     private async Task RunOnceAsync(CancellationToken ct)
     {
+        var sw = Stopwatch.StartNew();
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
@@ -68,7 +72,10 @@ public class InvoiceOverdueBackgroundService : BackgroundService
             .ToListAsync(ct);
 
         if (overdueInvoices.Count == 0)
+        {
+            _logger.LogDebug("BG-02 InvoiceOverdueJob: no overdue invoices found ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
             return;
+        }
 
         var now = DateTime.UtcNow;
 
@@ -90,6 +97,6 @@ public class InvoiceOverdueBackgroundService : BackgroundService
 
         await db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Invoice overdue job processed {Count} invoices", overdueInvoices.Count);
+        _logger.LogInformation("BG-02 InvoiceOverdueJob: marked {Count} invoices overdue in {ElapsedMs}ms", overdueInvoices.Count, sw.ElapsedMilliseconds);
     }
 }

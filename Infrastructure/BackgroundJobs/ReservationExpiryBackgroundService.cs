@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Persistence;
@@ -27,6 +28,8 @@ public class ReservationExpiryBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("BG-01 ReservationExpiryJob started — runs every hour");
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -54,6 +57,7 @@ public class ReservationExpiryBackgroundService : BackgroundService
 
     private async Task RunOnceAsync(CancellationToken ct)
     {
+        var sw = Stopwatch.StartNew();
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
@@ -65,7 +69,10 @@ public class ReservationExpiryBackgroundService : BackgroundService
             .ToListAsync(ct);
 
         if (expiredReservations.Count == 0)
+        {
+            _logger.LogDebug("BG-01 ReservationExpiryJob: no expired reservations found ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
             return;
+        }
 
         foreach (var reservation in expiredReservations)
         {
@@ -92,6 +99,6 @@ public class ReservationExpiryBackgroundService : BackgroundService
 
         await db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Reservation expiry job processed {Count} reservations", expiredReservations.Count);
+        _logger.LogInformation("BG-01 ReservationExpiryJob: expired {Count} reservations in {ElapsedMs}ms", expiredReservations.Count, sw.ElapsedMilliseconds);
     }
 }
