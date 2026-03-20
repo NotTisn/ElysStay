@@ -102,7 +102,7 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
 
             if (entry.Amount > remaining)
                 throw new BadRequestException(
-                    $"Payment {entry.Amount} on invoice {invoice.Id} exceeds remaining balance {remaining}.");
+                    $"Thanh toán {entry.Amount:N0}đ cho hóa đơn {invoice.Id} vượt quá số dư còn lại {remaining:N0}đ.");
 
             batchCumulativeAmounts[entry.InvoiceId] = batchPrior + entry.Amount;
 
@@ -164,7 +164,7 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
             {
                 var tenant = inv.Contract!.TenantUser!;
                 var room = inv.Contract!.Room!;
-                var totalPaid = inv.Payments.Where(p => p.Type == PaymentType.RentPayment).Sum(p => p.Amount) + result.Amount;
+                var totalPaid = inv.Payments.Where(p => p.Type == PaymentType.RentPayment).Sum(p => p.Amount);
                 var (subject, html) = Application.Common.Email.EmailTemplates.PaymentRecorded(
                     tenant.FullName, room.RoomNumber, room.Building!.Name,
                     inv.BillingMonth, inv.BillingYear,

@@ -315,7 +315,7 @@ public class GenerateInvoicesCommandHandler : IRequestHandler<GenerateInvoicesCo
             return contract.MonthlyRent;
 
         // Prorated: MonthlyRent / daysInMonth × days
-        var days = effectiveEnd.DayNumber - effectiveStart.DayNumber + 1;
+        var days = Math.Max(0, effectiveEnd.DayNumber - effectiveStart.DayNumber + 1);
         return Math.Round(contract.MonthlyRent / daysInMonth * days, 0);
     }
 }
