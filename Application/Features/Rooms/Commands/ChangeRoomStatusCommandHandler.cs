@@ -28,6 +28,7 @@ public class ChangeRoomStatusCommandHandler : IRequestHandler<ChangeRoomStatusCo
             throw new BadRequestException("Thay đổi trạng thái thủ công chỉ hỗ trợ Trống hoặc Bảo trì.");
 
         var room = await _db.Rooms
+            .Include(r => r.Building)
             .FirstOrDefaultAsync(r => r.Id == request.Id && r.DeletedAt == null, cancellationToken)
             ?? throw new NotFoundException($"Không tìm thấy phòng {request.Id}.");
 
@@ -61,6 +62,7 @@ public class ChangeRoomStatusCommandHandler : IRequestHandler<ChangeRoomStatusCo
         {
             Id = room.Id,
             BuildingId = room.BuildingId,
+            BuildingName = room.Building?.Name,
             RoomNumber = room.RoomNumber,
             Floor = room.Floor,
             Area = room.Area,

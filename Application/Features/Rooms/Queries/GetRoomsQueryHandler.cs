@@ -60,6 +60,7 @@ public class GetRoomsQueryHandler : IRequestHandler<GetRoomsQuery, PagedResult<R
             {
                 Id = r.Id,
                 BuildingId = r.BuildingId,
+                BuildingName = r.Building!.Name,
                 RoomNumber = r.RoomNumber,
                 Floor = r.Floor,
                 Area = r.Area,

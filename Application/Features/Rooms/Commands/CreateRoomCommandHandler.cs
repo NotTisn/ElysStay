@@ -59,6 +59,7 @@ public class CreateRoomCommandHandler : IRequestHandler<CreateRoomCommand, RoomD
         {
             Id = room.Id,
             BuildingId = room.BuildingId,
+            BuildingName = building.Name,
             RoomNumber = room.RoomNumber,
             Floor = room.Floor,
             Area = room.Area,

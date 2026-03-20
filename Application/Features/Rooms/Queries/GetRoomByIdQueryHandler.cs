@@ -27,6 +27,7 @@ public class GetRoomByIdQueryHandler : IRequestHandler<GetRoomByIdQuery, RoomDto
     {
         var room = await _db.Rooms
             .AsNoTracking()
+            .Include(r => r.Building)
             .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException($"Không tìm thấy phòng {request.Id}.");
 
@@ -51,6 +52,7 @@ public class GetRoomByIdQueryHandler : IRequestHandler<GetRoomByIdQuery, RoomDto
         {
             Id = room.Id,
             BuildingId = room.BuildingId,
+            BuildingName = room.Building?.Name,
             RoomNumber = room.RoomNumber,
             Floor = room.Floor,
             Area = room.Area,

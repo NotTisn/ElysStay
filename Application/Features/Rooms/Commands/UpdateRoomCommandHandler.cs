@@ -20,6 +20,7 @@ public class UpdateRoomCommandHandler : IRequestHandler<UpdateRoomCommand, RoomD
     public async Task<RoomDto> Handle(UpdateRoomCommand request, CancellationToken cancellationToken)
     {
         var room = await _db.Rooms
+            .Include(r => r.Building)
             .FirstOrDefaultAsync(r => r.Id == request.Id && r.DeletedAt == null, cancellationToken)
             ?? throw new NotFoundException($"Không tìm thấy phòng {request.Id}.");
 
@@ -79,6 +80,7 @@ public class UpdateRoomCommandHandler : IRequestHandler<UpdateRoomCommand, RoomD
         {
             Id = room.Id,
             BuildingId = room.BuildingId,
+            BuildingName = room.Building?.Name,
             RoomNumber = room.RoomNumber,
             Floor = room.Floor,
             Area = room.Area,

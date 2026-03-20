@@ -7,6 +7,7 @@ public record RoomDto
 {
     public required Guid Id { get; init; }
     public required Guid BuildingId { get; init; }
+    public string? BuildingName { get; init; }
     public required string RoomNumber { get; init; }
     public required int Floor { get; init; }
     public required decimal Area { get; init; }
