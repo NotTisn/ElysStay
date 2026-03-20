@@ -113,7 +113,7 @@ public class GenerateInvoicesCommandHandler : IRequestHandler<GenerateInvoicesCo
                 skipped.Add(new SkippedContract
                 {
                     ContractId = contract.Id,
-                    Reason = $"Invoice already exists for {request.BillingYear}/{request.BillingMonth}"
+                    Reason = $"Hóa đơn đã tồn tại cho kỳ {request.BillingMonth}/{request.BillingYear}"
                 });
                 continue;
             }
@@ -124,7 +124,7 @@ public class GenerateInvoicesCommandHandler : IRequestHandler<GenerateInvoicesCo
                 skipped.Add(new SkippedContract
                 {
                     ContractId = contract.Id,
-                    Reason = $"Contract terminated ({contract.TerminationDate.Value}) before billing period"
+                    Reason = $"Hợp đồng đã chấm dứt ({contract.TerminationDate.Value:dd/MM/yyyy}) trước kỳ thanh toán"
                 });
                 continue;
             }
@@ -135,7 +135,7 @@ public class GenerateInvoicesCommandHandler : IRequestHandler<GenerateInvoicesCo
                 skipped.Add(new SkippedContract
                 {
                     ContractId = contract.Id,
-                    Reason = $"Contract starts ({contract.StartDate}) after billing period"
+                    Reason = $"Hợp đồng bắt đầu ({contract.StartDate:dd/MM/yyyy}) sau kỳ thanh toán"
                 });
                 continue;
             }
@@ -154,8 +154,11 @@ public class GenerateInvoicesCommandHandler : IRequestHandler<GenerateInvoicesCo
             });
 
             // Get active occupant count for flat services
+            // Only count tenants who have moved in by the end of the billing period
+            // and haven't moved out before the billing period starts
             var activeOccupantCount = contract.ContractTenants
-                .Count(ct => ct.MoveOutDate == null);
+                .Count(ct => ct.MoveInDate <= billingPeriodEnd
+                    && (ct.MoveOutDate == null || ct.MoveOutDate >= billingPeriodStart));
 
             // 2. SERVICE LINES
             foreach (var service in buildingServices)
@@ -177,7 +180,7 @@ public class GenerateInvoicesCommandHandler : IRequestHandler<GenerateInvoicesCo
                     if (!meterReadings.TryGetValue((contract.RoomId, service.Id), out var reading))
                     {
                         // IG-02: Missing meter reading — skip + warning
-                        warnings.Add($"Room {contract.Room!.RoomNumber}: Missing meter reading for '{service.Name}' ({request.BillingYear}/{request.BillingMonth})");
+                        warnings.Add($"Phòng {contract.Room!.RoomNumber}: Thiếu chỉ số đồng hồ cho '{service.Name}' kỳ {request.BillingMonth}/{request.BillingYear}");
                         continue;
                     }
 
@@ -199,13 +202,13 @@ public class GenerateInvoicesCommandHandler : IRequestHandler<GenerateInvoicesCo
                 else
                 {
                     // IG-04: Flat service
-                    var quantity = roomServiceOverride?.OverrideQuantity
-                        ?? (activeOccupantCount > 0 ? activeOccupantCount : 1);
+                    var quantity = roomServiceOverride?.OverrideQuantity ?? activeOccupantCount;
 
-                    // Warn if defaulting to 1 due to 0 active occupants
-                    if (roomServiceOverride?.OverrideQuantity == null && activeOccupantCount == 0)
+                    // Skip flat service when 0 active occupants and no override
+                    if (quantity <= 0)
                     {
-                        warnings.Add($"Room {contract.Room!.RoomNumber}: 0 active occupants for flat service '{service.Name}', defaulting quantity to 1");
+                        warnings.Add($"Phòng {contract.Room!.RoomNumber}: Không có cư dân trong kỳ cho dịch vụ '{service.Name}', đã bỏ qua");
+                        continue;
                     }
 
                     var amount = quantity * effectivePrice;

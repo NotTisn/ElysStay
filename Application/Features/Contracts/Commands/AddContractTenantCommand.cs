@@ -85,7 +85,7 @@ public class AddContractTenantCommandHandler : IRequestHandler<AddContractTenant
 
         if (activeTenantsCount >= contract.Room!.MaxOccupants)
             throw new ConflictException(
-                $"Room capacity reached ({contract.Room.MaxOccupants} max). Remove a roommate before adding another.");
+                $"Phòng đã đầy ({contract.Room.MaxOccupants} người tối đa). Hãy xóa bớt thành viên trước khi thêm mới.");
 
         var contractTenant = new ContractTenant
         {

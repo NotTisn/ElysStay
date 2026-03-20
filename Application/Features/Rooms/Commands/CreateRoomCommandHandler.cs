@@ -38,7 +38,7 @@ public class CreateRoomCommandHandler : IRequestHandler<CreateRoomCommand, RoomD
             .AnyAsync(r => r.BuildingId == request.BuildingId && r.RoomNumber == request.RoomNumber && r.DeletedAt == null, cancellationToken);
         if (exists)
             throw new ConflictException(
-                $"Room number '{request.RoomNumber}' already exists in this building.",
+                $"Số phòng '{request.RoomNumber}' đã tồn tại trong tòa nhà.",
                 "DUPLICATE_ROOM_NUMBER");
 
         var room = new Room

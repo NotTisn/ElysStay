@@ -56,6 +56,17 @@ public class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceCommand, Uni
         if (invoice.Status == InvoiceStatus.Void)
             throw new ConflictException("Hóa đơn đã bị hủy.");
 
+        // Guard: if invoice has payments, warn owner (write-off acknowledgement)
+        var existingPayments = invoice.Payments
+            .Where(p => p.Type == PaymentType.RentPayment)
+            .Sum(p => p.Amount);
+        if (existingPayments > 0 && invoice.Status == InvoiceStatus.PartiallyPaid)
+        {
+            // Allow voiding but mark note for audit trail
+            invoice.Note = (invoice.Note ?? "") +
+                $" [Hủy với {existingPayments:N0}đ đã thanh toán — ghi nhận xóa nợ]";
+        }
+
         invoice.Status = InvoiceStatus.Void;
         invoice.UpdatedAt = DateTime.UtcNow;
 

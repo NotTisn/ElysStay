@@ -58,6 +58,6 @@ public class NotificationsController : BaseApiController
     public async Task<IActionResult> MarkAllRead(CancellationToken ct)
     {
         var count = await _mediator.Send(new MarkAllNotificationsReadCommand(), ct);
-        return OkResponse(new { markedRead = count }, "All notifications marked as read");
+        return OkResponse(new { markedRead = count }, "Đánh dấu tất cả thông báo đã đọc");
     }
 }

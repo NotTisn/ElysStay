@@ -62,7 +62,7 @@ public class BulkUpsertMeterReadingsCommandHandler : IRequestHandler<BulkUpsertM
         var duplicates = request.Readings
             .GroupBy(r => (r.RoomId, r.ServiceId))
             .Where(g => g.Count() > 1)
-            .Select(g => $"Room {g.Key.RoomId} + Service {g.Key.ServiceId}")
+            .Select(g => $"Phòng {g.Key.RoomId} + Dịch vụ {g.Key.ServiceId}")
             .ToList();
         if (duplicates.Count > 0)
             throw new BadRequestException($"Các mục chỉ số trùng lặp: {string.Join("; ", duplicates)}.");

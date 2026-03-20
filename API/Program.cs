@@ -139,9 +139,15 @@ static string GetClientIp(HttpContext context)
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    // Trust Docker network proxies (API is only reachable through Caddy in production)
+    // In production, API is only reachable through Caddy in Docker network.
+    // Trust the standard Docker bridge subnet and common private networks.
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(
+        System.Net.IPAddress.Parse("172.16.0.0"), 12));  // Docker default bridge
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(
+        System.Net.IPAddress.Parse("10.0.0.0"), 8));     // Docker custom networks
+    options.ForwardLimit = 1; // Only trust one proxy hop
 });
 
 var app = builder.Build();

@@ -105,7 +105,7 @@ public class RoomsController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Room created successfully");
+        return CreatedResponse(result, message: "Tạo phòng thành công");
     }
 
     /// <summary>

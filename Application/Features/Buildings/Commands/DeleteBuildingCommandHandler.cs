@@ -38,7 +38,7 @@ public class DeleteBuildingCommandHandler : IRequestHandler<DeleteBuildingComman
 
         if (hasActiveContract)
             throw new ConflictException(
-                "Cannot delete building: one or more rooms have active contracts.",
+                "Không thể xóa tòa nhà: một hoặc nhiều phòng đang có hợp đồng hoạt động.",
                 "ACTIVE_CONTRACT_EXISTS");
 
         // Block if any non-deleted room has pending/confirmed reservations
@@ -49,7 +49,7 @@ public class DeleteBuildingCommandHandler : IRequestHandler<DeleteBuildingComman
 
         if (hasActiveReservation)
             throw new ConflictException(
-                "Cannot delete building: one or more rooms have pending or confirmed reservations.",
+                "Không thể xóa tòa nhà: một hoặc nhiều phòng đang có đặt cọc chưa giải quyết.",
                 "ACTIVE_RESERVATION_EXISTS");
 
         // Soft delete building and cascade to rooms

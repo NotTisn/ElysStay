@@ -4,6 +4,7 @@ using Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
 
@@ -74,7 +75,7 @@ public class IssuesController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Issue reported successfully");
+        return CreatedResponse(result, message: "Báo cáo sự cố thành công");
     }
 
     /// <summary>
@@ -91,7 +92,7 @@ public class IssuesController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return OkResponse(result, "Issue updated successfully");
+        return OkResponse(result, "Cập nhật sự cố thành công");
     }
 
     /// <summary>
@@ -109,7 +110,7 @@ public class IssuesController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return OkResponse(result, "Issue status updated successfully");
+        return OkResponse(result, "Cập nhật trạng thái sự cố thành công");
     }
 
     /// <summary>
@@ -117,8 +118,19 @@ public class IssuesController : BaseApiController
     /// </summary>
     [HttpPost("{id:guid}/images")]
     [RequestSizeLimit(10 * 1024 * 1024)]
-    public async Task<IActionResult> UploadImages(Guid id, [FromForm] List<IFormFile> files, CancellationToken ct)
+    [EnableRateLimiting("sensitive")]
+    public async Task<IActionResult> UploadImages(Guid id, [FromForm] List<IFormFile>? files, CancellationToken ct)
     {
+        if (files is null || files.Count == 0)
+            return BadRequest(new { message = "Cần cung cấp ít nhất một file ảnh." });
+
+        if (files.Count > 3)
+            return BadRequest(new { message = "Tối đa 3 ảnh mỗi lần tải." });
+
+        var allowedTypes = new[] { "image/jpeg", "image/png" };
+        if (files.Any(f => !allowedTypes.Contains(f.ContentType)))
+            return BadRequest(new { message = "Chỉ chấp nhận file JPEG hoặc PNG." });
+
         var items = files.Select(f => new FileUploadItem
         {
             FileStream = f.OpenReadStream(),

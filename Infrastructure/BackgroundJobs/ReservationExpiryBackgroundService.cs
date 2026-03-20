@@ -80,8 +80,28 @@ public class ReservationExpiryBackgroundService : BackgroundService
 
         foreach (var reservation in expiredReservations)
         {
+            var wasConfirmed = reservation.Status == ReservationStatus.Confirmed;
+
             reservation.Status = ReservationStatus.Expired;
             reservation.UpdatedAt = now;
+
+            // DEP-02: Confirmed reservations had deposit received — record for accounting
+            if (wasConfirmed && reservation.DepositAmount > 0)
+            {
+                reservation.RefundAmount = 0;
+                reservation.RefundNote = "Tiền cọc bị mất do hết hạn đặt phòng.";
+
+                // Record DEPOSIT_IN (money was received at confirmation)
+                db.Payments.Add(new Payment
+                {
+                    ReservationId = reservation.Id,
+                    Type = PaymentType.DepositIn,
+                    Amount = reservation.DepositAmount,
+                    Note = "Tiền cọc nhận từ đặt phòng (hết hạn — tịch thu)",
+                    RecordedBy = reservation.TenantUserId,
+                    PaidAt = reservation.CreatedAt
+                });
+            }
 
             if (reservation.Room is not null && reservation.Room.Status == RoomStatus.Booked)
             {

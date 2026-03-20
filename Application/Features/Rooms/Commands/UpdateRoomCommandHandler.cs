@@ -48,7 +48,7 @@ public class UpdateRoomCommandHandler : IRequestHandler<UpdateRoomCommand, RoomD
                             && r.DeletedAt == null, cancellationToken);
             if (exists)
                 throw new ConflictException(
-                    $"Room number '{request.RoomNumber}' already exists in this building.",
+                    $"Số phòng '{request.RoomNumber}' đã tồn tại trong tòa nhà.",
                     "DUPLICATE_ROOM_NUMBER");
         }
 

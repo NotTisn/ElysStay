@@ -19,7 +19,9 @@ public class UpdateInvoiceCommandValidator : AbstractValidator<UpdateInvoiceComm
     {
         RuleFor(x => x.Id).NotEmpty().WithMessage("Mã hóa đơn là bắt buộc.");
         RuleFor(x => x.PenaltyAmount).GreaterThanOrEqualTo(0).When(x => x.PenaltyAmount.HasValue).WithMessage("Tiền phạt không được âm.");
+        RuleFor(x => x.PenaltyAmount).LessThanOrEqualTo(100_000_000).When(x => x.PenaltyAmount.HasValue).WithMessage("Tiền phạt không được vượt quá 100.000.000đ.");
         RuleFor(x => x.DiscountAmount).GreaterThanOrEqualTo(0).When(x => x.DiscountAmount.HasValue).WithMessage("Tiền giảm không được âm.");
+        RuleFor(x => x.DiscountAmount).LessThanOrEqualTo(100_000_000).When(x => x.DiscountAmount.HasValue).WithMessage("Tiền giảm không được vượt quá 100.000.000đ.");
         RuleFor(x => x.Note).MaximumLength(500).When(x => x.Note is not null).WithMessage("Ghi chú không được vượt quá 500 ký tự.");
     }
 }

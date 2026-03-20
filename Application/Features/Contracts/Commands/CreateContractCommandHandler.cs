@@ -152,7 +152,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
                     ContractId = contract.Id,
                     Type = PaymentType.DepositIn,
                     Amount = reservation.DepositAmount,
-                    Note = "Deposit transferred from reservation",
+                    Note = "Tiền cọc chuyển từ đặt phòng",
                     RecordedBy = userId,
                     PaidAt = DateTime.UtcNow
                 };
@@ -167,7 +167,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
                     ContractId = contract.Id,
                     Type = PaymentType.DepositIn,
                     Amount = request.DepositAmount - reservation.DepositAmount,
-                    Note = "Additional deposit payment",
+                    Note = "Bổ sung tiền cọc",
                     RecordedBy = userId,
                     PaidAt = DateTime.UtcNow
                 };
@@ -182,7 +182,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
                 ContractId = contract.Id,
                 Type = PaymentType.DepositIn,
                 Amount = request.DepositAmount,
-                Note = "Contract deposit",
+                Note = "Tiền cọc hợp đồng",
                 RecordedBy = userId,
                 PaidAt = DateTime.UtcNow
             };

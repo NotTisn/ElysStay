@@ -88,8 +88,9 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
         }
 
         // Auto-void DRAFT/SENT/OVERDUE invoices for billing periods after termination
-        // These invoices are no longer applicable and should not remain outstanding
+        // Only void invoices that have NO payments recorded (protect partial-pay records)
         var futureInvoices = await _db.Invoices
+            .Include(i => i.Payments)
             .Where(i => i.ContractId == contract.Id
                 && (i.Status == InvoiceStatus.Draft || i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.Overdue)
                 && (i.BillingYear > request.TerminationDate.Year
@@ -98,6 +99,12 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
 
         foreach (var invoice in futureInvoices)
         {
+            var hasPaidAmount = invoice.Payments.Any(p => p.Type == PaymentType.RentPayment);
+            if (hasPaidAmount)
+            {
+                // Invoice has payments — leave it as-is so owner can reconcile manually
+                continue;
+            }
             invoice.Status = InvoiceStatus.Void;
             invoice.UpdatedAt = DateTime.UtcNow;
         }
@@ -110,7 +117,7 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
                 ContractId = contract.Id,
                 Type = PaymentType.DepositRefund,
                 Amount = refundAmount,
-                Note = request.Note ?? "Deposit refund on contract termination",
+                Note = request.Note ?? "Hoàn trả tiền cọc khi chấm dứt hợp đồng",
                 RecordedBy = userId,
                 PaidAt = DateTime.UtcNow
             });
@@ -123,7 +130,7 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
                 ContractId = contract.Id,
                 Type = PaymentType.DepositRefund,
                 Amount = 0,
-                Note = request.Note ?? $"Deposit fully forfeited ({contract.DepositAmount:N0} VND deducted)",
+                Note = request.Note ?? $"Tiền cọc bị tịch thu toàn bộ ({contract.DepositAmount:N0}đ khấu trừ)",
                 RecordedBy = userId,
                 PaidAt = DateTime.UtcNow
             });

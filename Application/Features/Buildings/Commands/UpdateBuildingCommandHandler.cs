@@ -49,7 +49,7 @@ public class UpdateBuildingCommandHandler : IRequestHandler<UpdateBuildingComman
 
             if (maxFloorInUse.HasValue && request.TotalFloors.Value < maxFloorInUse.Value)
                 throw new BadRequestException(
-                    $"Cannot reduce total floors to {request.TotalFloors.Value}: room(s) exist on floor {maxFloorInUse.Value}.");
+                    $"Không thể giảm số tầng xuống {request.TotalFloors.Value}: có phòng trên tầng {maxFloorInUse.Value}.");
 
             building.TotalFloors = request.TotalFloors.Value;
         }

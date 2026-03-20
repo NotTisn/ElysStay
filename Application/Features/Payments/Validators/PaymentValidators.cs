@@ -27,6 +27,9 @@ public class BatchRecordPaymentsCommandValidator : AbstractValidator<BatchRecord
         RuleFor(x => x.Payments).NotEmpty().WithMessage("Cần ít nhất một khoản thanh toán.");
         RuleFor(x => x.Payments.Count).LessThanOrEqualTo(50)
             .WithMessage("Tối đa 50 khoản thanh toán mỗi lần.");
+        RuleFor(x => x.Payments)
+            .Must(payments => payments.Select(p => p.InvoiceId).Distinct().Count() == payments.Count)
+            .WithMessage("Không được có mã hóa đơn trùng lặp trong cùng một lô.");
         RuleForEach(x => x.Payments).ChildRules(entry =>
         {
             entry.RuleFor(e => e.InvoiceId).NotEmpty().WithMessage("Mã hóa đơn là bắt buộc.");

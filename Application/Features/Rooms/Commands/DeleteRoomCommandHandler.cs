@@ -37,7 +37,7 @@ public class DeleteRoomCommandHandler : IRequestHandler<DeleteRoomCommand>
             .AnyAsync(c => c.RoomId == room.Id && c.Status == ContractStatus.Active, cancellationToken);
         if (hasActiveContract)
             throw new ConflictException(
-                "Cannot delete room: it has an active contract.",
+                "Không thể xóa phòng: phòng đang có hợp đồng hoạt động.",
                 "ACTIVE_CONTRACT_EXISTS");
 
         // Block if pending/confirmed reservations
@@ -46,7 +46,7 @@ public class DeleteRoomCommandHandler : IRequestHandler<DeleteRoomCommand>
                 && (r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Confirmed), cancellationToken);
         if (hasActiveReservation)
             throw new ConflictException(
-                "Cannot delete room: it has active reservations.",
+                "Không thể xóa phòng: phòng đang có đặt cọc chưa giải quyết.",
                 "ACTIVE_RESERVATION_EXISTS");
 
         room.DeletedAt = DateTime.UtcNow;

@@ -50,8 +50,16 @@ public class UsersController : BaseApiController
     /// </summary>
     [HttpPost("me/avatar")]
     [RequestSizeLimit(2 * 1024 * 1024)]
-    public async Task<IActionResult> UploadAvatar(IFormFile file, CancellationToken ct)
+    [EnableRateLimiting("sensitive")]
+    public async Task<IActionResult> UploadAvatar(IFormFile? file, CancellationToken ct)
     {
+        if (file is null || file.Length == 0)
+            return BadRequest(new { message = "Cần cung cấp file ảnh đại diện." });
+
+        var allowedTypes = new[] { "image/jpeg", "image/png" };
+        if (!allowedTypes.Contains(file.ContentType))
+            return BadRequest(new { message = "Chỉ chấp nhận file JPEG hoặc PNG." });
+
         var command = new UploadAvatarCommand
         {
             FileStream = file.OpenReadStream(),
@@ -72,7 +80,7 @@ public class UsersController : BaseApiController
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command, CancellationToken ct)
     {
         await _mediator.Send(command, ct);
-        return OkResponse<object?>(null, "Password changed successfully");
+        return OkResponse<object?>(null, "Đổi mật khẩu thành công");
     }
 
     /// <summary>
@@ -154,7 +162,7 @@ public class UsersController : BaseApiController
     public async Task<IActionResult> CreateTenant([FromBody] CreateTenantCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Tenant created successfully");
+        return CreatedResponse(result, message: "Tạo tài khoản khách thuê thành công");
     }
 
     /// <summary>
@@ -167,7 +175,7 @@ public class UsersController : BaseApiController
     public async Task<IActionResult> CreateStaff([FromBody] CreateStaffCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Staff account created successfully");
+        return CreatedResponse(result, message: "Tạo tài khoản nhân viên thành công");
     }
 
     /// <summary>
@@ -183,7 +191,7 @@ public class UsersController : BaseApiController
             UserId = id,
             Status = request.Status
         }, ct);
-        return OkResponse<object?>(null, "User status updated successfully");
+        return OkResponse<object?>(null, "Cập nhật trạng thái người dùng thành công");
     }
 }
 

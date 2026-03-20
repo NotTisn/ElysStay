@@ -3,6 +3,7 @@ using Application.Features.Invoices.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
 
@@ -72,10 +73,11 @@ public class InvoicesController : BaseApiController
     /// </summary>
     [HttpPost("generate")]
     [Authorize(Roles = "Owner,Staff")]
+    [EnableRateLimiting("sensitive")]
     public async Task<IActionResult> GenerateInvoices([FromBody] GenerateInvoicesCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
-        return OkResponse(result, "Invoice generation completed");
+        return OkResponse(result, "Tạo hóa đơn hoàn tất");
     }
 
     /// <summary>
@@ -116,11 +118,12 @@ public class InvoicesController : BaseApiController
     /// </summary>
     [HttpPost("send-batch")]
     [Authorize(Roles = "Owner,Staff")]
+    [EnableRateLimiting("sensitive")]
     public async Task<IActionResult> BatchSendInvoices([FromBody] BatchSendInvoicesRequest request, CancellationToken ct)
     {
         var command = new BatchSendInvoicesCommand { InvoiceIds = request.InvoiceIds };
         var sentCount = await _mediator.Send(command, ct);
-        return OkResponse(new { sentCount }, $"{sentCount} invoices sent successfully");
+        return OkResponse(new { sentCount }, $"Gửi thành công {sentCount} hóa đơn");
     }
 
     /// <summary>
@@ -152,7 +155,7 @@ public class InvoicesController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Payment recorded successfully");
+        return CreatedResponse(result, message: "Ghi nhận thanh toán thành công");
     }
 
     /// <summary>

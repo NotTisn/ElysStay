@@ -3,6 +3,7 @@ using Application.Features.Expenses.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
 
@@ -106,7 +107,7 @@ public class ExpensesController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Expense created successfully");
+        return CreatedResponse(result, message: "Tạo chi phí thành công");
     }
 
     /// <summary>
@@ -126,7 +127,7 @@ public class ExpensesController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return OkResponse(result, "Expense updated successfully");
+        return OkResponse(result, "Cập nhật chi phí thành công");
     }
 
     /// <summary>
@@ -146,8 +147,16 @@ public class ExpensesController : BaseApiController
     [HttpPost("{id:guid}/receipt")]
     [Authorize(Roles = "Owner,Staff")]
     [RequestSizeLimit(5 * 1024 * 1024)]
-    public async Task<IActionResult> UploadReceipt(Guid id, IFormFile file, CancellationToken ct)
+    [EnableRateLimiting("sensitive")]
+    public async Task<IActionResult> UploadReceipt(Guid id, IFormFile? file, CancellationToken ct)
     {
+        if (file is null || file.Length == 0)
+            return BadRequest(new { message = "Cần cung cấp file biên lai." });
+
+        var allowedTypes = new[] { "image/jpeg", "image/png", "application/pdf" };
+        if (!allowedTypes.Contains(file.ContentType))
+            return BadRequest(new { message = "Chỉ chấp nhận file JPEG, PNG hoặc PDF." });
+
         var command = new UploadExpenseReceiptCommand
         {
             ExpenseId = id,

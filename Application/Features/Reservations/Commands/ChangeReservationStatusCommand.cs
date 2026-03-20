@@ -153,7 +153,7 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
                 ReservationId = reservation.Id,
                 Type = PaymentType.DepositIn,
                 Amount = reservation.DepositAmount,
-                Note = $"Deposit received for reservation (cancelled)",
+                Note = $"Tiền cọc nhận từ đặt phòng (đã hủy)",
                 RecordedBy = userId,
                 PaidAt = reservation.CreatedAt // Was originally received at reservation creation
             });
@@ -168,7 +168,7 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
                     ReservationId = reservation.Id,
                     Type = PaymentType.DepositRefund,
                     Amount = refundAmount,
-                    Note = request.RefundNote ?? "Deposit refund for cancelled reservation",
+                    Note = request.RefundNote ?? "Hoàn trả tiền cọc đặt phòng đã hủy",
                     RecordedBy = userId,
                     PaidAt = DateTime.UtcNow
                 });

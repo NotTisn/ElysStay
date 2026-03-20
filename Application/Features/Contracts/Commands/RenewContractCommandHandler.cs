@@ -58,7 +58,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
         var boundaryDate = newStartDate.AddDays(-1);
         oldContract.Status = ContractStatus.Terminated;
         oldContract.TerminationDate = boundaryDate;
-        oldContract.TerminationNote = "Administratively terminated for renewal";
+        oldContract.TerminationNote = "Chấm dứt để gia hạn hợp đồng mới";
         oldContract.UpdatedAt = DateTime.UtcNow;
         // Deposit carries over — deposit status stays Held on old contract
         // (the deposit is logically transferred to the new contract)
@@ -75,7 +75,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
             DepositAmount = oldContract.DepositAmount, // carries over
             DepositStatus = DepositStatus.Held,
             Status = ContractStatus.Active,
-            Note = $"Renewed from contract {oldContract.Id}",
+            Note = $"Gia hạn từ hợp đồng {oldContract.Id}",
             CreatedBy = userId,
         };
         _db.Contracts.Add(newContract);
@@ -91,7 +91,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
                 ContractId = oldContract.Id,
                 Type = PaymentType.DepositRefund,
                 Amount = newContract.DepositAmount,
-                Note = $"Deposit carried over to renewed contract (renewal)",
+                Note = $"Tiền cọc chuyển sang hợp đồng gia hạn",
                 RecordedBy = userId,
                 PaidAt = DateTime.UtcNow
             });
@@ -101,7 +101,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
                 ContractId = newContract.Id,
                 Type = PaymentType.DepositIn,
                 Amount = newContract.DepositAmount,
-                Note = $"Deposit carried over from contract {oldContract.Id} (renewal)",
+                Note = $"Tiền cọc chuyển từ hợp đồng {oldContract.Id}",
                 RecordedBy = userId,
                 PaidAt = DateTime.UtcNow
             });

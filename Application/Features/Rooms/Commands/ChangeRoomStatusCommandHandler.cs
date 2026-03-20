@@ -37,7 +37,7 @@ public class ChangeRoomStatusCommandHandler : IRequestHandler<ChangeRoomStatusCo
         // SM-05: Current status must also be Available or Maintenance
         if (room.Status is not (RoomStatus.Available or RoomStatus.Maintenance))
             throw new ConflictException(
-                $"Cannot manually change status from {room.Status}. Room must be Available or Maintenance.",
+                $"Không thể chuyển trạng thái thủ công từ {room.Status}. Phòng phải ở trạng thái Trống hoặc Bảo trì.",
                 "INVALID_STATUS_TRANSITION");
 
         if (room.Status == targetStatus)
@@ -53,7 +53,7 @@ public class ChangeRoomStatusCommandHandler : IRequestHandler<ChangeRoomStatusCo
         catch (DbUpdateConcurrencyException)
         {
             throw new ConflictException(
-                "Room was modified by another user. Please retry.",
+                "Phòng đã bị thay đổi bởi thao tác khác. Vui lòng thử lại.",
                 "CONCURRENCY_CONFLICT");
         }
 

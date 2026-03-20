@@ -63,7 +63,7 @@ public class AssignStaffCommandHandler : IRequestHandler<AssignStaffCommand, Sta
 
         if (alreadyAssigned)
             throw new ConflictException(
-                "This staff member is already assigned to this building.",
+                "Nhân viên này đã được phân công cho tòa nhà này.",
                 "DUPLICATE_STAFF_ASSIGNMENT");
 
         var assignment = new StaffAssignment

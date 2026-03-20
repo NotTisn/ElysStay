@@ -3,6 +3,7 @@ using Application.Features.TenantProfiles.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
 
@@ -48,7 +49,7 @@ public class TenantProfilesController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return OkResponse(result, "Tenant profile updated successfully");
+        return OkResponse(result, "Cập nhật hồ sơ khách thuê thành công");
     }
 
     /// <summary>
@@ -56,8 +57,16 @@ public class TenantProfilesController : BaseApiController
     /// </summary>
     [HttpPost("{userId:guid}/upload-id-images")]
     [RequestSizeLimit(10 * 1024 * 1024)]
-    public async Task<IActionResult> UploadIdImages(Guid userId, IFormFile frontImage, IFormFile backImage, CancellationToken ct)
+    [EnableRateLimiting("sensitive")]
+    public async Task<IActionResult> UploadIdImages(Guid userId, IFormFile? frontImage, IFormFile? backImage, CancellationToken ct)
     {
+        if (frontImage is null || backImage is null)
+            return BadRequest(new { message = "Cần cung cấp cả ảnh mặt trước và mặt sau CCCD." });
+
+        var allowedTypes = new[] { "image/jpeg", "image/png" };
+        if (!allowedTypes.Contains(frontImage.ContentType) || !allowedTypes.Contains(backImage.ContentType))
+            return BadRequest(new { message = "Chỉ chấp nhận file JPEG hoặc PNG." });
+
         var result = await _mediator.Send(new UploadCccdImagesCommand
         {
             UserId = userId,
@@ -79,8 +88,16 @@ public class TenantProfilesController : BaseApiController
     [HttpPost("{userId:guid}/ocr")]
     [Authorize(Roles = "Owner,Staff")]
     [RequestSizeLimit(10 * 1024 * 1024)]
-    public async Task<IActionResult> ParseCccdOcr(Guid userId, IFormFile frontImage, IFormFile backImage, CancellationToken ct)
+    [EnableRateLimiting("sensitive")]
+    public async Task<IActionResult> ParseCccdOcr(Guid userId, IFormFile? frontImage, IFormFile? backImage, CancellationToken ct)
     {
+        if (frontImage is null || backImage is null)
+            return BadRequest(new { message = "Cần cung cấp cả ảnh mặt trước và mặt sau CCCD." });
+
+        var allowedTypes = new[] { "image/jpeg", "image/png" };
+        if (!allowedTypes.Contains(frontImage.ContentType) || !allowedTypes.Contains(backImage.ContentType))
+            return BadRequest(new { message = "Chỉ chấp nhận file JPEG hoặc PNG." });
+
         var result = await _mediator.Send(new ParseCccdOcrQuery
         {
             UserId = userId,

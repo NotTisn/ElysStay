@@ -67,7 +67,7 @@ public class BuildingsController : BaseApiController
     public async Task<IActionResult> CreateBuilding([FromBody] CreateBuildingCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Building created successfully");
+        return CreatedResponse(result, message: "Tạo tòa nhà thành công");
     }
 
     /// <summary>
