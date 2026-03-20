@@ -126,6 +126,7 @@ public class UsersController : BaseApiController
     [HttpGet("staff")]
     [Authorize(Roles = "Owner")]
     public async Task<IActionResult> GetStaff(
+        [FromQuery] string? search,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string sort = "createdAt:desc",
@@ -134,6 +135,7 @@ public class UsersController : BaseApiController
         var result = await _mediator.Send(new GetUsersQuery
         {
             RoleFilter = UserRole.Staff,
+            Search = search,
             Page = page,
             PageSize = pageSize,
             Sort = sort
