@@ -12,5 +12,6 @@ public class GetContractsQuery : PagedQuery, IRequest<PagedResult<ContractDto>>
 {
     public Guid? BuildingId { get; init; }
     public Guid? RoomId { get; init; }
+    public Guid? TenantUserId { get; init; }
     public string? Status { get; init; }
 }

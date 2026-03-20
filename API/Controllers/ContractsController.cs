@@ -30,6 +30,7 @@ public class ContractsController : BaseApiController
     public async Task<IActionResult> GetContracts(
         [FromQuery] Guid? buildingId,
         [FromQuery] Guid? roomId,
+        [FromQuery] Guid? tenantUserId,
         [FromQuery] string? status,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -40,6 +41,7 @@ public class ContractsController : BaseApiController
         {
             BuildingId = buildingId,
             RoomId = roomId,
+            TenantUserId = tenantUserId,
             Status = status,
             Page = page,
             PageSize = pageSize,

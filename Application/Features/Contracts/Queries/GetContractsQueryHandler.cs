@@ -48,6 +48,11 @@ public class GetContractsQueryHandler : IRequestHandler<GetContractsQuery, Paged
         if (request.RoomId.HasValue)
             query = query.Where(c => c.RoomId == request.RoomId.Value);
 
+        if (request.TenantUserId.HasValue)
+            query = query.Where(c =>
+                c.TenantUserId == request.TenantUserId.Value ||
+                c.ContractTenants.Any(ct => ct.TenantUserId == request.TenantUserId.Value));
+
         if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<ContractStatus>(request.Status, true, out var status))
             query = query.Where(c => c.Status == status);
 
