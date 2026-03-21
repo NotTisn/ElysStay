@@ -29,19 +29,44 @@ public class UploadCccdImagesCommandHandler : IRequestHandler<UploadCccdImagesCo
 {
     private readonly IApplicationDbContext _db;
     private readonly IFileUploadService _fileUpload;
+    private readonly ICurrentUserService _currentUser;
+    private readonly IBuildingScopeService _buildingScope;
 
     private const long MaxSize = 5 * 1024 * 1024; // 5 MB
     private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
         { "image/jpeg", "image/png" };
 
-    public UploadCccdImagesCommandHandler(IApplicationDbContext db, IFileUploadService fileUpload)
+    public UploadCccdImagesCommandHandler(
+        IApplicationDbContext db,
+        IFileUploadService fileUpload,
+        ICurrentUserService currentUser,
+        IBuildingScopeService buildingScope)
     {
         _db = db;
         _fileUpload = fileUpload;
+        _currentUser = currentUser;
+        _buildingScope = buildingScope;
     }
 
     public async Task<UploadCccdImagesResult> Handle(UploadCccdImagesCommand request, CancellationToken ct)
     {
+        var userId = _currentUser.GetRequiredUserId();
+
+        // Tenants can only upload their own CCCD
+        if (_currentUser.IsTenant && request.UserId != userId)
+            throw new ForbiddenException("Bạn chỉ có thể tải ảnh CCCD của mình.");
+
+        // Owner/Staff must have building-scope access to the target user's building
+        if (!_currentUser.IsTenant)
+        {
+            var tenantBuildingId = await _db.Contracts
+                .Where(c => c.TenantUserId == request.UserId && c.Status == Domain.Enums.ContractStatus.Active)
+                .Select(c => c.Room!.BuildingId)
+                .FirstOrDefaultAsync(ct);
+            if (tenantBuildingId != Guid.Empty)
+                await _buildingScope.AuthorizeAsync(tenantBuildingId, ct);
+        }
+
         ValidateFile(request.FrontSize, request.FrontContentType, "Mặt trước");
         ValidateFile(request.BackSize, request.BackContentType, "Mặt sau");
 

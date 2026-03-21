@@ -17,11 +17,13 @@ public class ExportInvoicePdfQueryHandler : IRequestHandler<ExportInvoicePdfQuer
 {
     private readonly IApplicationDbContext _db;
     private readonly IInvoicePdfService _pdfService;
+    private readonly ICurrentUserService _currentUser;
 
-    public ExportInvoicePdfQueryHandler(IApplicationDbContext db, IInvoicePdfService pdfService)
+    public ExportInvoicePdfQueryHandler(IApplicationDbContext db, IInvoicePdfService pdfService, ICurrentUserService currentUser)
     {
         _db = db;
         _pdfService = pdfService;
+        _currentUser = currentUser;
     }
 
     public async Task<InvoicePdfResult> Handle(ExportInvoicePdfQuery request, CancellationToken ct)
@@ -39,6 +41,30 @@ public class ExportInvoicePdfQueryHandler : IRequestHandler<ExportInvoicePdfQuer
             .Include(i => i.Payments)
             .FirstOrDefaultAsync(i => i.Id == request.InvoiceId, ct)
             ?? throw new NotFoundException("Hóa đơn", request.InvoiceId);
+
+        // Authorization — mirror GetInvoiceByIdQuery
+        var userId = _currentUser.GetRequiredUserId();
+        if (_currentUser.IsTenant)
+        {
+            var contract2 = invoice.Contract!;
+            var isOnContract = contract2.TenantUserId == userId ||
+                await _db.ContractTenants.AnyAsync(
+                    ct2 => ct2.ContractId == contract2.Id && ct2.TenantUserId == userId, ct);
+            if (!isOnContract)
+                throw new ForbiddenException("Bạn chỉ có thể xem hóa đơn của mình.");
+        }
+        else if (_currentUser.IsOwner)
+        {
+            if (invoice.Contract!.Room!.Building!.OwnerId != userId)
+                throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
+        }
+        else if (_currentUser.IsStaff)
+        {
+            var isAssigned = await _db.StaffAssignments
+                .AnyAsync(sa => sa.BuildingId == invoice.Contract!.Room!.BuildingId && sa.StaffId == userId, ct);
+            if (!isAssigned)
+                throw new ForbiddenException("Bạn không được phân công cho tòa nhà này.");
+        }
 
         var contract = invoice.Contract!;
         var room = contract.Room!;

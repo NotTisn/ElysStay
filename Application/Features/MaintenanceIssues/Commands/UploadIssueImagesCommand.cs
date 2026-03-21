@@ -28,20 +28,30 @@ public class UploadIssueImagesCommandHandler : IRequestHandler<UploadIssueImages
 {
     private readonly IApplicationDbContext _db;
     private readonly IFileUploadService _fileUpload;
+    private readonly ICurrentUserService _currentUser;
+    private readonly IBuildingScopeService _buildingScope;
 
     private const long MaxSizePerFile = 3 * 1024 * 1024; // 3 MB
     private const int MaxFiles = 3;
     private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
         { "image/jpeg", "image/png" };
 
-    public UploadIssueImagesCommandHandler(IApplicationDbContext db, IFileUploadService fileUpload)
+    public UploadIssueImagesCommandHandler(
+        IApplicationDbContext db,
+        IFileUploadService fileUpload,
+        ICurrentUserService currentUser,
+        IBuildingScopeService buildingScope)
     {
         _db = db;
         _fileUpload = fileUpload;
+        _currentUser = currentUser;
+        _buildingScope = buildingScope;
     }
 
     public async Task<IReadOnlyList<string>> Handle(UploadIssueImagesCommand request, CancellationToken ct)
     {
+        _currentUser.GetRequiredUserId();
+
         if (request.Files is null || request.Files.Count == 0)
             throw new BadRequestException("Vui lòng chọn ít nhất 1 ảnh.");
 
@@ -59,6 +69,9 @@ public class UploadIssueImagesCommandHandler : IRequestHandler<UploadIssueImages
 
         var issue = await _db.MaintenanceIssues.FindAsync([request.IssueId], ct)
             ?? throw new NotFoundException("Sự cố", request.IssueId);
+
+        // Building-scope authorization
+        await _buildingScope.AuthorizeAsync(issue.BuildingId, ct);
 
         // Parse existing URLs (if any) so we don't exceed total limit
         var existingUrls = string.IsNullOrWhiteSpace(issue.ImageUrls)

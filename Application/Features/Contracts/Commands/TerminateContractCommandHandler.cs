@@ -49,6 +49,10 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
         if (request.TerminationDate < contract.StartDate)
             throw new BadRequestException("Ngày chấm dứt không được trước ngày bắt đầu hợp đồng.");
 
+        // Validate termination date is not before move-in date
+        if (request.TerminationDate < contract.MoveInDate)
+            throw new BadRequestException("Ngày chấm dứt không được trước ngày dọn vào.");
+
         // Validate deductions
         if (request.Deductions < 0)
             throw new BadRequestException("Khoản khấu trừ không được âm.");
