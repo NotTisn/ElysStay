@@ -41,6 +41,7 @@ public class DeleteExpenseCommandHandler : IRequestHandler<DeleteExpenseCommand,
 
         // Soft-delete: preserve financial audit trail
         expense.DeletedAt = DateTime.UtcNow;
+        expense.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
         return Unit.Value;

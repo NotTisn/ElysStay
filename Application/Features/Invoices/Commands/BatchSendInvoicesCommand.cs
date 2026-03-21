@@ -38,13 +38,15 @@ public class BatchSendInvoicesCommandHandler : IRequestHandler<BatchSendInvoices
     {
         _currentUser.GetRequiredUserId();
 
+        var distinctIds = request.InvoiceIds.Distinct().ToList();
+
         var invoices = await _db.Invoices
             .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
             .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
-            .Where(i => request.InvoiceIds.Contains(i.Id))
+            .Where(i => distinctIds.Contains(i.Id))
             .ToListAsync(cancellationToken);
 
-        if (invoices.Count != request.InvoiceIds.Count)
+        if (invoices.Count != distinctIds.Count)
             throw new NotFoundException("Một số hóa đơn không được tìm thấy.");
 
         // Authorize all distinct buildings

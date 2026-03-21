@@ -62,80 +62,95 @@ public class ReservationExpiryBackgroundService : BackgroundService
         var sw = Stopwatch.StartNew();
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
 
         var now = DateTime.UtcNow;
-        var expiredReservations = await db.RoomReservations
-            .Include(r => r.Room).ThenInclude(r => r!.Building!)
-            .Include(r => r.TenantUser)
+        var expiredReservationIds = await db.RoomReservations
             .Where(r => (r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Confirmed)
                         && r.ExpiresAt <= now)
+            .Select(r => r.Id)
             .ToListAsync(ct);
 
-        if (expiredReservations.Count == 0)
+        if (expiredReservationIds.Count == 0)
         {
             _logger.LogDebug("BG-01 ReservationExpiryJob: no expired reservations found ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
             return;
         }
 
-        foreach (var reservation in expiredReservations)
+        var processed = 0;
+        foreach (var reservationId in expiredReservationIds)
         {
-            var wasConfirmed = reservation.Status == ReservationStatus.Confirmed;
-
-            reservation.Status = ReservationStatus.Expired;
-            reservation.UpdatedAt = now;
-
-            // DEP-02: Confirmed reservations had deposit received — record for accounting
-            if (wasConfirmed && reservation.DepositAmount > 0)
+            try
             {
-                reservation.RefundAmount = 0;
-                reservation.RefundNote = "Tiền cọc bị mất do hết hạn đặt phòng.";
-
-                // Record DEPOSIT_IN (money was received at confirmation)
-                db.Payments.Add(new Payment
-                {
-                    ReservationId = reservation.Id,
-                    Type = PaymentType.DepositIn,
-                    Amount = reservation.DepositAmount,
-                    Note = "Tiền cọc nhận từ đặt phòng (hết hạn — tịch thu)",
-                    RecordedBy = reservation.TenantUserId,
-                    PaidAt = reservation.CreatedAt
-                });
+                await ProcessReservationAsync(reservationId, now, ct);
+                processed++;
             }
-
-            if (reservation.Room is not null && reservation.Room.Status == RoomStatus.Booked)
+            catch (Exception ex)
             {
-                reservation.Room.Status = RoomStatus.Available;
-                reservation.Room.UpdatedAt = now;
+                _logger.LogError(ex, "BG-01 ReservationExpiryJob: failed to expire reservation {ReservationId}", reservationId);
             }
+        }
 
-            // Notify tenant that their reservation has expired
-            db.Notifications.Add(new Notification
+        _logger.LogInformation("BG-01 ReservationExpiryJob: expired {Processed}/{Total} reservations in {ElapsedMs}ms", processed, expiredReservationIds.Count, sw.ElapsedMilliseconds);
+    }
+
+    private async Task ProcessReservationAsync(Guid reservationId, DateTime now, CancellationToken ct)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+        var reservation = await db.RoomReservations
+            .Include(r => r.Room).ThenInclude(r => r!.Building!)
+            .Include(r => r.TenantUser)
+            .FirstOrDefaultAsync(r => r.Id == reservationId, ct)
+            ?? throw new InvalidOperationException($"Reservation {reservationId} was not found during expiry processing.");
+
+        var wasConfirmed = reservation.Status == ReservationStatus.Confirmed;
+
+        reservation.Status = ReservationStatus.Expired;
+        reservation.UpdatedAt = now;
+
+        if (wasConfirmed && reservation.DepositAmount > 0)
+        {
+            reservation.RefundAmount = 0;
+            reservation.RefundNote = "Tiền cọc bị mất do hết hạn đặt phòng.";
+
+            db.Payments.Add(new Payment
             {
-                UserId = reservation.TenantUserId,
-                Title = "Đặt phòng đã hết hạn",
-                Message = $"Đặt phòng {reservation.Room?.RoomNumber ?? "N/A"} đã hết hạn và bị hủy tự động.",
-                Type = Domain.Constants.NotificationTypes.ReservationExpired,
-                ReferenceId = reservation.Id,
-                CreatedAt = now
+                ReservationId = reservation.Id,
+                Type = PaymentType.DepositIn,
+                Amount = reservation.DepositAmount,
+                Note = "Tiền cọc nhận từ đặt phòng (hết hạn — tịch thu)",
+                RecordedBy = reservation.TenantUserId,
+                PaidAt = reservation.CreatedAt
             });
         }
 
-        await db.SaveChangesAsync(ct);
-
-        // Best-effort emails to tenants (after successful save)
-        foreach (var reservation in expiredReservations)
+        if (reservation.Room is not null && reservation.Room.Status == RoomStatus.Booked)
         {
-            var tenant = reservation.TenantUser;
-            var room = reservation.Room;
-            if (tenant != null && room != null)
-            {
-                var (subject, html) = EmailTemplates.ReservationExpired(
-                    tenant.FullName, room.RoomNumber, room.Building?.Name ?? "N/A");
-                await emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, ct);
-            }
+            reservation.Room.Status = RoomStatus.Available;
+            reservation.Room.UpdatedAt = now;
         }
 
-        _logger.LogInformation("BG-01 ReservationExpiryJob: expired {Count} reservations in {ElapsedMs}ms", expiredReservations.Count, sw.ElapsedMilliseconds);
+        db.Notifications.Add(new Notification
+        {
+            UserId = reservation.TenantUserId,
+            Title = "Đặt phòng đã hết hạn",
+            Message = $"Đặt phòng {reservation.Room?.RoomNumber ?? "N/A"} đã hết hạn và bị hủy tự động.",
+            Type = Domain.Constants.NotificationTypes.ReservationExpired,
+            ReferenceId = reservation.Id,
+            CreatedAt = now
+        });
+
+        await db.SaveChangesAsync(ct);
+
+        var tenant = reservation.TenantUser;
+        var room = reservation.Room;
+        if (tenant != null && room != null)
+        {
+            var (subject, html) = EmailTemplates.ReservationExpired(
+                tenant.FullName, room.RoomNumber, room.Building?.Name ?? "N/A");
+            await emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, ct);
+        }
     }
 }

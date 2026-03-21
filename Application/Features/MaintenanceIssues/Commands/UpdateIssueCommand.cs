@@ -68,7 +68,14 @@ public class UpdateIssueCommandHandler : IRequestHandler<UpdateIssueCommand, Mai
             issue.Description = request.Description;
 
         issue.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConflictException("Sự cố đã bị thay đổi bởi thao tác khác. Vui lòng tải lại và thử lại.");
+        }
 
         return new MaintenanceIssueDto(
             issue.Id,

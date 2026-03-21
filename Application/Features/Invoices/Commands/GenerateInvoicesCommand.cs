@@ -278,7 +278,16 @@ public class GenerateInvoicesCommandHandler : IRequestHandler<GenerateInvoicesCo
         }
 
         // IG-08: Single transaction
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException) when (generated.Count > 0)
+        {
+            throw new ConflictException(
+                "Hóa đơn đã tồn tại cho một số hợp đồng trong kỳ này. Vui lòng thử lại.",
+                "DUPLICATE_INVOICE");
+        }
 
         return new InvoiceGenerationResult
         {

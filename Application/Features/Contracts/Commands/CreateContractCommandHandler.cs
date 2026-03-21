@@ -196,7 +196,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
         catch (DbUpdateConcurrencyException)
         {
             throw new ConflictException(
-                "Room was modified by another user. Please retry.",
+                "Phòng đã bị thay đổi bởi thao tác khác. Vui lòng thử lại.",
                 "CONCURRENCY_CONFLICT");
         }
 

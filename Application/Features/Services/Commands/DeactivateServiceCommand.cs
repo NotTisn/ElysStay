@@ -37,6 +37,13 @@ public class DeactivateServiceCommandHandler : IRequestHandler<DeactivateService
         service.IsActive = false;
         service.UpdatedAt = DateTime.UtcNow;
 
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConflictException("Dịch vụ đã bị thay đổi bởi thao tác khác. Vui lòng tải lại và thử lại.");
+        }
     }
 }

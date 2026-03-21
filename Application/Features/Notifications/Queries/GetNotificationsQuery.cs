@@ -37,7 +37,15 @@ public class GetNotificationsQueryHandler : IRequestHandler<GetNotificationsQuer
         if (request.IsRead.HasValue)
             query = query.Where(n => n.IsRead == request.IsRead.Value);
 
-        query = query.OrderByDescending(n => n.CreatedAt);
+        var sortKey = (request.Sort?.Split(':').FirstOrDefault() ?? "").ToLowerInvariant();
+        var desc = request.Sort?.EndsWith(":desc", StringComparison.OrdinalIgnoreCase) ?? true;
+
+        query = sortKey switch
+        {
+            "type" => desc ? query.OrderByDescending(n => n.Type) : query.OrderBy(n => n.Type),
+            "isread" => desc ? query.OrderByDescending(n => n.IsRead) : query.OrderBy(n => n.IsRead),
+            _ => desc ? query.OrderByDescending(n => n.CreatedAt) : query.OrderBy(n => n.CreatedAt),
+        };
 
         var pagedResult = await query
             .Select(n => new NotificationDto(

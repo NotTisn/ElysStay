@@ -55,7 +55,14 @@ public class SendInvoiceCommandHandler : IRequestHandler<SendInvoiceCommand, Uni
             ReferenceId = invoice.Id,
         });
 
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConflictException("Hóa đơn đã bị thay đổi bởi thao tác khác. Vui lòng tải lại và thử lại.");
+        }
 
         // Best-effort email to tenant (after successful save)
         var tenant = invoice.Contract!.TenantUser!;
