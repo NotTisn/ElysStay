@@ -123,7 +123,7 @@ public class ChangeIssueStatusCommandHandler : IRequestHandler<ChangeIssueStatus
 
         if (!valid)
             throw new ConflictException(
-                $"Cannot transition issue from {current} to {target}.",
+                $"Không thể chuyển trạng thái sự cố từ {current} sang {target}.",
                 "INVALID_STATUS_TRANSITION");
     }
 }

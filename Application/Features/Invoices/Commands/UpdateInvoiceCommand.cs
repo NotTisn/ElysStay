@@ -85,7 +85,7 @@ public class UpdateInvoiceCommandHandler : IRequestHandler<UpdateInvoiceCommand,
 
             if (newTotalAmount < paidAmount)
                 throw new BadRequestException(
-                    $"Updated total ({newTotalAmount}) cannot be less than already paid amount ({paidAmount}).");
+                    $"Tổng tiền mới ({newTotalAmount}) không thể nhỏ hơn số tiền đã thanh toán ({paidAmount}).");
 
             // Recalculate total
             invoice.TotalAmount = newTotalAmount;
