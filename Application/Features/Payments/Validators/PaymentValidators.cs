@@ -15,8 +15,8 @@ public class RecordPaymentCommandValidator : AbstractValidator<RecordPaymentComm
             .MaximumLength(50).When(x => x.PaymentMethod is not null)
             .WithMessage("Phương thức thanh toán không được vượt quá 50 ký tự.");
         RuleFor(x => x.Note)
-            .MaximumLength(500).When(x => x.Note is not null)
-            .WithMessage("Ghi chú không được vượt quá 500 ký tự.");
+            .MaximumLength(1000).When(x => x.Note is not null)
+            .WithMessage("Ghi chú không được vượt quá 1000 ký tự.");
     }
 }
 
@@ -38,8 +38,8 @@ public class BatchRecordPaymentsCommandValidator : AbstractValidator<BatchRecord
                 .MaximumLength(50).When(e => e.PaymentMethod is not null)
                 .WithMessage("Phương thức thanh toán không được vượt quá 50 ký tự.");
             entry.RuleFor(e => e.Note)
-                .MaximumLength(500).When(e => e.Note is not null)
-                .WithMessage("Ghi chú không được vượt quá 500 ký tự.");
+                .MaximumLength(1000).When(e => e.Note is not null)
+                .WithMessage("Ghi chú không được vượt quá 1000 ký tự.");
         });
     }
 }

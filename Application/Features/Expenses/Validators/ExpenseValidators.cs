@@ -19,7 +19,7 @@ public class CreateExpenseCommandValidator : AbstractValidator<CreateExpenseComm
             .NotEmpty().WithMessage("Danh mục là bắt buộc.").MaximumLength(100)
             .Must(c => AllowedCategories.Contains(c))
             .WithMessage($"Danh mục phải là một trong: {string.Join(", ", AllowedCategories.Order())}.");
-        RuleFor(x => x.Description).NotEmpty().WithMessage("Mô tả là bắt buộc.").MaximumLength(500).WithMessage("Mô tả không được vượt quá 500 ký tự.");
+        RuleFor(x => x.Description).NotEmpty().WithMessage("Mô tả là bắt buộc.").MaximumLength(1000).WithMessage("Mô tả không được vượt quá 1000 ký tự.");
         RuleFor(x => x.Amount).GreaterThan(0).WithMessage("Số tiền phải lớn hơn 0.");
         RuleFor(x => x.ExpenseDate)
             .NotEmpty().WithMessage("Ngày chi phí là bắt buộc.")
@@ -50,7 +50,7 @@ public class UpdateExpenseCommandValidator : AbstractValidator<UpdateExpenseComm
             .When(x => x.Category is not null);
         RuleFor(x => x.Description)
             .NotEmpty().WithMessage("Mô tả là bắt buộc.")
-            .MaximumLength(500).WithMessage("Mô tả không được vượt quá 500 ký tự.")
+            .MaximumLength(1000).WithMessage("Mô tả không được vượt quá 1000 ký tự.")
             .When(x => x.Description is not null);
         RuleFor(x => x.ExpenseDate)
             .Must(d => d!.Value <= DateOnly.FromDateTime(DateTime.UtcNow))

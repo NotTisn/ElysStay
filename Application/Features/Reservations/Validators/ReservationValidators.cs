@@ -17,8 +17,8 @@ public class CreateReservationCommandValidator : AbstractValidator<CreateReserva
             .When(x => x.ExpiresAt.HasValue)
             .WithMessage("Ngày hết hạn phải trong tương lai.");
         RuleFor(x => x.Note)
-            .MaximumLength(500).When(x => x.Note is not null)
-            .WithMessage("Ghi chú không được vượt quá 500 ký tự.");
+            .MaximumLength(1000).When(x => x.Note is not null)
+            .WithMessage("Ghi chú không được vượt quá 1000 ký tự.");
     }
 }
 
@@ -36,7 +36,7 @@ public class ChangeReservationStatusCommandValidator : AbstractValidator<ChangeR
             .GreaterThanOrEqualTo(0).WithMessage("Số tiền hoàn không được âm.")
             .When(x => x.RefundAmount.HasValue);
         RuleFor(x => x.RefundNote)
-            .MaximumLength(500).WithMessage("Ghi chú hoàn tiền không được vượt quá 500 ký tự.")
+            .MaximumLength(1000).WithMessage("Ghi chú hoàn tiền không được vượt quá 1000 ký tự.")
             .When(x => x.RefundNote is not null);
     }
 }

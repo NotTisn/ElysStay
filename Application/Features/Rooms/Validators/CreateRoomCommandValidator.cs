@@ -12,7 +12,7 @@ public class CreateRoomCommandValidator : AbstractValidator<CreateRoomCommand>
 
         RuleFor(x => x.RoomNumber)
             .NotEmpty().WithMessage("Số phòng là bắt buộc.")
-            .MaximumLength(20).WithMessage("Số phòng không được vượt quá 20 ký tự.");
+            .MaximumLength(50).WithMessage("Số phòng không được vượt quá 50 ký tự.");
 
         RuleFor(x => x.Floor)
             .GreaterThanOrEqualTo(1).WithMessage("Tầng phải ít nhất là 1.");

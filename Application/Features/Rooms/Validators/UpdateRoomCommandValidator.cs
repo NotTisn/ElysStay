@@ -11,7 +11,7 @@ public class UpdateRoomCommandValidator : AbstractValidator<UpdateRoomCommand>
             .NotEmpty().WithMessage("Mã phòng là bắt buộc.");
 
         RuleFor(x => x.RoomNumber)
-            .MaximumLength(20).WithMessage("Số phòng không được vượt quá 20 ký tự.")
+            .MaximumLength(50).WithMessage("Số phòng không được vượt quá 50 ký tự.")
             .When(x => x.RoomNumber is not null);
 
         RuleFor(x => x.Floor)

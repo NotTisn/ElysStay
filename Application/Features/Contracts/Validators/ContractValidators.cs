@@ -33,8 +33,8 @@ public class CreateContractCommandValidator : AbstractValidator<Commands.CreateC
             .GreaterThanOrEqualTo(0).WithMessage("Tiền đặt cọc không được âm.");
 
         RuleFor(x => x.Note)
-            .MaximumLength(2000).When(x => x.Note is not null)
-            .WithMessage("Ghi chú không được vượt quá 2000 ký tự.");
+            .MaximumLength(1000).When(x => x.Note is not null)
+            .WithMessage("Ghi chú không được vượt quá 1000 ký tự.");
     }
 }
 
@@ -48,6 +48,10 @@ public class UpdateContractCommandValidator : AbstractValidator<Commands.UpdateC
         RuleFor(x => x.MonthlyRent)
             .GreaterThan(0).When(x => x.MonthlyRent.HasValue)
             .WithMessage("Tiền thuê hàng tháng phải lớn hơn 0.");
+
+        RuleFor(x => x.Note)
+            .MaximumLength(1000).When(x => x.Note is not null)
+            .WithMessage("Ghi chú không được vượt quá 1000 ký tự.");
 
         // EndDate > StartDate is validated in the handler against the persisted StartDate
     }
@@ -65,6 +69,10 @@ public class TerminateContractCommandValidator : AbstractValidator<Commands.Term
 
         RuleFor(x => x.Deductions)
             .GreaterThanOrEqualTo(0).WithMessage("Khoản khấu trừ không được âm.");
+
+        RuleFor(x => x.Note)
+            .MaximumLength(1000).When(x => x.Note is not null)
+            .WithMessage("Ghi chú chấm dứt không được vượt quá 1000 ký tự.");
     }
 }
 

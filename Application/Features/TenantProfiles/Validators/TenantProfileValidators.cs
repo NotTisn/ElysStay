@@ -19,7 +19,7 @@ public class UpdateTenantProfileCommandValidator : AbstractValidator<UpdateTenan
             .WithMessage("Số CCCD phải đúng 12 chữ số.");
 
         RuleFor(x => x.Gender)
-            .MaximumLength(20).WithMessage("Giới tính không được vượt quá 20 ký tự.")
+            .MaximumLength(10).WithMessage("Giới tính không được vượt quá 10 ký tự.")
             .When(x => x.Gender is not null);
 
         RuleFor(x => x.PermanentAddress)
