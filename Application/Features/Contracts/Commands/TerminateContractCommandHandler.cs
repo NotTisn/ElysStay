@@ -142,7 +142,7 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
             UserId = contract.TenantUserId,
             Title = "Hợp đồng đã chấm dứt",
             Message = $"Hợp đồng phòng {contract.Room!.RoomNumber} tại {contract.Room.Building!.Name} đã được chấm dứt.",
-            Type = "CONTRACT_TERMINATED",
+            Type = Domain.Constants.NotificationTypes.ContractTerminated,
             ReferenceId = contract.Id,
         });
 

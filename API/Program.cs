@@ -39,13 +39,13 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
 
-// CORS — restrict origins per environment; adjust AllowedOrigins in appsettings for production
+// CORS — origins configured per environment in appsettings (empty = block all cross-origin)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultCorsPolicy", policy =>
     {
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-            ?? ["http://localhost:3000", "http://localhost:3001"];
+            ?? [];
 
         policy.WithOrigins(allowedOrigins)
               .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")

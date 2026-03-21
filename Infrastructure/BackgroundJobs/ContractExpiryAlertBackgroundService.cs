@@ -107,7 +107,7 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
                     UserId = contract.TenantUserId,
                     Title = "Cảnh báo hợp đồng sắp hết hạn",
                     Message = $"Hợp đồng phòng {contract.Room!.RoomNumber} sẽ hết hạn vào {contract.EndDate:yyyy-MM-dd}.",
-                    Type = "CONTRACT_EXPIRY_ALERT",
+                    Type = Domain.Constants.NotificationTypes.ContractExpiryAlert,
                     ReferenceId = contract.Id,
                     CreatedAt = now
                 });
@@ -121,7 +121,7 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
                     UserId = ownerId,
                     Title = "Cảnh báo hợp đồng sắp hết hạn",
                     Message = $"Hợp đồng phòng {contract.Room.RoomNumber} của khách {contract.TenantUser!.FullName} sẽ hết hạn vào {contract.EndDate:yyyy-MM-dd}.",
-                    Type = "CONTRACT_EXPIRY_ALERT",
+                    Type = Domain.Constants.NotificationTypes.ContractExpiryAlert,
                     ReferenceId = contract.Id,
                     CreatedAt = now
                 });

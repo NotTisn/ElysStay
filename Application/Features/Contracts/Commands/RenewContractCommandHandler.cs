@@ -133,7 +133,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
             UserId = oldContract.TenantUserId,
             Title = "Hợp đồng đã gia hạn",
             Message = $"Hợp đồng phòng {oldContract.Room!.RoomNumber} tại {oldContract.Room.Building!.Name} đã được gia hạn đến {request.NewEndDate:dd/MM/yyyy}.",
-            Type = "CONTRACT_RENEWED",
+            Type = Domain.Constants.NotificationTypes.ContractRenewed,
             ReferenceId = newContract.Id,
         });
 

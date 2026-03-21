@@ -76,7 +76,7 @@ public class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceCommand, Uni
             UserId = invoice.Contract!.TenantUserId,
             Title = "Hóa đơn đã hủy",
             Message = $"Hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear} đã bị hủy.",
-            Type = "INVOICE_VOIDED",
+            Type = Domain.Constants.NotificationTypes.InvoiceVoided,
             ReferenceId = invoice.Id,
         });
 

@@ -93,7 +93,7 @@ public class InvoiceOverdueBackgroundService : BackgroundService
                 UserId = invoice.Contract!.TenantUserId,
                 Title = "Hóa đơn quá hạn",
                 Message = $"Hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear} đã quá hạn thanh toán.",
-                Type = "INVOICE_OVERDUE",
+                Type = Domain.Constants.NotificationTypes.InvoiceOverdue,
                 ReferenceId = invoice.Id,
                 CreatedAt = now
             });

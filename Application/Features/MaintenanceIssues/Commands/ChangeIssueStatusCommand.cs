@@ -76,7 +76,7 @@ public class ChangeIssueStatusCommandHandler : IRequestHandler<ChangeIssueStatus
             UserId = issue.ReportedBy,
             Title = "Cập nhật sự cố",
             Message = $"Sự cố \"{issue.Title}\" đã được cập nhật: {oldStatus} → {request.Status}.",
-            Type = "ISSUE",
+            Type = Domain.Constants.NotificationTypes.Issue,
             ReferenceId = issue.Id
         };
         _db.Notifications.Add(notification);

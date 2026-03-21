@@ -51,7 +51,7 @@ public class SendInvoiceCommandHandler : IRequestHandler<SendInvoiceCommand, Uni
             UserId = invoice.Contract!.TenantUserId,
             Title = "Hóa đơn mới",
             Message = $"Hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear} đã được gửi.",
-            Type = "INVOICE_SENT",
+            Type = Domain.Constants.NotificationTypes.InvoiceSent,
             ReferenceId = invoice.Id,
         });
 

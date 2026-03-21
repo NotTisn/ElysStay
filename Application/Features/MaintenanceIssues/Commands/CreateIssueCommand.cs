@@ -118,7 +118,7 @@ public class CreateIssueCommandHandler : IRequestHandler<CreateIssueCommand, Mai
             UserId = building.OwnerId,
             Title = "Sự cố mới",
             Message = $"Sự cố mới \"{request.Title}\" đã được báo cáo tại {building.Name}.",
-            Type = "ISSUE",
+            Type = Domain.Constants.NotificationTypes.Issue,
             ReferenceId = issue.Id
         });
 

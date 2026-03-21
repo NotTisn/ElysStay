@@ -134,7 +134,7 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
                 UserId = invoice.Contract!.TenantUserId,
                 Title = "Thanh toán ghi nhận",
                 Message = $"Thanh toán {entry.Amount:N0}đ đã được ghi nhận cho hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear}.",
-                Type = "PAYMENT_RECORDED",
+                Type = Domain.Constants.NotificationTypes.PaymentRecorded,
                 ReferenceId = invoice.Id,
             });
 

@@ -115,7 +115,7 @@ public class ReservationExpiryBackgroundService : BackgroundService
                 UserId = reservation.TenantUserId,
                 Title = "Đặt phòng đã hết hạn",
                 Message = $"Đặt phòng {reservation.Room?.RoomNumber ?? "N/A"} đã hết hạn và bị hủy tự động.",
-                Type = "RESERVATION_EXPIRED",
+                Type = Domain.Constants.NotificationTypes.ReservationExpired,
                 ReferenceId = reservation.Id,
                 CreatedAt = now
             });

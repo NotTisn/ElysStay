@@ -129,7 +129,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             UserId = request.TenantUserId,
             Title = "Hợp đồng mới",
             Message = $"Bạn đã có hợp đồng thuê phòng {room.RoomNumber} tại {room.Building!.Name}.",
-            Type = "CONTRACT_CREATED",
+            Type = Domain.Constants.NotificationTypes.ContractCreated,
             ReferenceId = contract.Id,
         });
 
