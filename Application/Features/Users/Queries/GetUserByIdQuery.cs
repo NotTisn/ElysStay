@@ -31,16 +31,16 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto
         var user = await _db.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == request.Id, ct)
-            ?? throw new NotFoundException("User", request.Id);
+            ?? throw new NotFoundException("Người dùng", request.Id);
 
         // Tenant: self only
         if (_currentUser.IsTenant && user.Id != callerId)
-            throw new ForbiddenException("Tenants can only view their own profile.");
+            throw new ForbiddenException("Khách thuê chỉ có thể xem hồ sơ của mình.");
 
         if (_currentUser.IsStaff && user.Id != callerId)
         {
             if (user.Role != UserRole.Tenant)
-                throw new ForbiddenException("Staff can only view their own profile and tenants in assigned buildings.");
+                throw new ForbiddenException("Nhân viên chỉ có thể xem hồ sơ của mình và khách thuê trong tòa nhà được phân công.");
 
             var canViewTenant = await _db.Contracts
                 .AnyAsync(c => (c.TenantUserId == user.Id
@@ -48,7 +48,7 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto
                     && c.Room!.Building!.BuildingStaffs.Any(bs => bs.StaffId == callerId), ct);
 
             if (!canViewTenant)
-                throw new ForbiddenException("This tenant does not belong to any of your assigned buildings.");
+                throw new ForbiddenException("Khách thuê này không thuộc tòa nhà nào bạn được phân công.");
         }
 
         if (_currentUser.IsOwner && user.Id != callerId)
@@ -66,7 +66,7 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto
             };
 
             if (!canViewUser)
-                throw new ForbiddenException("This user does not belong to any of your buildings.");
+                throw new ForbiddenException("Người dùng này không thuộc tòa nhà nào của bạn.");
         }
 
         return new UserDto

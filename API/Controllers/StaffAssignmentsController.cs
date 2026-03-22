@@ -45,7 +45,7 @@ public class StaffAssignmentsController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Staff assigned successfully");
+        return CreatedResponse(result, message: "Phân công nhân viên thành công");
     }
 
     /// <summary>

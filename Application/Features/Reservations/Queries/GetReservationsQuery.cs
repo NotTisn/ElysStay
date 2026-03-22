@@ -52,7 +52,7 @@ public class GetReservationsQueryHandler : IRequestHandler<GetReservationsQuery,
         }
         else
         {
-            throw new ForbiddenException("Only owners and staff can access reservations.");
+            throw new ForbiddenException("Chỉ chủ nhà và nhân viên mới có thể truy cập đặt phòng.");
         }
 
         // Filters

@@ -39,13 +39,13 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
 
-// CORS — restrict origins per environment; adjust AllowedOrigins in appsettings for production
+// CORS — origins configured per environment in appsettings (empty = block all cross-origin)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultCorsPolicy", policy =>
     {
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-            ?? ["http://localhost:3000", "http://localhost:3001"];
+            ?? [];
 
         policy.WithOrigins(allowedOrigins)
               .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
@@ -71,7 +71,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
         options.Authority = keycloak["Authority"];
         options.Audience = keycloak["ClientId"];
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+
+        // Allow override for reverse-proxy deployments (internal HTTP to Keycloak)
+        var requireHttps = keycloak["RequireHttpsMetadata"];
+        options.RequireHttpsMetadata = requireHttps != null
+            ? bool.Parse(requireHttps)
+            : !builder.Environment.IsDevelopment();
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -79,6 +84,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuer = true,
             ValidateLifetime = true
         };
+
+        // Reverse-proxy support: token issuer (public URL) may differ from Authority (internal URL)
+        var validIssuer = keycloak["ValidIssuer"];
+        if (!string.IsNullOrEmpty(validIssuer))
+            options.TokenValidationParameters.ValidIssuer = validIssuer;
     });
 
 builder.Services.AddAuthorization();
@@ -129,6 +139,15 @@ static string GetClientIp(HttpContext context)
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // In production, API is only reachable through Caddy in Docker network.
+    // Trust the standard Docker bridge subnet and common private networks.
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(
+        System.Net.IPAddress.Parse("172.16.0.0"), 12));  // Docker default bridge
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(
+        System.Net.IPAddress.Parse("10.0.0.0"), 8));     // Docker custom networks
+    options.ForwardLimit = 1; // Only trust one proxy hop
 });
 
 var app = builder.Build();

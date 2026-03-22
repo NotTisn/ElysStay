@@ -40,7 +40,7 @@ public class UpdateRoomServicesCommandHandler : IRequestHandler<UpdateRoomServic
         var room = await _db.Rooms
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == request.RoomId, cancellationToken)
-            ?? throw new NotFoundException($"Room {request.RoomId} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy phòng {request.RoomId}.");
 
         await _buildingScope.AuthorizeAsync(room.BuildingId, cancellationToken);
 
@@ -53,7 +53,7 @@ public class UpdateRoomServicesCommandHandler : IRequestHandler<UpdateRoomServic
         foreach (var entry in request.Services)
         {
             if (!validServiceIds.Contains(entry.ServiceId))
-                throw new BadRequestException($"Service {entry.ServiceId} does not belong to this building or is inactive.");
+                throw new BadRequestException($"Dịch vụ {entry.ServiceId} không thuộc tòa nhà này hoặc đã ngừng hoạt động.");
         }
 
         // Remove all existing overrides for this room

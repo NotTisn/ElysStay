@@ -3,6 +3,7 @@ using Application.Features.Payments.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
 
@@ -78,9 +79,10 @@ public class PaymentsController : BaseApiController
     /// </summary>
     [HttpPost("batch")]
     [Authorize(Roles = "Owner,Staff")]
+    [EnableRateLimiting("sensitive")]
     public async Task<IActionResult> BatchRecordPayments([FromBody] BatchRecordPaymentsCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
-        return OkResponse(result, $"{result.Count} payments recorded successfully");
+        return OkResponse(result, $"Ghi nhận thành công {result.Count} thanh toán");
     }
 }

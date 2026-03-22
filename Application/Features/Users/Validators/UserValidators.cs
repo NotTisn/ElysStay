@@ -8,12 +8,12 @@ public class UpdateCurrentUserCommandValidator : AbstractValidator<UpdateCurrent
     public UpdateCurrentUserCommandValidator()
     {
         RuleFor(x => x.FullName)
-            .MaximumLength(200).WithMessage("Full name must not exceed 200 characters.")
+            .MaximumLength(200).WithMessage("Họ tên không được vượt quá 200 ký tự.")
             .When(x => x.FullName is not null);
 
         // VAL-02: Phone must be exactly 10 digits
         RuleFor(x => x.Phone)
-            .Matches(@"^\d{10}$").WithMessage("Phone number must be exactly 10 digits.")
+            .Matches(@"^\d{10}$").WithMessage("Số điện thoại phải đúng 10 chữ số.")
             .When(x => x.Phone is not null && !string.IsNullOrWhiteSpace(x.Phone));
     }
 }
@@ -23,12 +23,12 @@ public class ChangePasswordCommandValidator : AbstractValidator<ChangePasswordCo
     public ChangePasswordCommandValidator()
     {
         RuleFor(x => x.CurrentPassword)
-            .NotEmpty().WithMessage("Current password is required.");
+            .NotEmpty().WithMessage("Mật khẩu hiện tại là bắt buộc.");
 
         // AUTH-03: Minimum 8 characters
         RuleFor(x => x.NewPassword)
-            .NotEmpty().WithMessage("New password is required.")
-            .MinimumLength(8).WithMessage("Password must be at least 8 characters.");
+            .NotEmpty().WithMessage("Mật khẩu mới là bắt buộc.")
+            .MinimumLength(8).WithMessage("Mật khẩu phải có ít nhất 8 ký tự.");
     }
 }
 
@@ -37,20 +37,20 @@ public class CreateTenantCommandValidator : AbstractValidator<CreateTenantComman
     public CreateTenantCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Invalid email format.")
-            .MaximumLength(254).WithMessage("Email must not exceed 254 characters.");
+            .NotEmpty().WithMessage("Email là bắt buộc.")
+            .EmailAddress().WithMessage("Định dạng email không hợp lệ.")
+            .MaximumLength(254).WithMessage("Email không được vượt quá 254 ký tự.");
 
         RuleFor(x => x.FullName)
-            .NotEmpty().WithMessage("Full name is required.")
-            .MaximumLength(200).WithMessage("Full name must not exceed 200 characters.");
+            .NotEmpty().WithMessage("Họ tên là bắt buộc.")
+            .MaximumLength(200).WithMessage("Họ tên không được vượt quá 200 ký tự.");
 
         RuleFor(x => x.Phone)
-            .Matches(@"^\d{10}$").WithMessage("Phone number must be exactly 10 digits.")
+            .Matches(@"^\d{10}$").WithMessage("Số điện thoại phải đúng 10 chữ số.")
             .When(x => x.Phone is not null);
 
         RuleFor(x => x.Password)
-            .MinimumLength(8).WithMessage("Password must be at least 8 characters.")
+            .MinimumLength(8).WithMessage("Mật khẩu phải có ít nhất 8 ký tự.")
             .When(x => x.Password is not null);
     }
 }
@@ -60,21 +60,21 @@ public class CreateStaffCommandValidator : AbstractValidator<CreateStaffCommand>
     public CreateStaffCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Invalid email format.")
-            .MaximumLength(254).WithMessage("Email must not exceed 254 characters.");
+            .NotEmpty().WithMessage("Email là bắt buộc.")
+            .EmailAddress().WithMessage("Định dạng email không hợp lệ.")
+            .MaximumLength(254).WithMessage("Email không được vượt quá 254 ký tự.");
 
         RuleFor(x => x.FullName)
-            .NotEmpty().WithMessage("Full name is required.")
-            .MaximumLength(200).WithMessage("Full name must not exceed 200 characters.");
+            .NotEmpty().WithMessage("Họ tên là bắt buộc.")
+            .MaximumLength(200).WithMessage("Họ tên không được vượt quá 200 ký tự.");
 
         RuleFor(x => x.Phone)
-            .Matches(@"^\d{10}$").WithMessage("Phone number must be exactly 10 digits.")
+            .Matches(@"^\d{10}$").WithMessage("Số điện thoại phải đúng 10 chữ số.")
             .When(x => x.Phone is not null);
 
         RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required.")
-            .MinimumLength(8).WithMessage("Password must be at least 8 characters.");
+            .NotEmpty().WithMessage("Mật khẩu là bắt buộc.")
+            .MinimumLength(8).WithMessage("Mật khẩu phải có ít nhất 8 ký tự.");
     }
 }
 
@@ -83,6 +83,6 @@ public class ChangeUserStatusCommandValidator : AbstractValidator<ChangeUserStat
     public ChangeUserStatusCommandValidator()
     {
         RuleFor(x => x.UserId)
-            .NotEmpty().WithMessage("User ID is required.");
+            .NotEmpty().WithMessage("Mã người dùng là bắt buộc.");
     }
 }

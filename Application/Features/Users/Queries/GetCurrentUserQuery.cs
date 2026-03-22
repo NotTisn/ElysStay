@@ -28,7 +28,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, U
         var userId = _currentUser.GetRequiredUserId();
 
         var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct)
-            ?? throw new NotFoundException("User", userId);
+            ?? throw new NotFoundException("Người dùng", userId);
 
         return new UserProfileDto
         {

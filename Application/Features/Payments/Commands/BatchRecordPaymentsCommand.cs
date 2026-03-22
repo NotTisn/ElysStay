@@ -30,15 +30,18 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public BatchRecordPaymentsCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<IReadOnlyList<PaymentDto>> Handle(BatchRecordPaymentsCommand request, CancellationToken cancellationToken)
@@ -56,12 +59,13 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
 
         var invoices = await _db.Invoices
             .Include(i => i.Payments)
-            .Include(i => i.Contract!).ThenInclude(c => c.Room!)
+            .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
+            .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
             .Where(i => invoiceIds.Contains(i.Id))
             .ToDictionaryAsync(i => i.Id, cancellationToken);
 
         if (invoices.Count != invoiceIds.Count)
-            throw new NotFoundException("Some invoices were not found.");
+            throw new NotFoundException("Một số hóa đơn không được tìm thấy.");
 
         // Authorize all distinct buildings
         var buildingIds = invoices.Values
@@ -82,11 +86,11 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
 
             // PAY-04: Cannot pay DRAFT or VOID or already PAID
             if (invoice.Status == InvoiceStatus.Draft)
-                throw new ConflictException($"Cannot record payment on DRAFT invoice {invoice.Id}.");
+                throw new ConflictException($"Không thể ghi nhận thanh toán cho hóa đơn Nháp {invoice.Id}.");
             if (invoice.Status == InvoiceStatus.Void)
-                throw new ConflictException($"Cannot record payment on VOID invoice {invoice.Id}.");
+                throw new ConflictException($"Không thể ghi nhận thanh toán cho hóa đơn đã hủy {invoice.Id}.");
             if (invoice.Status == InvoiceStatus.Paid)
-                throw new ConflictException($"Invoice {invoice.Id} is already fully paid.");
+                throw new ConflictException($"Hóa đơn {invoice.Id} đã được thanh toán đầy đủ.");
 
             // Overpayment guard (accounting for in-batch running total)
             var dbPaid = invoice.Payments
@@ -98,7 +102,7 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
 
             if (entry.Amount > remaining)
                 throw new BadRequestException(
-                    $"Payment {entry.Amount} on invoice {invoice.Id} exceeds remaining balance {remaining}.");
+                    $"Thanh toán {entry.Amount:N0}đ cho hóa đơn {invoice.Id} vượt quá số dư còn lại {remaining:N0}đ.");
 
             batchCumulativeAmounts[entry.InvoiceId] = batchPrior + entry.Amount;
 
@@ -130,7 +134,7 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
                 UserId = invoice.Contract!.TenantUserId,
                 Title = "Thanh toán ghi nhận",
                 Message = $"Thanh toán {entry.Amount:N0}đ đã được ghi nhận cho hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear}.",
-                Type = "PAYMENT_RECORDED",
+                Type = Domain.Constants.NotificationTypes.PaymentRecorded,
                 ReferenceId = invoice.Id,
             });
 
@@ -152,6 +156,22 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
         // PAY-06: All-or-nothing
         await _db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+
+        // Best-effort emails to tenants (after successful commit)
+        foreach (var result in results)
+        {
+            if (result.InvoiceId.HasValue && invoices.TryGetValue(result.InvoiceId.Value, out var inv))
+            {
+                var tenant = inv.Contract!.TenantUser!;
+                var room = inv.Contract!.Room!;
+                var totalPaid = inv.Payments.Where(p => p.Type == PaymentType.RentPayment).Sum(p => p.Amount);
+                var (subject, html) = Application.Common.Email.EmailTemplates.PaymentRecorded(
+                    tenant.FullName, room.RoomNumber, room.Building!.Name,
+                    inv.BillingMonth, inv.BillingYear,
+                    result.Amount, inv.TotalAmount, totalPaid);
+                await _emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, cancellationToken);
+            }
+        }
 
         return results;
 

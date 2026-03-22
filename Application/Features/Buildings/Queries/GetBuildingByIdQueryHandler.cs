@@ -30,7 +30,7 @@ public class GetBuildingByIdQueryHandler : IRequestHandler<GetBuildingByIdQuery,
                 OccupiedRooms = b.Rooms.Count(r => r.Status == RoomStatus.Occupied)
             })
             .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new NotFoundException($"Building {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy tòa nhà {request.Id}.");
 
         var building = data.Building;
 

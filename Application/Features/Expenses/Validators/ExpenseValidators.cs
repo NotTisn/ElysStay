@@ -14,17 +14,17 @@ public class CreateExpenseCommandValidator : AbstractValidator<CreateExpenseComm
 
     public CreateExpenseCommandValidator()
     {
-        RuleFor(x => x.BuildingId).NotEmpty();
+        RuleFor(x => x.BuildingId).NotEmpty().WithMessage("Mã tòa nhà là bắt buộc.");
         RuleFor(x => x.Category)
-            .NotEmpty().MaximumLength(100)
+            .NotEmpty().WithMessage("Danh mục là bắt buộc.").MaximumLength(100)
             .Must(c => AllowedCategories.Contains(c))
-            .WithMessage($"Category must be one of: {string.Join(", ", AllowedCategories.Order())}.");
-        RuleFor(x => x.Description).NotEmpty().MaximumLength(500);
-        RuleFor(x => x.Amount).GreaterThan(0);
+            .WithMessage($"Danh mục phải là một trong: {string.Join(", ", AllowedCategories.Order())}.");
+        RuleFor(x => x.Description).NotEmpty().WithMessage("Mô tả là bắt buộc.").MaximumLength(1000).WithMessage("Mô tả không được vượt quá 1000 ký tự.");
+        RuleFor(x => x.Amount).GreaterThan(0).WithMessage("Số tiền phải lớn hơn 0.");
         RuleFor(x => x.ExpenseDate)
-            .NotEmpty()
+            .NotEmpty().WithMessage("Ngày chi phí là bắt buộc.")
             .Must(d => d <= DateOnly.FromDateTime(DateTime.UtcNow))
-            .WithMessage("ExpenseDate cannot be in the future.");
+            .WithMessage("Ngày chi phí không được trong tương lai.");
     }
 }
 
@@ -38,23 +38,23 @@ public class UpdateExpenseCommandValidator : AbstractValidator<UpdateExpenseComm
 
     public UpdateExpenseCommandValidator()
     {
-        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Mã chi phí là bắt buộc.");
         RuleFor(x => x.Amount)
-            .GreaterThan(0)
+            .GreaterThan(0).WithMessage("Số tiền phải lớn hơn 0.")
             .When(x => x.Amount.HasValue);
         RuleFor(x => x.Category)
-            .NotEmpty()
+            .NotEmpty().WithMessage("Danh mục là bắt buộc.")
             .MaximumLength(100)
             .Must(c => AllowedCategories.Contains(c))
-            .WithMessage($"Category must be one of: {string.Join(", ", AllowedCategories.Order())}.")
+            .WithMessage($"Danh mục phải là một trong: {string.Join(", ", AllowedCategories.Order())}.")
             .When(x => x.Category is not null);
         RuleFor(x => x.Description)
-            .NotEmpty()
-            .MaximumLength(500)
+            .NotEmpty().WithMessage("Mô tả là bắt buộc.")
+            .MaximumLength(1000).WithMessage("Mô tả không được vượt quá 1000 ký tự.")
             .When(x => x.Description is not null);
         RuleFor(x => x.ExpenseDate)
             .Must(d => d!.Value <= DateOnly.FromDateTime(DateTime.UtcNow))
-            .WithMessage("ExpenseDate cannot be in the future.")
+            .WithMessage("Ngày chi phí không được trong tương lai.")
             .When(x => x.ExpenseDate.HasValue);
     }
 }
@@ -63,7 +63,7 @@ public class DeleteExpenseCommandValidator : AbstractValidator<DeleteExpenseComm
 {
     public DeleteExpenseCommandValidator()
     {
-        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Mã chi phí là bắt buộc.");
     }
 }
 
@@ -74,7 +74,7 @@ public class GetExpensesQueryValidator : AbstractValidator<GetExpensesQuery>
         RuleFor(x => x.FromDate)
             .LessThanOrEqualTo(x => x.ToDate!.Value)
             .When(x => x.FromDate.HasValue && x.ToDate.HasValue)
-            .WithMessage("FromDate must be on or before ToDate.");
+            .WithMessage("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
     }
 }
 
@@ -85,6 +85,6 @@ public class GetExpenseSummaryQueryValidator : AbstractValidator<GetExpenseSumma
         RuleFor(x => x.FromDate)
             .LessThanOrEqualTo(x => x.ToDate!.Value)
             .When(x => x.FromDate.HasValue && x.ToDate.HasValue)
-            .WithMessage("FromDate must be on or before ToDate.");
+            .WithMessage("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
     }
 }

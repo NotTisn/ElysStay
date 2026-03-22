@@ -4,6 +4,7 @@ using Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
 
@@ -74,7 +75,7 @@ public class IssuesController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Issue reported successfully");
+        return CreatedResponse(result, message: "Báo cáo sự cố thành công");
     }
 
     /// <summary>
@@ -91,7 +92,7 @@ public class IssuesController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return OkResponse(result, "Issue updated successfully");
+        return OkResponse(result, "Cập nhật sự cố thành công");
     }
 
     /// <summary>
@@ -109,10 +110,43 @@ public class IssuesController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return OkResponse(result, "Issue status updated successfully");
+        return OkResponse(result, "Cập nhật trạng thái sự cố thành công");
     }
 
-    // Note: POST /{id}/images requires file upload/Cloudinary — deferred.
+    /// <summary>
+    /// POST /issues/{id}/images — Upload up to 3 images (max 3 MB each, JPEG/PNG).
+    /// </summary>
+    [HttpPost("{id:guid}/images")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    [EnableRateLimiting("sensitive")]
+    public async Task<IActionResult> UploadImages(Guid id, [FromForm] List<IFormFile>? files, CancellationToken ct)
+    {
+        if (files is null || files.Count == 0)
+            return BadRequest(new { message = "Cần cung cấp ít nhất một file ảnh." });
+
+        if (files.Count > 3)
+            return BadRequest(new { message = "Tối đa 3 ảnh mỗi lần tải." });
+
+        var allowedTypes = new[] { "image/jpeg", "image/png" };
+        if (files.Any(f => !allowedTypes.Contains(f.ContentType)))
+            return BadRequest(new { message = "Chỉ chấp nhận file JPEG hoặc PNG." });
+
+        var items = files.Select(f => new FileUploadItem
+        {
+            FileStream = f.OpenReadStream(),
+            FileName = f.FileName,
+            ContentType = f.ContentType,
+            FileSize = f.Length
+        }).ToList();
+
+        var command = new UploadIssueImagesCommand
+        {
+            IssueId = id,
+            Files = items
+        };
+        var urls = await _mediator.Send(command, ct);
+        return OkResponse(new { imageUrls = urls }, "Tải ảnh lên thành công");
+    }
 }
 
 // --- Request records ---

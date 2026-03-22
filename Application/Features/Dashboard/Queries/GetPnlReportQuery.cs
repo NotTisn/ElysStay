@@ -33,7 +33,7 @@ public class GetPnlReportQueryHandler : IRequestHandler<GetPnlReportQuery, PnlRe
         var userId = _currentUser.GetRequiredUserId();
 
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only owners can access P&L reports.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể xem báo cáo lãi lỗ.");
 
         // Get owner's buildings
         var buildingIds = await _db.Buildings
@@ -44,7 +44,7 @@ public class GetPnlReportQueryHandler : IRequestHandler<GetPnlReportQuery, PnlRe
         if (request.BuildingId.HasValue)
         {
             if (!buildingIds.Contains(request.BuildingId.Value))
-                throw new ForbiddenException("You do not own this building.");
+                throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
             buildingIds = [request.BuildingId.Value];
         }
 

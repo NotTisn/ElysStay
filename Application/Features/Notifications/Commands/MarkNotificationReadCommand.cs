@@ -28,7 +28,7 @@ public class MarkNotificationReadCommandHandler : IRequestHandler<MarkNotificati
 
         var notification = await _db.Notifications
             .FirstOrDefaultAsync(n => n.Id == request.Id && n.UserId == userId, ct)
-            ?? throw new NotFoundException($"Notification {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy thông báo {request.Id}.");
 
         notification.IsRead = true;
         await _db.SaveChangesAsync(ct);

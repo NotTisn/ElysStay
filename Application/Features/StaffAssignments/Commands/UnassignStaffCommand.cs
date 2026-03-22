@@ -21,7 +21,7 @@ public class UnassignStaffCommandHandler : IRequestHandler<UnassignStaffCommand>
     public async Task Handle(UnassignStaffCommand request, CancellationToken cancellationToken)
     {
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only the owner can unassign staff.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể hủy phân công nhân viên.");
 
         var userId = _currentUser.GetRequiredUserId();
 
@@ -29,14 +29,14 @@ public class UnassignStaffCommandHandler : IRequestHandler<UnassignStaffCommand>
         var building = await _db.Buildings
             .AsNoTracking()
             .FirstOrDefaultAsync(b => b.Id == request.BuildingId, cancellationToken)
-            ?? throw new NotFoundException($"Building {request.BuildingId} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy tòa nhà {request.BuildingId}.");
 
         if (building.OwnerId != userId)
-            throw new ForbiddenException("You do not own this building.");
+            throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
 
         var assignment = await _db.StaffAssignments
             .FirstOrDefaultAsync(sa => sa.BuildingId == request.BuildingId && sa.StaffId == request.StaffId, cancellationToken)
-            ?? throw new NotFoundException("Staff assignment not found.");
+            ?? throw new NotFoundException("Không tìm thấy phân công nhân viên.");
 
         _db.StaffAssignments.Remove(assignment);
         await _db.SaveChangesAsync(cancellationToken);

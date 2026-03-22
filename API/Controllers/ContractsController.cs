@@ -30,6 +30,7 @@ public class ContractsController : BaseApiController
     public async Task<IActionResult> GetContracts(
         [FromQuery] Guid? buildingId,
         [FromQuery] Guid? roomId,
+        [FromQuery] Guid? tenantUserId,
         [FromQuery] string? status,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -40,6 +41,7 @@ public class ContractsController : BaseApiController
         {
             BuildingId = buildingId,
             RoomId = roomId,
+            TenantUserId = tenantUserId,
             Status = status,
             Page = page,
             PageSize = pageSize,
@@ -72,7 +74,7 @@ public class ContractsController : BaseApiController
     public async Task<IActionResult> CreateContract([FromBody] CreateContractCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Contract created successfully");
+        return CreatedResponse(result, message: "Tạo hợp đồng thành công");
     }
 
     /// <summary>
@@ -113,7 +115,7 @@ public class ContractsController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return OkResponse(result, "Contract terminated successfully");
+        return OkResponse(result, "Chấm dứt hợp đồng thành công");
     }
 
     /// <summary>
@@ -133,7 +135,7 @@ public class ContractsController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Contract renewed successfully");
+        return CreatedResponse(result, message: "Gia hạn hợp đồng thành công");
     }
 
     // ── Contract Tenant (Roommate) Endpoints ──────────────────────
@@ -164,7 +166,7 @@ public class ContractsController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Roommate added successfully");
+        return CreatedResponse(result, message: "Thêm người ở ghép thành công");
     }
 
     /// <summary>

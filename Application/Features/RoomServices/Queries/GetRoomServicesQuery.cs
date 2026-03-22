@@ -24,7 +24,7 @@ public class GetRoomServicesQueryHandler : IRequestHandler<GetRoomServicesQuery,
         var room = await _db.Rooms
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == request.RoomId, cancellationToken)
-            ?? throw new NotFoundException($"Room {request.RoomId} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy phòng {request.RoomId}.");
 
         await _buildingScope.AuthorizeAsync(room.BuildingId, cancellationToken);
 

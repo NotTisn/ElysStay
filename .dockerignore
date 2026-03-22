@@ -1,0 +1,15 @@
+**/bin/
+**/obj/
+**/out/
+**/.vs/
+**/.vscode/
+**/node_modules/
+.git/
+.gitignore
+*.md
+docs/
+dev-tools/
+keycloak/
+docker-compose*.yml
+Caddyfile
+.env*

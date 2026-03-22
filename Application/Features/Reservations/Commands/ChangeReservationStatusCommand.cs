@@ -46,7 +46,7 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
             .Include(r => r.Room).ThenInclude(r => r!.Building)
             .Include(r => r.TenantUser)
             .FirstOrDefaultAsync(r => r.Id == request.Id, ct)
-            ?? throw new NotFoundException($"Reservation {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy đặt phòng {request.Id}.");
 
         await _buildingScope.AuthorizeAsync(reservation.Room!.BuildingId, ct);
 
@@ -61,7 +61,7 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
                 break;
 
             default:
-                throw new BadRequestException($"Unknown action: {request.Action}. Use CONFIRM or CANCEL.");
+                throw new BadRequestException($"Hành động không xác định: {request.Action}. Sử dụng CONFIRM hoặc CANCEL.");
         }
 
         reservation.UpdatedAt = DateTime.UtcNow;
@@ -73,7 +73,7 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
         catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
         {
             throw new ConflictException(
-                "Room was modified by another user. Please retry.",
+                "Phòng đã bị thay đổi bởi người dùng khác. Vui lòng thử lại.",
                 "CONCURRENCY_CONFLICT");
         }
 
@@ -101,12 +101,12 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
     {
         if (reservation.Status != ReservationStatus.Pending)
             throw new ConflictException(
-                $"Cannot confirm reservation in {reservation.Status} status. Only PENDING can be confirmed.",
+                $"Không thể xác nhận đặt phòng ở trạng thái {reservation.Status}. Chỉ trạng thái Pending mới có thể xác nhận.",
                 "INVALID_STATUS_TRANSITION");
 
         if (reservation.ExpiresAt <= DateTime.UtcNow)
             throw new ConflictException(
-                "Cannot confirm an expired reservation.",
+                "Không thể xác nhận đặt phòng đã hết hạn.",
                 "RESERVATION_EXPIRED");
 
         reservation.Status = ReservationStatus.Confirmed;
@@ -124,7 +124,7 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
     {
         if (reservation.Status != ReservationStatus.Pending && reservation.Status != ReservationStatus.Confirmed)
             throw new ConflictException(
-                $"Cannot cancel reservation in {reservation.Status} status.",
+                $"Không thể hủy đặt phòng ở trạng thái {reservation.Status}.",
                 "INVALID_STATUS_TRANSITION");
 
         // Capture previous status before mutation — needed for deposit logic
@@ -134,7 +134,7 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
         var refundAmount = request.RefundAmount ?? 0m;
         if (refundAmount < 0 || refundAmount > reservation.DepositAmount)
             throw new BadRequestException(
-                $"Refund amount must be between 0 and {reservation.DepositAmount}.");
+                $"Số tiền hoàn phải từ 0 đến {reservation.DepositAmount}.");
 
         reservation.Status = ReservationStatus.Cancelled;
         reservation.RefundAmount = refundAmount;
@@ -153,7 +153,7 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
                 ReservationId = reservation.Id,
                 Type = PaymentType.DepositIn,
                 Amount = reservation.DepositAmount,
-                Note = $"Deposit received for reservation (cancelled)",
+                Note = $"Tiền cọc nhận từ đặt phòng (đã hủy)",
                 RecordedBy = userId,
                 PaidAt = reservation.CreatedAt // Was originally received at reservation creation
             });
@@ -168,7 +168,7 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
                     ReservationId = reservation.Id,
                     Type = PaymentType.DepositRefund,
                     Amount = refundAmount,
-                    Note = request.RefundNote ?? "Deposit refund for cancelled reservation",
+                    Note = request.RefundNote ?? "Hoàn trả tiền cọc đặt phòng đã hủy",
                     RecordedBy = userId,
                     PaidAt = DateTime.UtcNow
                 });

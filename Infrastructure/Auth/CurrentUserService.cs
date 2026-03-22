@@ -26,7 +26,7 @@ public class CurrentUserService : ICurrentUserService
     public bool IsAuthenticated => Principal?.Identity?.IsAuthenticated == true;
 
     public string KeycloakId => Principal?.FindFirstValue(ClaimTypes.NameIdentifier)
-        ?? throw new ForbiddenException("No authenticated user.");
+        ?? throw new ForbiddenException("Không có người dùng được xác thực.");
 
     public string Email => Principal?.FindFirstValue(ClaimTypes.Email)
         ?? Principal?.FindFirstValue("email")
@@ -60,7 +60,7 @@ public class CurrentUserService : ICurrentUserService
 
     public Guid GetRequiredUserId()
     {
-        return _userId ?? throw new ForbiddenException("User account not provisioned.");
+        return _userId ?? throw new ForbiddenException("Tài khoản người dùng chưa được khởi tạo.");
     }
 
     internal bool IsUserIdResolved => _userIdResolved;

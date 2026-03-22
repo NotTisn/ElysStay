@@ -13,7 +13,7 @@ namespace Application.Features.Users.Commands;
 /// Auto-creates an empty TenantProfile (TP-01).
 /// Auth: OWNER or STAFF.
 /// </summary>
-public record CreateTenantCommand : IRequest<UserDto>
+public record CreateTenantCommand : IRequest<CreateUserResultDto>
 {
     public required string Email { get; init; }
     public required string FullName { get; init; }
@@ -21,7 +21,7 @@ public record CreateTenantCommand : IRequest<UserDto>
     public string? Password { get; init; }
 }
 
-public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, UserDto>
+public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, CreateUserResultDto>
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
@@ -34,21 +34,21 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, U
         _keycloak = keycloak;
     }
 
-    public async Task<UserDto> Handle(CreateTenantCommand request, CancellationToken ct)
+    public async Task<CreateUserResultDto> Handle(CreateTenantCommand request, CancellationToken ct)
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
         var normalizedFullName = request.FullName.Trim();
 
         // Auth: Owner or Staff
         if (_currentUser.IsTenant)
-            throw new ForbiddenException("Tenants cannot create other tenants.");
+            throw new ForbiddenException("Khách thuê không thể tạo khách thuê khác.");
 
         // UQ-07: Check email uniqueness in local DB
         var emailExists = await _db.Users
             .IgnoreQueryFilters()
             .AnyAsync(u => u.Email.ToLower() == normalizedEmail, ct);
         if (emailExists)
-            throw new ConflictException("A user with this email already exists.", "DUPLICATE_EMAIL");
+            throw new ConflictException("Email này đã được sử dụng.", "DUPLICATE_EMAIL");
 
         // Generate random password if not provided (spec: "Không có password → tạo ngẫu nhiên")
         var password = request.Password ?? GenerateRandomPassword();
@@ -78,7 +78,7 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, U
 
         await _db.SaveChangesAsync(ct);
 
-        return new UserDto
+        return new CreateUserResultDto
         {
             Id = user.Id,
             Email = user.Email,
@@ -87,7 +87,8 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, U
             AvatarUrl = user.AvatarUrl,
             Role = user.Role.ToString(),
             Status = user.Status.ToString(),
-            CreatedAt = user.CreatedAt
+            CreatedAt = user.CreatedAt,
+            TemporaryPassword = password,
         };
     }
 

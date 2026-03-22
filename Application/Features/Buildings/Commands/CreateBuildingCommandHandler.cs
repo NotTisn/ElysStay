@@ -25,7 +25,7 @@ public class CreateBuildingCommandHandler : IRequestHandler<CreateBuildingComman
 
         // Defense-in-depth: controller already requires Owner role, but enforce here too
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only owners can create buildings.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể tạo tòa nhà.");
 
         var building = new Building
         {

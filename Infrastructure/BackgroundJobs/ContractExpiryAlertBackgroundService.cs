@@ -1,5 +1,8 @@
+using System.Diagnostics;
+using Application.Common.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
+using Application.Common.Email;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +30,8 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("BG-03 ContractExpiryAlertJob started — runs daily at 08:00 UTC");
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -54,6 +59,7 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
 
     private async Task RunOnceAsync(CancellationToken ct)
     {
+        var sw = Stopwatch.StartNew();
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
@@ -61,14 +67,15 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
         var threshold = today.AddDays(30);
 
         var contracts = await db.Contracts
-            .Include(c => c.Room)
-                .ThenInclude(r => r!.Building)
-            .Include(c => c.TenantUser)
             .Where(c => c.Status == ContractStatus.Active && c.EndDate <= threshold)
+            .Select(c => new { c.Id, c.TenantUserId, OwnerId = c.Room!.Building!.OwnerId })
             .ToListAsync(ct);
 
         if (contracts.Count == 0)
+        {
+            _logger.LogDebug("BG-03 ContractExpiryAlertJob: no expiring contracts found ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
             return;
+        }
 
         var now = DateTime.UtcNow;
 
@@ -87,38 +94,96 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
             .Select(n => (n.UserId, n.ReferenceId!.Value))
             .ToHashSet();
 
+        var processed = 0;
+
         foreach (var contract in contracts)
         {
-            if (!notifiedSet.Contains((contract.TenantUserId, contract.Id)))
+            if (notifiedSet.Contains((contract.TenantUserId, contract.Id))
+                && notifiedSet.Contains((contract.OwnerId, contract.Id)))
             {
-                db.Notifications.Add(new Notification
-                {
-                    UserId = contract.TenantUserId,
-                    Title = "Canh bao hop dong sap het han",
-                    Message = $"Hop dong phong {contract.Room!.RoomNumber} se het han vao {contract.EndDate:yyyy-MM-dd}.",
-                    Type = "CONTRACT_EXPIRY_ALERT",
-                    ReferenceId = contract.Id,
-                    CreatedAt = now
-                });
+                continue;
             }
 
-            var ownerId = contract.Room!.Building!.OwnerId;
-            if (!notifiedSet.Contains((ownerId, contract.Id)))
+            try
             {
-                db.Notifications.Add(new Notification
-                {
-                    UserId = ownerId,
-                    Title = "Canh bao hop dong sap het han",
-                    Message = $"Hop dong phong {contract.Room.RoomNumber} cua khach {contract.TenantUser!.FullName} se het han vao {contract.EndDate:yyyy-MM-dd}.",
-                    Type = "CONTRACT_EXPIRY_ALERT",
-                    ReferenceId = contract.Id,
-                    CreatedAt = now
-                });
+                await ProcessContractAsync(contract.Id, now, notifiedSet, ct);
+                processed++;
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "BG-03 ContractExpiryAlertJob: failed to process contract {ContractId}", contract.Id);
+            }
+        }
+
+        _logger.LogInformation("BG-03 ContractExpiryAlertJob: alerted for {Processed}/{Total} expiring contracts in {ElapsedMs}ms", processed, contracts.Count, sw.ElapsedMilliseconds);
+    }
+
+    private async Task ProcessContractAsync(Guid contractId, DateTime now, HashSet<(Guid UserId, Guid ContractId)> notifiedSet, CancellationToken ct)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+        var contract = await db.Contracts
+            .Include(c => c.Room)
+                .ThenInclude(r => r!.Building!)
+                    .ThenInclude(b => b.Owner)
+            .Include(c => c.TenantUser)
+            .FirstOrDefaultAsync(c => c.Id == contractId, ct)
+            ?? throw new InvalidOperationException($"Contract {contractId} was not found during expiry alert processing.");
+
+        var tenantNotified = notifiedSet.Contains((contract.TenantUserId, contract.Id));
+        if (!tenantNotified)
+        {
+            db.Notifications.Add(new Notification
+            {
+                UserId = contract.TenantUserId,
+                Title = "Cảnh báo hợp đồng sắp hết hạn",
+                Message = $"Hợp đồng phòng {contract.Room!.RoomNumber} sẽ hết hạn vào {contract.EndDate:yyyy-MM-dd}.",
+                Type = Domain.Constants.NotificationTypes.ContractExpiryAlert,
+                ReferenceId = contract.Id,
+                CreatedAt = now
+            });
+        }
+
+        var ownerId = contract.Room!.Building!.OwnerId;
+        var ownerNotified = notifiedSet.Contains((ownerId, contract.Id));
+        if (!ownerNotified)
+        {
+            db.Notifications.Add(new Notification
+            {
+                UserId = ownerId,
+                Title = "Cảnh báo hợp đồng sắp hết hạn",
+                Message = $"Hợp đồng phòng {contract.Room.RoomNumber} của khách {contract.TenantUser!.FullName} sẽ hết hạn vào {contract.EndDate:yyyy-MM-dd}.",
+                Type = Domain.Constants.NotificationTypes.ContractExpiryAlert,
+                ReferenceId = contract.Id,
+                CreatedAt = now
+            });
         }
 
         await db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Contract expiry alert job processed {Count} contracts", contracts.Count);
+        var tenant = contract.TenantUser;
+        var room = contract.Room;
+        var building = room?.Building;
+        if (tenant != null && room != null && building != null)
+        {
+            if (!tenantNotified)
+            {
+                var (s1, h1) = EmailTemplates.ContractExpiryTenant(
+                    tenant.FullName, room.RoomNumber, building.Name, contract.EndDate);
+                await emailService.TrySendAsync(tenant.Email, tenant.FullName, s1, h1, ct);
+                notifiedSet.Add((tenant.Id, contract.Id));
+            }
+
+            if (building.Owner != null && !ownerNotified)
+            {
+                var (s2, h2) = EmailTemplates.ContractExpiryOwner(
+                    building.Owner.FullName, tenant.FullName,
+                    room.RoomNumber, building.Name, contract.EndDate);
+                await emailService.TrySendAsync(building.Owner.Email, building.Owner.FullName, s2, h2, ct);
+                notifiedSet.Add((building.OwnerId, contract.Id));
+            }
+        }
     }
 }

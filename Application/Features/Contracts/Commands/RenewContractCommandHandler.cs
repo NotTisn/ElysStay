@@ -13,15 +13,18 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public RenewContractCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<ContractDto> Handle(RenewContractCommand request, CancellationToken cancellationToken)
@@ -33,14 +36,14 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
             .Include(c => c.TenantUser!)
             .Include(c => c.ContractTenants)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException("Contract", request.Id);
+            ?? throw new NotFoundException("Hợp đồng", request.Id);
 
         if (oldContract.Status != ContractStatus.Active)
-            throw new ConflictException("Only active contracts can be renewed.");
+            throw new ConflictException("Chỉ có thể gia hạn hợp đồng đang hoạt động.");
 
         // Deposit must still be held to carry over
         if (oldContract.DepositStatus != DepositStatus.Held)
-            throw new ConflictException("Cannot renew: deposit is no longer held (current status: " + oldContract.DepositStatus + ").");
+            throw new ConflictException("Không thể gia hạn: tiền cọc không còn được giữ (trạng thái hiện tại: " + oldContract.DepositStatus + ").");
 
         // Building scope auth
         await _buildingScope.AuthorizeAsync(oldContract.Room!.BuildingId, cancellationToken);
@@ -49,13 +52,13 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
         var newStartDate = oldContract.EndDate.AddDays(1);
 
         if (request.NewEndDate <= newStartDate)
-            throw new BadRequestException($"New end date must be after {newStartDate}.");
+            throw new BadRequestException($"Ngày kết thúc mới phải sau {newStartDate}.");
 
         // 1. Terminate old contract (administrative — no deposit refund, no room change)
         var boundaryDate = newStartDate.AddDays(-1);
         oldContract.Status = ContractStatus.Terminated;
         oldContract.TerminationDate = boundaryDate;
-        oldContract.TerminationNote = "Administratively terminated for renewal";
+        oldContract.TerminationNote = "Chấm dứt để gia hạn hợp đồng mới";
         oldContract.UpdatedAt = DateTime.UtcNow;
         // Deposit carries over — deposit status stays Held on old contract
         // (the deposit is logically transferred to the new contract)
@@ -72,7 +75,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
             DepositAmount = oldContract.DepositAmount, // carries over
             DepositStatus = DepositStatus.Held,
             Status = ContractStatus.Active,
-            Note = $"Renewed from contract {oldContract.Id}",
+            Note = $"Gia hạn từ hợp đồng {oldContract.Id}",
             CreatedBy = userId,
         };
         _db.Contracts.Add(newContract);
@@ -88,7 +91,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
                 ContractId = oldContract.Id,
                 Type = PaymentType.DepositRefund,
                 Amount = newContract.DepositAmount,
-                Note = $"Deposit carried over to renewed contract (renewal)",
+                Note = $"Tiền cọc chuyển sang hợp đồng gia hạn",
                 RecordedBy = userId,
                 PaidAt = DateTime.UtcNow
             });
@@ -98,7 +101,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
                 ContractId = newContract.Id,
                 Type = PaymentType.DepositIn,
                 Amount = newContract.DepositAmount,
-                Note = $"Deposit carried over from contract {oldContract.Id} (renewal)",
+                Note = $"Tiền cọc chuyển từ hợp đồng {oldContract.Id}",
                 RecordedBy = userId,
                 PaidAt = DateTime.UtcNow
             });
@@ -130,7 +133,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
             UserId = oldContract.TenantUserId,
             Title = "Hợp đồng đã gia hạn",
             Message = $"Hợp đồng phòng {oldContract.Room!.RoomNumber} tại {oldContract.Room.Building!.Name} đã được gia hạn đến {request.NewEndDate:dd/MM/yyyy}.",
-            Type = "CONTRACT_RENEWED",
+            Type = Domain.Constants.NotificationTypes.ContractRenewed,
             ReferenceId = newContract.Id,
         });
 
@@ -142,8 +145,14 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
         }
         catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_Contracts_RoomId_Active") == true)
         {
-            throw new ConflictException("An active contract already exists for this room. Concurrent renewal detected.");
+            throw new ConflictException("Phòng này đã có hợp đồng đang hoạt động. Phát hiện gia hạn đồng thời.");
         }
+
+        // Best-effort email to tenant (after successful save)
+        var (subject, html) = Application.Common.Email.EmailTemplates.ContractRenewed(
+            oldContract.TenantUser!.FullName, oldContract.Room!.RoomNumber,
+            oldContract.Room.Building!.Name, request.NewEndDate);
+        await _emailService.TrySendAsync(oldContract.TenantUser.Email, oldContract.TenantUser.FullName, subject, html, cancellationToken);
 
         return new ContractDto
         {

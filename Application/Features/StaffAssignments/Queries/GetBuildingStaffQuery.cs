@@ -23,7 +23,7 @@ public class GetBuildingStaffQueryHandler : IRequestHandler<GetBuildingStaffQuer
     {
         var exists = await _db.Buildings.AnyAsync(b => b.Id == request.BuildingId, cancellationToken);
         if (!exists)
-            throw new NotFoundException($"Building {request.BuildingId} not found.");
+            throw new NotFoundException($"Không tìm thấy tòa nhà {request.BuildingId}.");
 
         await _buildingScope.AuthorizeAsync(request.BuildingId, cancellationToken);
 

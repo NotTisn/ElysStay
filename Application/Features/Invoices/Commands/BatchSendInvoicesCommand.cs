@@ -20,28 +20,34 @@ public class BatchSendInvoicesCommandHandler : IRequestHandler<BatchSendInvoices
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public BatchSendInvoicesCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<int> Handle(BatchSendInvoicesCommand request, CancellationToken cancellationToken)
     {
         _currentUser.GetRequiredUserId();
 
+        var distinctIds = request.InvoiceIds.Distinct().ToList();
+
         var invoices = await _db.Invoices
             .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
-            .Where(i => request.InvoiceIds.Contains(i.Id))
+            .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
+            .Where(i => distinctIds.Contains(i.Id))
             .ToListAsync(cancellationToken);
 
-        if (invoices.Count != request.InvoiceIds.Count)
-            throw new NotFoundException("Some invoices were not found.");
+        if (invoices.Count != distinctIds.Count)
+            throw new NotFoundException("Một số hóa đơn không được tìm thấy.");
 
         // Authorize all distinct buildings
         var buildingIds = invoices
@@ -67,13 +73,24 @@ public class BatchSendInvoicesCommandHandler : IRequestHandler<BatchSendInvoices
                 UserId = invoice.Contract!.TenantUserId,
                 Title = "Hóa đơn mới",
                 Message = $"Hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear} đã được gửi.",
-                Type = "INVOICE_SENT",
+                Type = Domain.Constants.NotificationTypes.InvoiceSent,
                 ReferenceId = invoice.Id,
             });
         }
 
         if (sentCount > 0)
             await _db.SaveChangesAsync(cancellationToken);
+
+        // Best-effort emails to tenants (after successful save)
+        foreach (var invoice in invoices.Where(i => i.Status == InvoiceStatus.Sent))
+        {
+            var tenant = invoice.Contract!.TenantUser!;
+            var room = invoice.Contract!.Room!;
+            var (subject, html) = Application.Common.Email.EmailTemplates.InvoiceSent(
+                tenant.FullName, room.RoomNumber, room.Building!.Name,
+                invoice.BillingMonth, invoice.BillingYear, invoice.TotalAmount, invoice.DueDate);
+            await _emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, cancellationToken);
+        }
 
         return sentCount;
     }

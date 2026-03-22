@@ -47,7 +47,7 @@ public class ServicesController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Service created successfully");
+        return CreatedResponse(result, message: "Tạo dịch vụ thành công");
     }
 
     /// <summary>

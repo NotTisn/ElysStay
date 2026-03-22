@@ -46,7 +46,7 @@ public class GlobalExceptionHandlingMiddleware
             ValidationException validationEx => (
                 StatusCodes.Status400BadRequest,
                 ApiResponse.Fail(
-                    "One or more validation errors occurred.",
+                    "Có một hoặc nhiều lỗi xác thực dữ liệu.",
                     "VALIDATION_ERROR",
                     validationEx.Errors
                         .GroupBy(e => e.PropertyName)
@@ -80,14 +80,14 @@ public class GlobalExceptionHandlingMiddleware
             DbUpdateConcurrencyException => (
                 StatusCodes.Status409Conflict,
                 ApiResponse.Fail(
-                    "The record was modified by another request. Please retry.",
+                    "Dữ liệu đã bị thay đổi bởi yêu cầu khác. Vui lòng thử lại.",
                     "CONCURRENCY_CONFLICT"
                 )
             ),
 
             _ => (
                 StatusCodes.Status500InternalServerError,
-                ApiResponse.Fail("An unexpected error occurred.")
+                ApiResponse.Fail("Đã xảy ra lỗi không mong muốn.")
             )
         };
 

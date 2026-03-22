@@ -8,28 +8,28 @@ public class CreateRoomCommandValidator : AbstractValidator<CreateRoomCommand>
     public CreateRoomCommandValidator()
     {
         RuleFor(x => x.BuildingId)
-            .NotEmpty().WithMessage("Building ID is required.");
+            .NotEmpty().WithMessage("Mã tòa nhà là bắt buộc.");
 
         RuleFor(x => x.RoomNumber)
-            .NotEmpty().WithMessage("Room number is required.")
-            .MaximumLength(20).WithMessage("Room number must not exceed 20 characters.");
+            .NotEmpty().WithMessage("Số phòng là bắt buộc.")
+            .MaximumLength(50).WithMessage("Số phòng không được vượt quá 50 ký tự.");
 
         RuleFor(x => x.Floor)
-            .GreaterThanOrEqualTo(1).WithMessage("Floor must be at least 1.");
+            .GreaterThanOrEqualTo(1).WithMessage("Tầng phải ít nhất là 1.");
 
         RuleFor(x => x.Area)
-            .GreaterThan(0).WithMessage("Area must be greater than 0.")
-            .LessThanOrEqualTo(1000).WithMessage("Area must not exceed 1000 m².");
+            .GreaterThan(0).WithMessage("Diện tích phải lớn hơn 0.")
+            .LessThanOrEqualTo(1000).WithMessage("Diện tích không được vượt quá 1000 m².");
 
         RuleFor(x => x.Price)
-            .GreaterThanOrEqualTo(0).WithMessage("Price must be non-negative.");
+            .GreaterThanOrEqualTo(0).WithMessage("Giá phòng không được âm.");
 
         RuleFor(x => x.MaxOccupants)
-            .GreaterThanOrEqualTo(1).WithMessage("Max occupants must be at least 1.")
-            .LessThanOrEqualTo(20).WithMessage("Max occupants must not exceed 20.");
+            .GreaterThanOrEqualTo(1).WithMessage("Số người tối đa phải ít nhất là 1.")
+            .LessThanOrEqualTo(20).WithMessage("Số người tối đa không được vượt quá 20.");
 
         RuleFor(x => x.Description)
-            .MaximumLength(2000).WithMessage("Description must not exceed 2000 characters.")
+            .MaximumLength(2000).WithMessage("Mô tả không được vượt quá 2000 ký tự.")
             .When(x => x.Description is not null);
     }
 }

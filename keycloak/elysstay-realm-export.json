@@ -33,7 +33,7 @@
   "verifyEmail": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
-  "resetPasswordAllowed": false,
+  "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
   "bruteForceProtected": false,
   "permanentLockout": false,
@@ -80,6 +80,33 @@
         "id": "e6d8121e-fa84-43b2-a599-4124e1dea15e",
         "name": "offline_access",
         "description": "${role_offline-access}",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "cd815fc5-cbfe-4413-a9a4-892e366f7d26",
+        "attributes": {}
+      },
+      {
+        "id": "d0000000-0000-0000-0000-000000000001",
+        "name": "owner",
+        "description": "Building owner role",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "cd815fc5-cbfe-4413-a9a4-892e366f7d26",
+        "attributes": {}
+      },
+      {
+        "id": "d0000000-0000-0000-0000-000000000002",
+        "name": "staff",
+        "description": "Building staff role",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "cd815fc5-cbfe-4413-a9a4-892e366f7d26",
+        "attributes": {}
+      },
+      {
+        "id": "d0000000-0000-0000-0000-000000000003",
+        "name": "tenant",
+        "description": "Tenant role",
         "composite": false,
         "clientRole": false,
         "containerId": "cd815fc5-cbfe-4413-a9a4-892e366f7d26",
@@ -478,6 +505,136 @@
       },
       "notBefore": 0,
       "groups": []
+    },
+    {
+      "id": "a0000000-0000-0000-0000-000000000001",
+      "username": "demo-owner@elysstay.com",
+      "email": "demo-owner@elysstay.com",
+      "firstName": "Nguyễn Văn",
+      "lastName": "An",
+      "emailVerified": true,
+      "enabled": true,
+      "createdTimestamp": 1772210218267,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@123",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-elysstay",
+        "owner"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "a0000000-0000-0000-0000-000000000002",
+      "username": "demo-staff@elysstay.com",
+      "email": "demo-staff@elysstay.com",
+      "firstName": "Trần Thị",
+      "lastName": "Bình",
+      "emailVerified": true,
+      "enabled": true,
+      "createdTimestamp": 1772210218267,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@123",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-elysstay",
+        "staff"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "a0000000-0000-0000-0000-000000000003",
+      "username": "demo-tenant1@elysstay.com",
+      "email": "demo-tenant1@elysstay.com",
+      "firstName": "Lê Hoàng",
+      "lastName": "Cường",
+      "emailVerified": true,
+      "enabled": true,
+      "createdTimestamp": 1772210218267,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@123",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-elysstay",
+        "tenant"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "a0000000-0000-0000-0000-000000000004",
+      "username": "demo-tenant2@elysstay.com",
+      "email": "demo-tenant2@elysstay.com",
+      "firstName": "Phạm Minh",
+      "lastName": "Dũng",
+      "emailVerified": true,
+      "enabled": true,
+      "createdTimestamp": 1772210218267,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@123",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-elysstay",
+        "tenant"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "a0000000-0000-0000-0000-000000000005",
+      "username": "demo-tenant3@elysstay.com",
+      "email": "demo-tenant3@elysstay.com",
+      "firstName": "Võ Thanh",
+      "lastName": "Hùng",
+      "emailVerified": true,
+      "enabled": true,
+      "createdTimestamp": 1772210218267,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo@123",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-elysstay",
+        "tenant"
+      ],
+      "notBefore": 0,
+      "groups": []
     }
   ],
   "scopeMappings": [
@@ -761,6 +918,58 @@
           }
         }
       ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "f0000000-0000-0000-0000-000000000001",
+      "clientId": "elysstay-fe",
+      "name": "ElysStay Frontend",
+      "description": "Public SPA client for the Next.js frontend",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "/*"
+      ],
+      "webOrigins": [
+        "/*"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "oidc.ciba.grant.enabled": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "post.logout.redirect.uris": "+"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "web-origins",
         "acr",

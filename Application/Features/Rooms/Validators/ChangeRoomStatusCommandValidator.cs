@@ -8,9 +8,9 @@ public class ChangeRoomStatusCommandValidator : AbstractValidator<ChangeRoomStat
     public ChangeRoomStatusCommandValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("Room ID is required.");
+            .NotEmpty().WithMessage("Mã phòng là bắt buộc.");
 
         RuleFor(x => x.Status)
-            .NotEmpty().WithMessage("Status is required.");
+            .NotEmpty().WithMessage("Trạng thái là bắt buộc.");
     }
 }

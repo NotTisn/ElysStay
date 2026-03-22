@@ -8,10 +8,10 @@ public class AssignStaffCommandValidator : AbstractValidator<AssignStaffCommand>
     public AssignStaffCommandValidator()
     {
         RuleFor(x => x.BuildingId)
-            .NotEmpty().WithMessage("BuildingId is required.");
+            .NotEmpty().WithMessage("Mã tòa nhà là bắt buộc.");
 
         RuleFor(x => x.StaffId)
-            .NotEmpty().WithMessage("StaffId is required.");
+            .NotEmpty().WithMessage("Mã nhân viên là bắt buộc.");
     }
 }
 
@@ -20,9 +20,9 @@ public class UnassignStaffCommandValidator : AbstractValidator<UnassignStaffComm
     public UnassignStaffCommandValidator()
     {
         RuleFor(x => x.BuildingId)
-            .NotEmpty().WithMessage("BuildingId is required.");
+            .NotEmpty().WithMessage("Mã tòa nhà là bắt buộc.");
 
         RuleFor(x => x.StaffId)
-            .NotEmpty().WithMessage("StaffId is required.");
+            .NotEmpty().WithMessage("Mã nhân viên là bắt buộc.");
     }
 }

@@ -7,9 +7,9 @@ public class GenerateInvoicesCommandValidator : AbstractValidator<GenerateInvoic
 {
     public GenerateInvoicesCommandValidator()
     {
-        RuleFor(x => x.BuildingId).NotEmpty().WithMessage("BuildingId is required.");
-        RuleFor(x => x.BillingYear).InclusiveBetween(2020, 2100).WithMessage("BillingYear must be between 2020 and 2100 (VAL-06).");
-        RuleFor(x => x.BillingMonth).InclusiveBetween(1, 12).WithMessage("BillingMonth must be between 1 and 12 (VAL-06).");
+        RuleFor(x => x.BuildingId).NotEmpty().WithMessage("Mã tòa nhà là bắt buộc.");
+        RuleFor(x => x.BillingYear).InclusiveBetween(2020, 2100).WithMessage("Năm thanh toán phải từ 2020 đến 2100.");
+        RuleFor(x => x.BillingMonth).InclusiveBetween(1, 12).WithMessage("Tháng thanh toán phải từ 1 đến 12.");
     }
 }
 
@@ -17,10 +17,12 @@ public class UpdateInvoiceCommandValidator : AbstractValidator<UpdateInvoiceComm
 {
     public UpdateInvoiceCommandValidator()
     {
-        RuleFor(x => x.Id).NotEmpty().WithMessage("Invoice ID is required.");
-        RuleFor(x => x.PenaltyAmount).GreaterThanOrEqualTo(0).When(x => x.PenaltyAmount.HasValue).WithMessage("PenaltyAmount cannot be negative.");
-        RuleFor(x => x.DiscountAmount).GreaterThanOrEqualTo(0).When(x => x.DiscountAmount.HasValue).WithMessage("DiscountAmount cannot be negative.");
-        RuleFor(x => x.Note).MaximumLength(500).When(x => x.Note is not null).WithMessage("Note cannot exceed 500 characters.");
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Mã hóa đơn là bắt buộc.");
+        RuleFor(x => x.PenaltyAmount).GreaterThanOrEqualTo(0).When(x => x.PenaltyAmount.HasValue).WithMessage("Tiền phạt không được âm.");
+        RuleFor(x => x.PenaltyAmount).LessThanOrEqualTo(100_000_000).When(x => x.PenaltyAmount.HasValue).WithMessage("Tiền phạt không được vượt quá 100.000.000đ.");
+        RuleFor(x => x.DiscountAmount).GreaterThanOrEqualTo(0).When(x => x.DiscountAmount.HasValue).WithMessage("Tiền giảm không được âm.");
+        RuleFor(x => x.DiscountAmount).LessThanOrEqualTo(100_000_000).When(x => x.DiscountAmount.HasValue).WithMessage("Tiền giảm không được vượt quá 100.000.000đ.");
+        RuleFor(x => x.Note).MaximumLength(1000).When(x => x.Note is not null).WithMessage("Ghi chú không được vượt quá 1000 ký tự.");
     }
 }
 
@@ -28,13 +30,13 @@ public class BatchSendInvoicesCommandValidator : AbstractValidator<BatchSendInvo
 {
     public BatchSendInvoicesCommandValidator()
     {
-        RuleFor(x => x.InvoiceIds).NotEmpty().WithMessage("At least one invoice ID is required.");
+        RuleFor(x => x.InvoiceIds).NotEmpty().WithMessage("Cần ít nhất một mã hóa đơn.");
         RuleForEach(x => x.InvoiceIds)
-            .NotEmpty().WithMessage("Invoice ID cannot be empty.");
+            .NotEmpty().WithMessage("Mã hóa đơn không được để trống.");
         RuleFor(x => x.InvoiceIds.Count).LessThanOrEqualTo(100)
-            .WithMessage("Maximum 100 invoices per batch send.");
+            .WithMessage("Tối đa 100 hóa đơn mỗi lần gửi.");
         RuleFor(x => x.InvoiceIds)
             .Must(ids => ids.Distinct().Count() == ids.Count)
-            .WithMessage("Duplicate invoice IDs are not allowed.");
+            .WithMessage("Không được có mã hóa đơn trùng lặp.");
     }
 }

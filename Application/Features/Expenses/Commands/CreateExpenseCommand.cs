@@ -50,7 +50,7 @@ public class CreateExpenseCommandHandler : IRequestHandler<CreateExpenseCommand,
                     && r.DeletedAt == null, ct);
 
             if (!roomExists)
-                throw new NotFoundException($"Room {request.RoomId} not found in building {request.BuildingId}.");
+                throw new NotFoundException($"Không tìm thấy phòng {request.RoomId} trong tòa nhà {request.BuildingId}.");
         }
 
         var expense = new Domain.Entities.Expense

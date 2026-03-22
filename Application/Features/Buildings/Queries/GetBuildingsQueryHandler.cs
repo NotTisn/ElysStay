@@ -37,7 +37,7 @@ public class GetBuildingsQueryHandler : IRequestHandler<GetBuildingsQuery, Paged
         }
         else
         {
-            throw new ForbiddenException("Tenants cannot list buildings.");
+            throw new ForbiddenException("Khách thuê không thể xem danh sách tòa nhà.");
         }
 
         // Filters

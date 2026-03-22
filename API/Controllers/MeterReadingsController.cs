@@ -53,7 +53,7 @@ public class MeterReadingsController : BaseApiController
         [FromBody] BulkUpsertMeterReadingsCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
-        return OkResponse(result, "Meter readings submitted successfully");
+        return OkResponse(result, "Gửi chỉ số đồng hồ thành công");
     }
 
     /// <summary>

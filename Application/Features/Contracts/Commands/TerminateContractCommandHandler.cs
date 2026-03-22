@@ -13,15 +13,18 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public TerminateContractCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<ContractDto> Handle(TerminateContractCommand request, CancellationToken cancellationToken)
@@ -33,25 +36,29 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
             .Include(c => c.TenantUser!)
             .Include(c => c.ContractTenants)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException("Contract", request.Id);
+            ?? throw new NotFoundException("Hợp đồng", request.Id);
 
         // Must be active (SM-10)
         if (contract.Status != ContractStatus.Active)
-            throw new ConflictException("Only active contracts can be terminated.");
+            throw new ConflictException("Chỉ có thể chấm dứt hợp đồng đang hoạt động.");
 
         // Building scope auth
         await _buildingScope.AuthorizeAsync(contract.Room!.BuildingId, cancellationToken);
 
         // Validate termination date is not before contract start
         if (request.TerminationDate < contract.StartDate)
-            throw new BadRequestException("Termination date cannot be before the contract start date.");
+            throw new BadRequestException("Ngày chấm dứt không được trước ngày bắt đầu hợp đồng.");
+
+        // Validate termination date is not before move-in date
+        if (request.TerminationDate < contract.MoveInDate)
+            throw new BadRequestException("Ngày chấm dứt không được trước ngày dọn vào.");
 
         // Validate deductions
         if (request.Deductions < 0)
-            throw new BadRequestException("Deductions cannot be negative.");
+            throw new BadRequestException("Khoản khấu trừ không được âm.");
 
         if (request.Deductions > contract.DepositAmount)
-            throw new BadRequestException("Deductions cannot exceed deposit amount.");
+            throw new BadRequestException("Khoản khấu trừ không được vượt quá tiền đặt cọc.");
 
         // Calculate refund (DEP-04)
         var refundAmount = contract.DepositAmount - request.Deductions;
@@ -85,8 +92,9 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
         }
 
         // Auto-void DRAFT/SENT/OVERDUE invoices for billing periods after termination
-        // These invoices are no longer applicable and should not remain outstanding
+        // Only void invoices that have NO payments recorded (protect partial-pay records)
         var futureInvoices = await _db.Invoices
+            .Include(i => i.Payments)
             .Where(i => i.ContractId == contract.Id
                 && (i.Status == InvoiceStatus.Draft || i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.Overdue)
                 && (i.BillingYear > request.TerminationDate.Year
@@ -95,6 +103,12 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
 
         foreach (var invoice in futureInvoices)
         {
+            var hasPaidAmount = invoice.Payments.Any(p => p.Type == PaymentType.RentPayment);
+            if (hasPaidAmount)
+            {
+                // Invoice has payments — leave it as-is so owner can reconcile manually
+                continue;
+            }
             invoice.Status = InvoiceStatus.Void;
             invoice.UpdatedAt = DateTime.UtcNow;
         }
@@ -107,7 +121,7 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
                 ContractId = contract.Id,
                 Type = PaymentType.DepositRefund,
                 Amount = refundAmount,
-                Note = request.Note ?? "Deposit refund on contract termination",
+                Note = request.Note ?? "Hoàn trả tiền cọc khi chấm dứt hợp đồng",
                 RecordedBy = userId,
                 PaidAt = DateTime.UtcNow
             });
@@ -120,7 +134,7 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
                 ContractId = contract.Id,
                 Type = PaymentType.DepositRefund,
                 Amount = 0,
-                Note = request.Note ?? $"Deposit fully forfeited ({contract.DepositAmount:N0} VND deducted)",
+                Note = request.Note ?? $"Tiền cọc bị tịch thu toàn bộ ({contract.DepositAmount:N0}đ khấu trừ)",
                 RecordedBy = userId,
                 PaidAt = DateTime.UtcNow
             });
@@ -132,7 +146,7 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
             UserId = contract.TenantUserId,
             Title = "Hợp đồng đã chấm dứt",
             Message = $"Hợp đồng phòng {contract.Room!.RoomNumber} tại {contract.Room.Building!.Name} đã được chấm dứt.",
-            Type = "CONTRACT_TERMINATED",
+            Type = Domain.Constants.NotificationTypes.ContractTerminated,
             ReferenceId = contract.Id,
         });
 
@@ -142,8 +156,14 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
         }
         catch (DbUpdateConcurrencyException)
         {
-            throw new ConflictException("The room was modified by another operation. Please retry.");
+            throw new ConflictException("Phòng đã bị thay đổi bởi thao tác khác. Vui lòng thử lại.");
         }
+
+        // Best-effort email to tenant (after successful save)
+        var (subject, html) = Application.Common.Email.EmailTemplates.ContractTerminated(
+            contract.TenantUser!.FullName, contract.Room.RoomNumber,
+            contract.Room.Building!.Name, refundAmount);
+        await _emailService.TrySendAsync(contract.TenantUser.Email, contract.TenantUser.FullName, subject, html, cancellationToken);
 
         return new ContractDto
         {

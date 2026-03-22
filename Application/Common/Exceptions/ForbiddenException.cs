@@ -5,6 +5,6 @@ namespace Application.Common.Exceptions;
 /// </summary>
 public class ForbiddenException : Exception
 {
-    public ForbiddenException(string message = "You do not have permission to perform this action.")
+    public ForbiddenException(string message = "Bạn không có quyền thực hiện thao tác này.")
         : base(message) { }
 }

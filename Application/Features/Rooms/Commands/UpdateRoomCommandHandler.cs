@@ -20,8 +20,9 @@ public class UpdateRoomCommandHandler : IRequestHandler<UpdateRoomCommand, RoomD
     public async Task<RoomDto> Handle(UpdateRoomCommand request, CancellationToken cancellationToken)
     {
         var room = await _db.Rooms
+            .Include(r => r.Building)
             .FirstOrDefaultAsync(r => r.Id == request.Id && r.DeletedAt == null, cancellationToken)
-            ?? throw new NotFoundException($"Room {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy phòng {request.Id}.");
 
         // AUTH-05: Building-scope check
         await _buildingScope.AuthorizeAsync(room.BuildingId, cancellationToken);
@@ -32,10 +33,10 @@ public class UpdateRoomCommandHandler : IRequestHandler<UpdateRoomCommand, RoomD
             var building = await _db.Buildings
                 .AsNoTracking()
                 .FirstOrDefaultAsync(b => b.Id == room.BuildingId, cancellationToken)
-                ?? throw new NotFoundException($"Building {room.BuildingId} not found.");
+                ?? throw new NotFoundException($"Không tìm thấy tòa nhà {room.BuildingId}.");
 
             if (request.Floor.Value < 1 || request.Floor.Value > building.TotalFloors)
-                throw new BadRequestException($"Floor must be between 1 and {building.TotalFloors}.");
+                throw new BadRequestException($"Tầng phải từ 1 đến {building.TotalFloors}.");
         }
 
         // Validate uniqueness if room number changed (UQ-04)
@@ -48,7 +49,7 @@ public class UpdateRoomCommandHandler : IRequestHandler<UpdateRoomCommand, RoomD
                             && r.DeletedAt == null, cancellationToken);
             if (exists)
                 throw new ConflictException(
-                    $"Room number '{request.RoomNumber}' already exists in this building.",
+                    $"Số phòng '{request.RoomNumber}' đã tồn tại trong tòa nhà.",
                     "DUPLICATE_ROOM_NUMBER");
         }
 
@@ -79,6 +80,7 @@ public class UpdateRoomCommandHandler : IRequestHandler<UpdateRoomCommand, RoomD
         {
             Id = room.Id,
             BuildingId = room.BuildingId,
+            BuildingName = room.Building?.Name,
             RoomNumber = room.RoomNumber,
             Floor = room.Floor,
             Area = room.Area,

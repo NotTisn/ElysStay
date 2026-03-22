@@ -53,7 +53,7 @@ public class BulkUpsertMeterReadingsCommandHandler : IRequestHandler<BulkUpsertM
         // Verify building exists
         var buildingExists = await _db.Buildings.AnyAsync(b => b.Id == request.BuildingId, cancellationToken);
         if (!buildingExists)
-            throw new NotFoundException("Building", request.BuildingId);
+            throw new NotFoundException("Tòa nhà", request.BuildingId);
 
         // Validate all room IDs belong to this building
         var requestedRoomIds = request.Readings.Select(r => r.RoomId).Distinct().ToList();
@@ -62,10 +62,10 @@ public class BulkUpsertMeterReadingsCommandHandler : IRequestHandler<BulkUpsertM
         var duplicates = request.Readings
             .GroupBy(r => (r.RoomId, r.ServiceId))
             .Where(g => g.Count() > 1)
-            .Select(g => $"Room {g.Key.RoomId} + Service {g.Key.ServiceId}")
+            .Select(g => $"Phòng {g.Key.RoomId} + Dịch vụ {g.Key.ServiceId}")
             .ToList();
         if (duplicates.Count > 0)
-            throw new BadRequestException($"Duplicate meter reading entries: {string.Join("; ", duplicates)}.");
+            throw new BadRequestException($"Các mục chỉ số trùng lặp: {string.Join("; ", duplicates)}.");
         var validRoomIds = await _db.Rooms
             .Where(r => r.BuildingId == request.BuildingId && requestedRoomIds.Contains(r.Id))
             .Select(r => r.Id)
@@ -73,7 +73,7 @@ public class BulkUpsertMeterReadingsCommandHandler : IRequestHandler<BulkUpsertM
 
         var invalidRoomIds = requestedRoomIds.Except(validRoomIds).ToList();
         if (invalidRoomIds.Count > 0)
-            throw new BadRequestException($"Rooms [{string.Join(", ", invalidRoomIds)}] do not belong to this building.");
+            throw new BadRequestException($"Phòng [{string.Join(", ", invalidRoomIds)}] không thuộc tòa nhà này.");
 
         // Validate all service IDs are metered services of this building
         var requestedServiceIds = request.Readings.Select(r => r.ServiceId).Distinct().ToList();
@@ -84,7 +84,7 @@ public class BulkUpsertMeterReadingsCommandHandler : IRequestHandler<BulkUpsertM
 
         var invalidServiceIds = requestedServiceIds.Except(validServiceIds).ToList();
         if (invalidServiceIds.Count > 0)
-            throw new BadRequestException($"Services [{string.Join(", ", invalidServiceIds)}] are not valid metered services for this building.");
+            throw new BadRequestException($"Dịch vụ [{string.Join(", ", invalidServiceIds)}] không phải dịch vụ đo đếm hợp lệ của tòa nhà này.");
 
         // Compute the previous billing period for auto-fetching PreviousReading
         var prevYear = request.BillingMonth == 1 ? request.BillingYear - 1 : request.BillingYear;

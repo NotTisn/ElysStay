@@ -89,7 +89,7 @@ public class UserAutoProvisioningMiddleware
                 user.Id, keycloakId);
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync("{\"message\":\"Account has been deactivated.\",\"errorCode\":\"ACCOUNT_DEACTIVATED\"}");
+            await context.Response.WriteAsync("{\"message\":\"Tài khoản đã bị vô hiệu hóa.\",\"errorCode\":\"ACCOUNT_DEACTIVATED\"}");
             return;
         }
         else

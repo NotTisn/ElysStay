@@ -26,13 +26,13 @@ public class RemoveRoomServiceOverrideCommandHandler : IRequestHandler<RemoveRoo
         var room = await _db.Rooms
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == request.RoomId, cancellationToken)
-            ?? throw new NotFoundException($"Room {request.RoomId} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy phòng {request.RoomId}.");
 
         await _buildingScope.AuthorizeAsync(room.BuildingId, cancellationToken);
 
         var override_ = await _db.RoomServices
             .FirstOrDefaultAsync(rs => rs.RoomId == request.RoomId && rs.ServiceId == request.ServiceId, cancellationToken)
-            ?? throw new NotFoundException($"No override found for service {request.ServiceId} in room {request.RoomId}.");
+            ?? throw new NotFoundException($"Không tìm thấy tùy chỉnh cho dịch vụ {request.ServiceId} trong phòng {request.RoomId}.");
 
         _db.RoomServices.Remove(override_);
         await _db.SaveChangesAsync(cancellationToken);

@@ -27,8 +27,9 @@ public class GetRoomByIdQueryHandler : IRequestHandler<GetRoomByIdQuery, RoomDto
     {
         var room = await _db.Rooms
             .AsNoTracking()
+            .Include(r => r.Building)
             .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException($"Room {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy phòng {request.Id}.");
 
         // Tenant: can only view rooms they have an active contract for
         if (_currentUser.IsTenant)
@@ -40,7 +41,7 @@ public class GetRoomByIdQueryHandler : IRequestHandler<GetRoomByIdQuery, RoomDto
                     && (c.TenantUserId == userId || c.ContractTenants.Any(ct => ct.TenantUserId == userId)),
                     cancellationToken);
             if (!hasContract)
-                throw new ForbiddenException("You can only view rooms you have an active contract for.");
+                throw new ForbiddenException("Bạn chỉ có thể xem phòng mà bạn có hợp đồng đang hoạt động.");
         }
         else
         {
@@ -51,6 +52,7 @@ public class GetRoomByIdQueryHandler : IRequestHandler<GetRoomByIdQuery, RoomDto
         {
             Id = room.Id,
             BuildingId = room.BuildingId,
+            BuildingName = room.Building?.Name,
             RoomNumber = room.RoomNumber,
             Floor = room.Floor,
             Area = room.Area,

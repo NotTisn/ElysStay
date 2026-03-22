@@ -1,5 +1,8 @@
+using System.Diagnostics;
+using Application.Common.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
+using Application.Common.Email;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +30,8 @@ public class InvoiceOverdueBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("BG-02 InvoiceOverdueJob started — runs daily at midnight UTC");
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -54,6 +59,7 @@ public class InvoiceOverdueBackgroundService : BackgroundService
 
     private async Task RunOnceAsync(CancellationToken ct)
     {
+        var sw = Stopwatch.StartNew();
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
@@ -61,35 +67,73 @@ public class InvoiceOverdueBackgroundService : BackgroundService
 
         // Include PartiallyPaid — a tenant who pays $1 on a $1000 invoice
         // should still transition to Overdue after the due date passes.
-        var overdueInvoices = await db.Invoices
-            .Include(i => i.Contract)
+        var overdueInvoiceIds = await db.Invoices
             .Where(i => (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid)
                         && i.DueDate < today)
+            .Select(i => i.Id)
             .ToListAsync(ct);
 
-        if (overdueInvoices.Count == 0)
+        if (overdueInvoiceIds.Count == 0)
+        {
+            _logger.LogDebug("BG-02 InvoiceOverdueJob: no overdue invoices found ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
             return;
+        }
 
         var now = DateTime.UtcNow;
 
-        foreach (var invoice in overdueInvoices)
-        {
-            invoice.Status = InvoiceStatus.Overdue;
-            invoice.UpdatedAt = now;
+        var processed = 0;
 
-            db.Notifications.Add(new Notification
+        foreach (var invoiceId in overdueInvoiceIds)
+        {
+            try
             {
-                UserId = invoice.Contract!.TenantUserId,
-                Title = "Hoa don qua han",
-                Message = $"Hoa don thang {invoice.BillingMonth}/{invoice.BillingYear} da qua han thanh toan.",
-                Type = "INVOICE_OVERDUE",
-                ReferenceId = invoice.Id,
-                CreatedAt = now
-            });
+                await ProcessInvoiceAsync(invoiceId, now, ct);
+                processed++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "BG-02 InvoiceOverdueJob: failed to mark invoice {InvoiceId} overdue", invoiceId);
+            }
         }
+
+        _logger.LogInformation("BG-02 InvoiceOverdueJob: marked {Processed}/{Total} invoices overdue in {ElapsedMs}ms", processed, overdueInvoiceIds.Count, sw.ElapsedMilliseconds);
+    }
+
+    private async Task ProcessInvoiceAsync(Guid invoiceId, DateTime now, CancellationToken ct)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+        var invoice = await db.Invoices
+            .Include(i => i.Contract).ThenInclude(c => c!.Room!).ThenInclude(r => r.Building!)
+            .Include(i => i.Contract).ThenInclude(c => c!.TenantUser!)
+            .FirstOrDefaultAsync(i => i.Id == invoiceId, ct)
+            ?? throw new InvalidOperationException($"Invoice {invoiceId} was not found during overdue processing.");
+
+        invoice.Status = InvoiceStatus.Overdue;
+        invoice.UpdatedAt = now;
+
+        db.Notifications.Add(new Notification
+        {
+            UserId = invoice.Contract!.TenantUserId,
+            Title = "Hóa đơn quá hạn",
+            Message = $"Hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear} đã quá hạn thanh toán.",
+            Type = Domain.Constants.NotificationTypes.InvoiceOverdue,
+            ReferenceId = invoice.Id,
+            CreatedAt = now
+        });
 
         await db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Invoice overdue job processed {Count} invoices", overdueInvoices.Count);
+        var tenant = invoice.Contract.TenantUser;
+        var room = invoice.Contract.Room;
+        if (tenant != null && room != null)
+        {
+            var (subject, html) = EmailTemplates.InvoiceOverdue(
+                tenant.FullName, room.RoomNumber, room.Building!.Name,
+                invoice.BillingMonth, invoice.BillingYear, invoice.TotalAmount);
+            await emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, ct);
+        }
     }
 }

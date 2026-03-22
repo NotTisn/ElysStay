@@ -31,7 +31,7 @@ public class BuildingScopeService : IBuildingScopeService
                 .AnyAsync(b => b.Id == buildingId && b.OwnerId == userId, ct);
 
             if (!ownsBuilding)
-                throw new ForbiddenException("You do not own this building.");
+                throw new ForbiddenException("Bạn không sở hữu tòa nhà này.");
 
             return;
         }
@@ -43,7 +43,7 @@ public class BuildingScopeService : IBuildingScopeService
                 .AnyAsync(sa => sa.BuildingId == buildingId && sa.StaffId == userId, ct);
 
             if (!isAssigned)
-                throw new ForbiddenException("You are not assigned to this building.");
+                throw new ForbiddenException("Bạn không được phân công cho tòa nhà này.");
 
             return;
         }

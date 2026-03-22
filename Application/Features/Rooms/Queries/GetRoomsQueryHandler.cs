@@ -36,7 +36,7 @@ public class GetRoomsQueryHandler : IRequestHandler<GetRoomsQuery, PagedResult<R
         }
         else
         {
-            throw new ForbiddenException("Tenants cannot list rooms.");
+            throw new ForbiddenException("Khách thuê không thể xem danh sách phòng.");
         }
 
         // Filters
@@ -60,6 +60,7 @@ public class GetRoomsQueryHandler : IRequestHandler<GetRoomsQuery, PagedResult<R
             {
                 Id = r.Id,
                 BuildingId = r.BuildingId,
+                BuildingName = r.Building!.Name,
                 RoomNumber = r.RoomNumber,
                 Floor = r.Floor,
                 Area = r.Area,

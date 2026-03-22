@@ -1,5 +1,8 @@
+using System.Diagnostics;
+using Application.Common.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
+using Application.Common.Email;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +30,8 @@ public class ReservationExpiryBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        _logger.LogInformation("BG-01 ReservationExpiryJob started — runs every hour");
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -54,44 +59,98 @@ public class ReservationExpiryBackgroundService : BackgroundService
 
     private async Task RunOnceAsync(CancellationToken ct)
     {
+        var sw = Stopwatch.StartNew();
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         var now = DateTime.UtcNow;
-        var expiredReservations = await db.RoomReservations
-            .Include(r => r.Room)
+        var expiredReservationIds = await db.RoomReservations
             .Where(r => (r.Status == ReservationStatus.Pending || r.Status == ReservationStatus.Confirmed)
                         && r.ExpiresAt <= now)
+            .Select(r => r.Id)
             .ToListAsync(ct);
 
-        if (expiredReservations.Count == 0)
-            return;
-
-        foreach (var reservation in expiredReservations)
+        if (expiredReservationIds.Count == 0)
         {
-            reservation.Status = ReservationStatus.Expired;
-            reservation.UpdatedAt = now;
+            _logger.LogDebug("BG-01 ReservationExpiryJob: no expired reservations found ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
+            return;
+        }
 
-            if (reservation.Room is not null && reservation.Room.Status == RoomStatus.Booked)
+        var processed = 0;
+        foreach (var reservationId in expiredReservationIds)
+        {
+            try
             {
-                reservation.Room.Status = RoomStatus.Available;
-                reservation.Room.UpdatedAt = now;
+                await ProcessReservationAsync(reservationId, now, ct);
+                processed++;
             }
-
-            // Notify tenant that their reservation has expired
-            db.Notifications.Add(new Notification
+            catch (Exception ex)
             {
-                UserId = reservation.TenantUserId,
-                Title = "Dat phong da het han",
-                Message = $"Dat phong {reservation.Room?.RoomNumber ?? "N/A"} da het han va bi huy tu dong.",
-                Type = "RESERVATION_EXPIRED",
-                ReferenceId = reservation.Id,
-                CreatedAt = now
+                _logger.LogError(ex, "BG-01 ReservationExpiryJob: failed to expire reservation {ReservationId}", reservationId);
+            }
+        }
+
+        _logger.LogInformation("BG-01 ReservationExpiryJob: expired {Processed}/{Total} reservations in {ElapsedMs}ms", processed, expiredReservationIds.Count, sw.ElapsedMilliseconds);
+    }
+
+    private async Task ProcessReservationAsync(Guid reservationId, DateTime now, CancellationToken ct)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+        var reservation = await db.RoomReservations
+            .Include(r => r.Room).ThenInclude(r => r!.Building!)
+            .Include(r => r.TenantUser)
+            .FirstOrDefaultAsync(r => r.Id == reservationId, ct)
+            ?? throw new InvalidOperationException($"Reservation {reservationId} was not found during expiry processing.");
+
+        var wasConfirmed = reservation.Status == ReservationStatus.Confirmed;
+
+        reservation.Status = ReservationStatus.Expired;
+        reservation.UpdatedAt = now;
+
+        if (wasConfirmed && reservation.DepositAmount > 0)
+        {
+            reservation.RefundAmount = 0;
+            reservation.RefundNote = "Tiền cọc bị mất do hết hạn đặt phòng.";
+
+            db.Payments.Add(new Payment
+            {
+                ReservationId = reservation.Id,
+                Type = PaymentType.DepositIn,
+                Amount = reservation.DepositAmount,
+                Note = "Tiền cọc nhận từ đặt phòng (hết hạn — tịch thu)",
+                RecordedBy = reservation.TenantUserId,
+                PaidAt = reservation.CreatedAt
             });
         }
 
+        if (reservation.Room is not null && reservation.Room.Status == RoomStatus.Booked)
+        {
+            reservation.Room.Status = RoomStatus.Available;
+            reservation.Room.UpdatedAt = now;
+        }
+
+        db.Notifications.Add(new Notification
+        {
+            UserId = reservation.TenantUserId,
+            Title = "Đặt phòng đã hết hạn",
+            Message = $"Đặt phòng {reservation.Room?.RoomNumber ?? "N/A"} đã hết hạn và bị hủy tự động.",
+            Type = Domain.Constants.NotificationTypes.ReservationExpired,
+            ReferenceId = reservation.Id,
+            CreatedAt = now
+        });
+
         await db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Reservation expiry job processed {Count} reservations", expiredReservations.Count);
+        var tenant = reservation.TenantUser;
+        var room = reservation.Room;
+        if (tenant != null && room != null)
+        {
+            var (subject, html) = EmailTemplates.ReservationExpired(
+                tenant.FullName, room.RoomNumber, room.Building?.Name ?? "N/A");
+            await emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, ct);
+        }
     }
 }

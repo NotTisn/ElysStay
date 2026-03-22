@@ -46,6 +46,32 @@ public class UsersController : BaseApiController
     }
 
     /// <summary>
+    /// POST /users/me/avatar — Upload avatar image (max 2 MB, JPEG/PNG).
+    /// </summary>
+    [HttpPost("me/avatar")]
+    [RequestSizeLimit(2 * 1024 * 1024)]
+    [EnableRateLimiting("sensitive")]
+    public async Task<IActionResult> UploadAvatar(IFormFile? file, CancellationToken ct)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest(new { message = "Cần cung cấp file ảnh đại diện." });
+
+        var allowedTypes = new[] { "image/jpeg", "image/png" };
+        if (!allowedTypes.Contains(file.ContentType))
+            return BadRequest(new { message = "Chỉ chấp nhận file JPEG hoặc PNG." });
+
+        var command = new UploadAvatarCommand
+        {
+            FileStream = file.OpenReadStream(),
+            FileName = file.FileName,
+            ContentType = file.ContentType,
+            FileSize = file.Length
+        };
+        var url = await _mediator.Send(command, ct);
+        return OkResponse(new { avatarUrl = url }, "Cập nhật ảnh đại diện thành công");
+    }
+
+    /// <summary>
     /// PUT /users/me/password — Change the authenticated user's password.
     /// Verifies current password before setting new one.
     /// </summary>
@@ -54,7 +80,7 @@ public class UsersController : BaseApiController
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordCommand command, CancellationToken ct)
     {
         await _mediator.Send(command, ct);
-        return OkResponse<object?>(null, "Password changed successfully");
+        return OkResponse<object?>(null, "Đổi mật khẩu thành công");
     }
 
     /// <summary>
@@ -100,6 +126,7 @@ public class UsersController : BaseApiController
     [HttpGet("staff")]
     [Authorize(Roles = "Owner")]
     public async Task<IActionResult> GetStaff(
+        [FromQuery] string? search,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string sort = "createdAt:desc",
@@ -108,6 +135,7 @@ public class UsersController : BaseApiController
         var result = await _mediator.Send(new GetUsersQuery
         {
             RoleFilter = UserRole.Staff,
+            Search = search,
             Page = page,
             PageSize = pageSize,
             Sort = sort
@@ -136,7 +164,7 @@ public class UsersController : BaseApiController
     public async Task<IActionResult> CreateTenant([FromBody] CreateTenantCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Tenant created successfully");
+        return CreatedResponse(result, message: "Tạo tài khoản khách thuê thành công");
     }
 
     /// <summary>
@@ -149,7 +177,7 @@ public class UsersController : BaseApiController
     public async Task<IActionResult> CreateStaff([FromBody] CreateStaffCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Staff account created successfully");
+        return CreatedResponse(result, message: "Tạo tài khoản nhân viên thành công");
     }
 
     /// <summary>
@@ -165,7 +193,7 @@ public class UsersController : BaseApiController
             UserId = id,
             Status = request.Status
         }, ct);
-        return OkResponse<object?>(null, "User status updated successfully");
+        return OkResponse<object?>(null, "Cập nhật trạng thái người dùng thành công");
     }
 }
 

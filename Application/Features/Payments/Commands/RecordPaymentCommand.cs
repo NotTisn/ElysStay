@@ -28,15 +28,18 @@ public class RecordPaymentCommandHandler : IRequestHandler<RecordPaymentCommand,
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public RecordPaymentCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<PaymentDto> Handle(RecordPaymentCommand request, CancellationToken cancellationToken)
@@ -50,18 +53,19 @@ public class RecordPaymentCommandHandler : IRequestHandler<RecordPaymentCommand,
         try
         {
             var invoice = await _db.Invoices
-                .Include(i => i.Contract!).ThenInclude(c => c.Room!)
+                .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
+                .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
                 .Include(i => i.Payments)
                 .FirstOrDefaultAsync(i => i.Id == request.InvoiceId, cancellationToken)
-                ?? throw new NotFoundException("Invoice", request.InvoiceId);
+                ?? throw new NotFoundException("Hóa đơn", request.InvoiceId);
 
             // PAY-04: Cannot pay DRAFT or VOID
             if (invoice.Status == InvoiceStatus.Draft)
-                throw new ConflictException("Cannot record payment on a DRAFT invoice. Send it first.");
+                throw new ConflictException("Không thể ghi nhận thanh toán cho hóa đơn Nháp. Hãy gửi hóa đơn trước.");
             if (invoice.Status == InvoiceStatus.Void)
-                throw new ConflictException("Cannot record payment on a VOID invoice.");
+                throw new ConflictException("Không thể ghi nhận thanh toán cho hóa đơn đã hủy.");
             if (invoice.Status == InvoiceStatus.Paid)
-                throw new ConflictException("Invoice is already fully paid.");
+                throw new ConflictException("Hóa đơn đã được thanh toán đầy đủ.");
 
             await _buildingScope.AuthorizeAsync(invoice.Contract!.Room!.BuildingId, cancellationToken);
 
@@ -71,7 +75,7 @@ public class RecordPaymentCommandHandler : IRequestHandler<RecordPaymentCommand,
                 .Sum(p => p.Amount);
             var remaining = invoice.TotalAmount - currentPaid;
             if (request.Amount > remaining)
-                throw new BadRequestException($"Payment amount ({request.Amount}) exceeds remaining balance ({remaining}).");
+                throw new BadRequestException($"Số tiền thanh toán ({request.Amount}) vượt quá số dư còn lại ({remaining}).");
 
             // Create payment
             var payment = new Payment
@@ -102,12 +106,21 @@ public class RecordPaymentCommandHandler : IRequestHandler<RecordPaymentCommand,
                 UserId = invoice.Contract!.TenantUserId,
                 Title = "Thanh toán ghi nhận",
                 Message = $"Thanh toán {request.Amount:N0}đ đã được ghi nhận cho hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear}.",
-                Type = "PAYMENT_RECORDED",
+                Type = Domain.Constants.NotificationTypes.PaymentRecorded,
                 ReferenceId = invoice.Id,
             });
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+
+            // Best-effort email to tenant (after successful commit)
+            var tenant = invoice.Contract!.TenantUser!;
+            var room = invoice.Contract!.Room!;
+            var (subject, html) = Application.Common.Email.EmailTemplates.PaymentRecorded(
+                tenant.FullName, room.RoomNumber, room.Building!.Name,
+                invoice.BillingMonth, invoice.BillingYear,
+                request.Amount, invoice.TotalAmount, totalPaid);
+            await _emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, cancellationToken);
 
             return new PaymentDto
             {

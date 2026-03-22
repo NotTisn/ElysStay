@@ -31,7 +31,7 @@ public class GetContractTenantsQueryHandler : IRequestHandler<GetContractTenants
             .AsNoTracking()
             .Include(c => c.Room!).ThenInclude(r => r.Building!)
             .FirstOrDefaultAsync(c => c.Id == request.ContractId, cancellationToken)
-            ?? throw new Common.Exceptions.NotFoundException("Contract", request.ContractId);
+            ?? throw new Common.Exceptions.NotFoundException("Hợp đồng", request.ContractId);
 
         // Tenant access check
         if (_currentUser.IsTenant)
@@ -42,21 +42,21 @@ public class GetContractTenantsQueryHandler : IRequestHandler<GetContractTenants
                     cancellationToken);
 
             if (!isTenantOnContract)
-                throw new Common.Exceptions.ForbiddenException("You can only view your own contract's tenants.");
+                throw new Common.Exceptions.ForbiddenException("Bạn chỉ có thể xem danh sách người ở trong hợp đồng của mình.");
         }
         else
         {
             // Owner/Staff building scope
             var building = contract.Room!.Building!;
             if (_currentUser.IsOwner && building.OwnerId != userId)
-                throw new Common.Exceptions.ForbiddenException("You do not own this building.");
+                throw new Common.Exceptions.ForbiddenException("Bạn không sở hữu tòa nhà này.");
 
             if (_currentUser.IsStaff)
             {
                 var isAssigned = await _db.StaffAssignments
                     .AnyAsync(sa => sa.BuildingId == building.Id && sa.StaffId == userId, cancellationToken);
                 if (!isAssigned)
-                    throw new Common.Exceptions.ForbiddenException("You are not assigned to this building.");
+                    throw new Common.Exceptions.ForbiddenException("Bạn không được phân công cho tòa nhà này.");
             }
         }
 

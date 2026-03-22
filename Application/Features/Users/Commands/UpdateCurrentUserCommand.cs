@@ -31,7 +31,7 @@ public class UpdateCurrentUserCommandHandler : IRequestHandler<UpdateCurrentUser
         var userId = _currentUser.GetRequiredUserId();
 
         var user = await _db.Users.FindAsync([userId], ct)
-            ?? throw new NotFoundException("User", userId);
+            ?? throw new NotFoundException("Người dùng", userId);
 
         if (request.FullName is not null)
             user.FullName = request.FullName.Trim();

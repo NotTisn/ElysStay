@@ -77,7 +77,7 @@ public class ReservationsController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return CreatedResponse(result, message: "Reservation created successfully");
+        return CreatedResponse(result, message: "Tạo đặt phòng thành công");
     }
 
     /// <summary>
@@ -99,7 +99,7 @@ public class ReservationsController : BaseApiController
         };
 
         var result = await _mediator.Send(command, ct);
-        return OkResponse(result, "Reservation status updated successfully");
+        return OkResponse(result, "Cập nhật trạng thái đặt phòng thành công");
     }
 }
 

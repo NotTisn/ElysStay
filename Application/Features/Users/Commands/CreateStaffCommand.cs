@@ -13,7 +13,7 @@ namespace Application.Features.Users.Commands;
 /// Replaces spec's POST /auth/register-staff (auth is Keycloak-native).
 /// Auth: OWNER only.
 /// </summary>
-public record CreateStaffCommand : IRequest<UserDto>
+public record CreateStaffCommand : IRequest<CreateUserResultDto>
 {
     public required string Email { get; init; }
     public required string FullName { get; init; }
@@ -21,7 +21,7 @@ public record CreateStaffCommand : IRequest<UserDto>
     public required string Password { get; init; }
 }
 
-public class CreateStaffCommandHandler : IRequestHandler<CreateStaffCommand, UserDto>
+public class CreateStaffCommandHandler : IRequestHandler<CreateStaffCommand, CreateUserResultDto>
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
@@ -34,21 +34,21 @@ public class CreateStaffCommandHandler : IRequestHandler<CreateStaffCommand, Use
         _keycloak = keycloak;
     }
 
-    public async Task<UserDto> Handle(CreateStaffCommand request, CancellationToken ct)
+    public async Task<CreateUserResultDto> Handle(CreateStaffCommand request, CancellationToken ct)
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
         var normalizedFullName = request.FullName.Trim();
 
         // Auth: Owner only
         if (!_currentUser.IsOwner)
-            throw new ForbiddenException("Only the owner can create staff accounts.");
+            throw new ForbiddenException("Chỉ chủ nhà mới có thể tạo tài khoản nhân viên.");
 
         // UQ-07: Email uniqueness
         var emailExists = await _db.Users
             .IgnoreQueryFilters()
             .AnyAsync(u => u.Email.ToLower() == normalizedEmail, ct);
         if (emailExists)
-            throw new ConflictException("A user with this email already exists.", "DUPLICATE_EMAIL");
+            throw new ConflictException("Email này đã được sử dụng.", "DUPLICATE_EMAIL");
 
         // Create in Keycloak first
         var keycloakId = await _keycloak.CreateUserAsync(
@@ -71,7 +71,7 @@ public class CreateStaffCommandHandler : IRequestHandler<CreateStaffCommand, Use
         _db.Users.Add(user);
         await _db.SaveChangesAsync(ct);
 
-        return new UserDto
+        return new CreateUserResultDto
         {
             Id = user.Id,
             Email = user.Email,
@@ -80,7 +80,8 @@ public class CreateStaffCommandHandler : IRequestHandler<CreateStaffCommand, Use
             AvatarUrl = user.AvatarUrl,
             Role = user.Role.ToString(),
             Status = user.Status.ToString(),
-            CreatedAt = user.CreatedAt
+            CreatedAt = user.CreatedAt,
+            TemporaryPassword = request.Password,
         };
     }
 }

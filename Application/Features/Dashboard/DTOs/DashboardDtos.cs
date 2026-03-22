@@ -13,7 +13,8 @@ public record OwnerDashboardDto(
     int PendingReservations,
     int OverdueInvoiceCount,
     decimal OverdueAmount,
-    decimal MonthlyRevenue);
+    decimal MonthlyRevenue,
+    int PendingMeterReadings);
 
 /// <summary>
 /// Staff dashboard summary data.

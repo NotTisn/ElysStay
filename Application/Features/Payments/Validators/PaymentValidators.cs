@@ -9,14 +9,14 @@ public class RecordPaymentCommandValidator : AbstractValidator<RecordPaymentComm
 {
     public RecordPaymentCommandValidator()
     {
-        RuleFor(x => x.InvoiceId).NotEmpty().WithMessage("InvoiceId is required.");
-        RuleFor(x => x.Amount).GreaterThan(0).WithMessage("Amount must be greater than zero (PAY-02).");
+        RuleFor(x => x.InvoiceId).NotEmpty().WithMessage("Mã hóa đơn là bắt buộc.");
+        RuleFor(x => x.Amount).GreaterThan(0).WithMessage("Số tiền phải lớn hơn 0.");
         RuleFor(x => x.PaymentMethod)
             .MaximumLength(50).When(x => x.PaymentMethod is not null)
-            .WithMessage("PaymentMethod cannot exceed 50 characters.");
+            .WithMessage("Phương thức thanh toán không được vượt quá 50 ký tự.");
         RuleFor(x => x.Note)
-            .MaximumLength(500).When(x => x.Note is not null)
-            .WithMessage("Note cannot exceed 500 characters.");
+            .MaximumLength(1000).When(x => x.Note is not null)
+            .WithMessage("Ghi chú không được vượt quá 1000 ký tự.");
     }
 }
 
@@ -24,19 +24,22 @@ public class BatchRecordPaymentsCommandValidator : AbstractValidator<BatchRecord
 {
     public BatchRecordPaymentsCommandValidator()
     {
-        RuleFor(x => x.Payments).NotEmpty().WithMessage("At least one payment is required.");
+        RuleFor(x => x.Payments).NotEmpty().WithMessage("Cần ít nhất một khoản thanh toán.");
         RuleFor(x => x.Payments.Count).LessThanOrEqualTo(50)
-            .WithMessage("Maximum 50 payments per batch request.");
+            .WithMessage("Tối đa 50 khoản thanh toán mỗi lần.");
+        RuleFor(x => x.Payments)
+            .Must(payments => payments.Select(p => p.InvoiceId).Distinct().Count() == payments.Count)
+            .WithMessage("Không được có mã hóa đơn trùng lặp trong cùng một lô.");
         RuleForEach(x => x.Payments).ChildRules(entry =>
         {
-            entry.RuleFor(e => e.InvoiceId).NotEmpty().WithMessage("InvoiceId is required.");
-            entry.RuleFor(e => e.Amount).GreaterThan(0).WithMessage("Amount must be greater than zero (PAY-02).");
+            entry.RuleFor(e => e.InvoiceId).NotEmpty().WithMessage("Mã hóa đơn là bắt buộc.");
+            entry.RuleFor(e => e.Amount).GreaterThan(0).WithMessage("Số tiền phải lớn hơn 0.");
             entry.RuleFor(e => e.PaymentMethod)
                 .MaximumLength(50).When(e => e.PaymentMethod is not null)
-                .WithMessage("PaymentMethod cannot exceed 50 characters.");
+                .WithMessage("Phương thức thanh toán không được vượt quá 50 ký tự.");
             entry.RuleFor(e => e.Note)
-                .MaximumLength(500).When(e => e.Note is not null)
-                .WithMessage("Note cannot exceed 500 characters.");
+                .MaximumLength(1000).When(e => e.Note is not null)
+                .WithMessage("Ghi chú không được vượt quá 1000 ký tự.");
         });
     }
 }
@@ -47,12 +50,12 @@ public class GetPaymentsQueryValidator : AbstractValidator<GetPaymentsQuery>
     {
         RuleFor(x => x.Type)
             .Must(type => string.IsNullOrWhiteSpace(type) || Enum.TryParse<PaymentType>(type, true, out _))
-            .WithMessage("Type must be one of: RentPayment, DepositIn, DepositRefund.");
+            .WithMessage("Loại thanh toán phải là: RentPayment, DepositIn, hoặc DepositRefund.");
 
         RuleFor(x => x.FromDate)
             .LessThanOrEqualTo(x => x.ToDate!.Value)
             .When(x => x.FromDate.HasValue && x.ToDate.HasValue)
-            .WithMessage("FromDate must be on or before ToDate.");
+            .WithMessage("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
     }
 }
 
@@ -62,11 +65,11 @@ public class GetPaymentSummaryQueryValidator : AbstractValidator<GetPaymentSumma
     {
         RuleFor(x => x.Type)
             .Must(type => string.IsNullOrWhiteSpace(type) || Enum.TryParse<PaymentType>(type, true, out _))
-            .WithMessage("Type must be one of: RentPayment, DepositIn, DepositRefund.");
+            .WithMessage("Loại thanh toán phải là: RentPayment, DepositIn, hoặc DepositRefund.");
 
         RuleFor(x => x.FromDate)
             .LessThanOrEqualTo(x => x.ToDate!.Value)
             .When(x => x.FromDate.HasValue && x.ToDate.HasValue)
-            .WithMessage("FromDate must be on or before ToDate.");
+            .WithMessage("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
     }
 }

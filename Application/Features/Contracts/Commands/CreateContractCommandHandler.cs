@@ -13,15 +13,18 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IBuildingScopeService _buildingScope;
+    private readonly IEmailService _emailService;
 
     public CreateContractCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser,
-        IBuildingScopeService buildingScope)
+        IBuildingScopeService buildingScope,
+        IEmailService emailService)
     {
         _db = db;
         _currentUser = currentUser;
         _buildingScope = buildingScope;
+        _emailService = emailService;
     }
 
     public async Task<ContractDto> Handle(CreateContractCommand request, CancellationToken cancellationToken)
@@ -32,7 +35,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
         var room = await _db.Rooms
             .Include(r => r.Building!)
             .FirstOrDefaultAsync(r => r.Id == request.RoomId && r.DeletedAt == null, cancellationToken)
-            ?? throw new NotFoundException("Room", request.RoomId);
+            ?? throw new NotFoundException("Phòng", request.RoomId);
 
         // Building scope authorization
         await _buildingScope.AuthorizeAsync(room.BuildingId, cancellationToken);
@@ -40,21 +43,21 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
         // Verify tenant user exists and has Tenant role
         var tenantUser = await _db.Users
             .FirstOrDefaultAsync(u => u.Id == request.TenantUserId && u.Role == UserRole.Tenant, cancellationToken)
-            ?? throw new NotFoundException("Tenant user", request.TenantUserId);
+            ?? throw new NotFoundException("Khách thuê", request.TenantUserId);
 
         // Tenant must be active and not soft-deleted
         if (tenantUser.Status != UserStatus.Active)
-            throw new BadRequestException("Cannot create a contract with a deactivated tenant.");
+            throw new BadRequestException("Không thể tạo hợp đồng với khách thuê đã bị vô hiệu hóa.");
 
         if (tenantUser.DeletedAt != null)
-            throw new BadRequestException("Cannot create a contract with a deleted tenant.");
+            throw new BadRequestException("Không thể tạo hợp đồng với khách thuê đã bị xóa.");
 
         // UQ-01: Only 1 ACTIVE contract per room
         var hasActiveContract = await _db.Contracts
             .AnyAsync(c => c.RoomId == request.RoomId && c.Status == ContractStatus.Active, cancellationToken);
 
         if (hasActiveContract)
-            throw new ConflictException("This room already has an active contract.", "ROOM_OCCUPIED");
+            throw new ConflictException("Phòng này đã có hợp đồng đang hoạt động.", "ROOM_OCCUPIED");
 
         // Validate room status for transition
         RoomReservation? reservation = null;
@@ -63,22 +66,22 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             // Contract from reservation: SM-02 (BOOKED → OCCUPIED)
             reservation = await _db.RoomReservations
                 .FirstOrDefaultAsync(r => r.Id == request.ReservationId.Value, cancellationToken)
-                ?? throw new NotFoundException("Reservation", request.ReservationId.Value);
+                ?? throw new NotFoundException("Đặt phòng", request.ReservationId.Value);
 
             if (reservation.RoomId != request.RoomId)
-                throw new BadRequestException("Reservation does not belong to the specified room.");
+                throw new BadRequestException("Đặt phòng không thuộc phòng được chỉ định.");
 
             if (reservation.TenantUserId != request.TenantUserId)
-                throw new BadRequestException("Reservation tenant does not match the specified tenant.");
+                throw new BadRequestException("Khách thuê trong đặt phòng không khớp với khách thuê được chỉ định.");
 
             if (reservation.Status != ReservationStatus.Confirmed)
-                throw new ConflictException("Reservation must be Confirmed before creating a contract. Current: " + reservation.Status);
+                throw new ConflictException("Đặt phòng phải được Xác nhận trước khi tạo hợp đồng. Hiện tại: " + reservation.Status);
 
             if (reservation.ExpiresAt <= DateTime.UtcNow)
-                throw new ConflictException("Cannot create a contract from an expired reservation.", "RESERVATION_EXPIRED");
+                throw new ConflictException("Không thể tạo hợp đồng từ đặt phòng đã hết hạn.", "RESERVATION_EXPIRED");
 
             if (room.Status != RoomStatus.Booked)
-                throw new ConflictException($"Room must be in Booked status to create a contract from reservation. Current: {room.Status}");
+                throw new ConflictException($"Phòng phải ở trạng thái Đã đặt để tạo hợp đồng từ đặt phòng. Hiện tại: {room.Status}");
 
             if (request.DepositAmount < reservation.DepositAmount)
                 throw new BadRequestException(
@@ -88,7 +91,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
         {
             // Direct contract: SM-06 (AVAILABLE → OCCUPIED)
             if (room.Status != RoomStatus.Available)
-                throw new ConflictException($"Room must be Available to create a direct contract. Current: {room.Status}");
+                throw new ConflictException($"Phòng phải ở trạng thái Trống để tạo hợp đồng trực tiếp. Hiện tại: {room.Status}");
         }
 
         // Create the contract
@@ -126,7 +129,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             UserId = request.TenantUserId,
             Title = "Hợp đồng mới",
             Message = $"Bạn đã có hợp đồng thuê phòng {room.RoomNumber} tại {room.Building!.Name}.",
-            Type = "CONTRACT_CREATED",
+            Type = Domain.Constants.NotificationTypes.ContractCreated,
             ReferenceId = contract.Id,
         });
 
@@ -149,7 +152,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
                     ContractId = contract.Id,
                     Type = PaymentType.DepositIn,
                     Amount = reservation.DepositAmount,
-                    Note = "Deposit transferred from reservation",
+                    Note = "Tiền cọc chuyển từ đặt phòng",
                     RecordedBy = userId,
                     PaidAt = DateTime.UtcNow
                 };
@@ -164,7 +167,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
                     ContractId = contract.Id,
                     Type = PaymentType.DepositIn,
                     Amount = request.DepositAmount - reservation.DepositAmount,
-                    Note = "Additional deposit payment",
+                    Note = "Bổ sung tiền cọc",
                     RecordedBy = userId,
                     PaidAt = DateTime.UtcNow
                 };
@@ -179,7 +182,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
                 ContractId = contract.Id,
                 Type = PaymentType.DepositIn,
                 Amount = request.DepositAmount,
-                Note = "Contract deposit",
+                Note = "Tiền cọc hợp đồng",
                 RecordedBy = userId,
                 PaidAt = DateTime.UtcNow
             };
@@ -193,9 +196,15 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
         catch (DbUpdateConcurrencyException)
         {
             throw new ConflictException(
-                "Room was modified by another user. Please retry.",
+                "Phòng đã bị thay đổi bởi thao tác khác. Vui lòng thử lại.",
                 "CONCURRENCY_CONFLICT");
         }
+
+        // Best-effort email to tenant (after successful save)
+        var (subject, html) = Application.Common.Email.EmailTemplates.ContractCreated(
+            tenantUser.FullName, room.RoomNumber, room.Building!.Name,
+            request.StartDate, request.EndDate, request.MonthlyRent);
+        await _emailService.TrySendAsync(tenantUser.Email, tenantUser.FullName, subject, html, cancellationToken);
 
         return new ContractDto
         {

@@ -21,15 +21,16 @@ public class ChangeRoomStatusCommandHandler : IRequestHandler<ChangeRoomStatusCo
     public async Task<RoomDto> Handle(ChangeRoomStatusCommand request, CancellationToken cancellationToken)
     {
         if (!Enum.TryParse<RoomStatus>(request.Status, true, out var targetStatus))
-            throw new BadRequestException($"Invalid status: '{request.Status}'. Must be 'Available' or 'Maintenance'.");
+            throw new BadRequestException($"Trạng thái không hợp lệ: '{request.Status}'. Phải là 'Available' hoặc 'Maintenance'.");
 
         // SM-05: Only Available and Maintenance are valid targets for manual PATCH
         if (targetStatus is not (RoomStatus.Available or RoomStatus.Maintenance))
-            throw new BadRequestException("Manual status change only supports Available or Maintenance.");
+            throw new BadRequestException("Thay đổi trạng thái thủ công chỉ hỗ trợ Trống hoặc Bảo trì.");
 
         var room = await _db.Rooms
+            .Include(r => r.Building)
             .FirstOrDefaultAsync(r => r.Id == request.Id && r.DeletedAt == null, cancellationToken)
-            ?? throw new NotFoundException($"Room {request.Id} not found.");
+            ?? throw new NotFoundException($"Không tìm thấy phòng {request.Id}.");
 
         // AUTH-05
         await _buildingScope.AuthorizeAsync(room.BuildingId, cancellationToken);
@@ -37,11 +38,11 @@ public class ChangeRoomStatusCommandHandler : IRequestHandler<ChangeRoomStatusCo
         // SM-05: Current status must also be Available or Maintenance
         if (room.Status is not (RoomStatus.Available or RoomStatus.Maintenance))
             throw new ConflictException(
-                $"Cannot manually change status from {room.Status}. Room must be Available or Maintenance.",
+                $"Không thể chuyển trạng thái thủ công từ {room.Status}. Phòng phải ở trạng thái Trống hoặc Bảo trì.",
                 "INVALID_STATUS_TRANSITION");
 
         if (room.Status == targetStatus)
-            throw new BadRequestException($"Room is already {targetStatus}.");
+            throw new BadRequestException($"Phòng đã ở trạng thái {targetStatus}.");
 
         room.Status = targetStatus;
         room.UpdatedAt = DateTime.UtcNow;
@@ -53,7 +54,7 @@ public class ChangeRoomStatusCommandHandler : IRequestHandler<ChangeRoomStatusCo
         catch (DbUpdateConcurrencyException)
         {
             throw new ConflictException(
-                "Room was modified by another user. Please retry.",
+                "Phòng đã bị thay đổi bởi thao tác khác. Vui lòng thử lại.",
                 "CONCURRENCY_CONFLICT");
         }
 
@@ -61,6 +62,7 @@ public class ChangeRoomStatusCommandHandler : IRequestHandler<ChangeRoomStatusCo
         {
             Id = room.Id,
             BuildingId = room.BuildingId,
+            BuildingName = room.Building?.Name,
             RoomNumber = room.RoomNumber,
             Floor = room.Floor,
             Area = room.Area,

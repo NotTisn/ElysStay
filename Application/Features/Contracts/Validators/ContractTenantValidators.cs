@@ -8,13 +8,13 @@ public class AddContractTenantCommandValidator : AbstractValidator<AddContractTe
     public AddContractTenantCommandValidator()
     {
         RuleFor(x => x.ContractId)
-            .NotEmpty().WithMessage("ContractId is required.");
+            .NotEmpty().WithMessage("Mã hợp đồng là bắt buộc.");
 
         RuleFor(x => x.TenantUserId)
-            .NotEmpty().WithMessage("TenantUserId is required.");
+            .NotEmpty().WithMessage("Mã khách thuê là bắt buộc.");
 
         RuleFor(x => x.MoveInDate)
-            .NotEmpty().WithMessage("MoveInDate is required.");
+            .NotEmpty().WithMessage("Ngày dọn vào là bắt buộc.");
     }
 }
 
@@ -23,9 +23,9 @@ public class RemoveContractTenantCommandValidator : AbstractValidator<RemoveCont
     public RemoveContractTenantCommandValidator()
     {
         RuleFor(x => x.ContractId)
-            .NotEmpty().WithMessage("ContractId is required.");
+            .NotEmpty().WithMessage("Mã hợp đồng là bắt buộc.");
 
         RuleFor(x => x.TenantId)
-            .NotEmpty().WithMessage("TenantId is required.");
+            .NotEmpty().WithMessage("Mã khách thuê là bắt buộc.");
     }
 }

@@ -38,10 +38,10 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PagedResult<U
     {
         // Authorization: Owner can list anyone, Staff can list tenants only
         if (_currentUser.IsTenant)
-            throw new ForbiddenException("Tenants cannot list users.");
+            throw new ForbiddenException("Khách thuê không thể xem danh sách người dùng.");
 
         if (_currentUser.IsStaff && request.RoleFilter != UserRole.Tenant)
-            throw new ForbiddenException("Staff can only list tenants.");
+            throw new ForbiddenException("Nhân viên chỉ có thể xem danh sách khách thuê.");
 
         var userId = _currentUser.GetRequiredUserId();
 

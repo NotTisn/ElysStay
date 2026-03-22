@@ -7,34 +7,34 @@ public class CreateContractCommandValidator : AbstractValidator<Commands.CreateC
     public CreateContractCommandValidator()
     {
         RuleFor(x => x.RoomId)
-            .NotEmpty().WithMessage("RoomId is required.");
+            .NotEmpty().WithMessage("Mã phòng là bắt buộc.");
 
         RuleFor(x => x.TenantUserId)
-            .NotEmpty().WithMessage("TenantUserId is required.");
+            .NotEmpty().WithMessage("Mã khách thuê là bắt buộc.");
 
         RuleFor(x => x.StartDate)
-            .NotEmpty().WithMessage("StartDate is required.");
+            .NotEmpty().WithMessage("Ngày bắt đầu là bắt buộc.");
 
         RuleFor(x => x.EndDate)
-            .NotEmpty().WithMessage("EndDate is required.")
-            .GreaterThan(x => x.StartDate).WithMessage("EndDate must be after StartDate (VAL-05).");
+            .NotEmpty().WithMessage("Ngày kết thúc là bắt buộc.")
+            .GreaterThan(x => x.StartDate).WithMessage("Ngày kết thúc phải sau ngày bắt đầu.");
 
         RuleFor(x => x.MoveInDate)
-            .NotEmpty().WithMessage("MoveInDate is required.")
+            .NotEmpty().WithMessage("Ngày dọn vào là bắt buộc.")
             .GreaterThanOrEqualTo(x => x.StartDate)
-            .WithMessage("MoveInDate cannot be before StartDate.")
+            .WithMessage("Ngày dọn vào không được trước ngày bắt đầu.")
             .LessThanOrEqualTo(x => x.EndDate)
-            .WithMessage("MoveInDate cannot be after EndDate.");
+            .WithMessage("Ngày dọn vào không được sau ngày kết thúc.");
 
         RuleFor(x => x.MonthlyRent)
-            .GreaterThan(0).WithMessage("MonthlyRent must be greater than zero.");
+            .GreaterThan(0).WithMessage("Tiền thuê hàng tháng phải lớn hơn 0.");
 
         RuleFor(x => x.DepositAmount)
-            .GreaterThanOrEqualTo(0).WithMessage("DepositAmount cannot be negative.");
+            .GreaterThanOrEqualTo(0).WithMessage("Tiền đặt cọc không được âm.");
 
         RuleFor(x => x.Note)
-            .MaximumLength(2000).When(x => x.Note is not null)
-            .WithMessage("Note cannot exceed 2000 characters.");
+            .MaximumLength(1000).When(x => x.Note is not null)
+            .WithMessage("Ghi chú không được vượt quá 1000 ký tự.");
     }
 }
 
@@ -43,11 +43,15 @@ public class UpdateContractCommandValidator : AbstractValidator<Commands.UpdateC
     public UpdateContractCommandValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("Contract ID is required.");
+            .NotEmpty().WithMessage("Mã hợp đồng là bắt buộc.");
 
         RuleFor(x => x.MonthlyRent)
             .GreaterThan(0).When(x => x.MonthlyRent.HasValue)
-            .WithMessage("MonthlyRent must be greater than zero.");
+            .WithMessage("Tiền thuê hàng tháng phải lớn hơn 0.");
+
+        RuleFor(x => x.Note)
+            .MaximumLength(1000).When(x => x.Note is not null)
+            .WithMessage("Ghi chú không được vượt quá 1000 ký tự.");
 
         // EndDate > StartDate is validated in the handler against the persisted StartDate
     }
@@ -58,13 +62,17 @@ public class TerminateContractCommandValidator : AbstractValidator<Commands.Term
     public TerminateContractCommandValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("Contract ID is required.");
+            .NotEmpty().WithMessage("Mã hợp đồng là bắt buộc.");
 
         RuleFor(x => x.TerminationDate)
-            .NotEmpty().WithMessage("TerminationDate is required.");
+            .NotEmpty().WithMessage("Ngày chấm dứt là bắt buộc.");
 
         RuleFor(x => x.Deductions)
-            .GreaterThanOrEqualTo(0).WithMessage("Deductions cannot be negative.");
+            .GreaterThanOrEqualTo(0).WithMessage("Khoản khấu trừ không được âm.");
+
+        RuleFor(x => x.Note)
+            .MaximumLength(1000).When(x => x.Note is not null)
+            .WithMessage("Ghi chú chấm dứt không được vượt quá 1000 ký tự.");
     }
 }
 
@@ -73,13 +81,13 @@ public class RenewContractCommandValidator : AbstractValidator<Commands.RenewCon
     public RenewContractCommandValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("Contract ID is required.");
+            .NotEmpty().WithMessage("Mã hợp đồng là bắt buộc.");
 
         RuleFor(x => x.NewEndDate)
-            .NotEmpty().WithMessage("NewEndDate is required.");
+            .NotEmpty().WithMessage("Ngày kết thúc mới là bắt buộc.");
 
         RuleFor(x => x.NewMonthlyRent)
             .GreaterThan(0).When(x => x.NewMonthlyRent.HasValue)
-            .WithMessage("NewMonthlyRent must be greater than zero.");
+            .WithMessage("Tiền thuê hàng tháng mới phải lớn hơn 0.");
     }
 }
