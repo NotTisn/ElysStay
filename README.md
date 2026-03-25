@@ -31,14 +31,18 @@ This will:
 
 ```powershell
 .\dev-tools\dev.bat -Status       # Show what's running
-.\dev-tools\dev.bat -Kill         # Stop backend + frontend
-.\dev-tools\dev.bat -Kill -Docker # Stop everything including Docker
-.\dev-tools\dev.bat -Logs         # Tail service logs
-.\dev-tools\dev.bat -Clean        # Nuclear reset (with confirmation)
-.\dev-tools\dev.bat -Backend      # Start only backend
+.\dev-tools\dev.bat -Kill         # Stop backend + frontend processes
+.\dev-tools\dev.bat -InfraDown    # Stop Docker containers
+.\dev-tools\dev.bat -Logs         # Open logs folder
+.\dev-tools\dev.bat -Clean        # Wipe all build artifacts (bin/obj/.next)
+.\dev-tools\dev.bat -Backend      # Start only backend (infra must be up)
 .\dev-tools\dev.bat -Frontend     # Start only frontend
 .\dev-tools\dev.bat -Infra        # Start only Docker services
+.\dev-tools\dev.bat -FixKeycloak  # Repair Keycloak container (re-imports realm)
+.\dev-tools\dev.bat -Watch        # Start all + error watcher window
 ```
+
+> Full documentation: [`dev-tools/README.md`](dev-tools/README.md)
 
 ### Service ports
 
@@ -115,8 +119,7 @@ dotnet run --project API
 dotnet run --project API --verbosity minimal
 ```
 
-The API will be available at the port configured in the project (default: 5000/5001 for Kestrel with HTTPS). A health endpoint is available at `/healthz`.
-The API is configured for local development at `http://localhost:5027`. A health endpoint is available at `/healthz`.
+The API will be available at `http://localhost:5027`. A health endpoint is available at `/healthz`.
 
 ## Notes about connection strings (docker vs local)
 - `API/appsettings.json` currently contains a `DefaultConnection` pointing at `Host=localhost;Port=5433;...`.
