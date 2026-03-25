@@ -10,6 +10,7 @@
 #   .\dev-mode.ps1 -ClearLogs   Clear logs only (no restart)
 #   .\dev-mode.ps1 -Kill        Kill all dev processes (dotnet + node)
 #   .\dev-mode.ps1 -Clean       Clean all build artifacts (bin/obj/.next)
+#   .\dev-mode.ps1 -Reseed      Reset demo DB volume, then boot full seeded stack
 #   .\dev-mode.ps1 -Infra       Start Docker infrastructure only
 #   .\dev-mode.ps1 -InfraDown   Stop Docker infrastructure
 #   .\dev-mode.ps1 -FixKeycloak Purge Keycloak and restart fresh
@@ -28,6 +29,7 @@ param(
     [switch]$ClearLogs,
     [switch]$Kill,
     [switch]$Clean,
+    [switch]$Reseed,
     [switch]$Infra,
     [switch]$InfraDown,
     [switch]$FixKeycloak,
@@ -413,6 +415,14 @@ function Start-InfrastructureOnly {
         $status = if (Test-Port $port) { "OK" } else { "FAIL" }
         Write-Status "$($name.PadRight(12)) :$port" $status
     }
+
+    # Apply CSP fix to Keycloak -- allows silent-check-sso iframe from localhost:3000.
+    # Keycloak 24 sets frame-ancestors 'self' by default which blocks the SSO iframe.
+    # --import-realm only applies on first boot; subsequent starts need kcadm.sh.
+    if (Test-Port 8080) {
+        Start-Sleep -Seconds 3
+        Apply-KeycloakCspFix
+    }
 }
 
 function Stop-Infrastructure {
@@ -425,10 +435,92 @@ function Stop-Infrastructure {
     Write-Status "Infrastructure stopped" "OK"
 }
 
+function Reset-DemoData {
+    Show-Banner
+    Write-Status "Resetting local demo database volume..." "WAIT"
+
+    Stop-AllDevProcesses
+
+    Push-Location $BACKEND_DIR
+    $prevEA = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    $resetOutput = & docker compose down -v 2>&1
+    $resetExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $prevEA
+    Pop-Location
+
+    if ($resetExitCode -ne 0) {
+        Write-Status "docker compose down -v failed (exit $resetExitCode)" "FAIL"
+        foreach ($line in $resetOutput) {
+            Write-Host "    $line" -ForegroundColor DarkGray
+        }
+        exit 1
+    }
+
+    Clear-Logs
+    Write-Status "Demo database volume removed. Next startup will re-apply migrations and seed demo data." "OK"
+}
+
+function Apply-KeycloakCspFix {
+    # Keycloak 24 ships with frame-ancestors 'self' by default.
+    # This blocks the silent-check-sso iframe from localhost:3000.
+    # Also, the client redirectUris must be explicit (not wildcard with empty rootUrl).
+    # Fix: update the realm + client via kcadm.sh (admin CLI).
+    # Note: --import-realm only runs on first boot (when realm is not in DB),
+    # so realm JSON changes won't auto-apply on container restart -- we must
+    # use kcadm.sh to push changes live to the running server.
+    $admin = "admin"
+    $password = "admin123"
+    if (Test-Path "$BACKEND_DIR\.env") {
+        $envContent = Get-Content "$BACKEND_DIR\.env" -Raw
+        if ($envContent -match "KEYCLOAK_ADMIN=(.+)") { $admin = $Matches[1].Trim() }
+        if ($envContent -match "KEYCLOAK_ADMIN_PASSWORD=(.+)") { $password = $Matches[1].Trim() }
+    }
+
+    Write-Status "Applying Keycloak dev fixes (CSP + client redirect URIs)..." "WAIT"
+
+    # Use docker cp to send a script file -- avoids all PowerShell piping BOM issues.
+    $tmpScript = [System.IO.Path]::Combine($env:TEMP, "kc-csp-fix.sh")
+    $dq = [char]34  # double-quote character
+
+    $scriptContent = (
+        "export HOME=/tmp`n" +
+        "KCADM=/opt/keycloak/bin/kcadm.sh`n" +
+        "CSP=${dq}frame-src 'self'; frame-ancestors 'self' http://localhost:3000; object-src 'none';${dq}`n" +
+        "FE_CLIENT_ID=f0000000-0000-0000-0000-000000000001`n" +
+        "`n" +
+        "# Authenticate`n" +
+        "`$KCADM config credentials --server http://localhost:8080 --realm master --user ${dq}$admin${dq} --password ${dq}$password${dq} >/dev/null 2>&1`n" +
+        "`n" +
+        "# Fix realm CSP: allow iframe from localhost:3000`n" +
+        "`$KCADM update realms/elysstay -s ${dq}browserSecurityHeaders.contentSecurityPolicy=`$CSP${dq} -s ${dq}browserSecurityHeaders.xFrameOptions=${dq} >/dev/null 2>&1`n" +
+        "`n" +
+        "# Fix client redirect URIs: explicit localhost:3000 (not wildcard with empty rootUrl)`n" +
+        "`$KCADM update clients/`$FE_CLIENT_ID -r elysstay -s rootUrl=http://localhost:3000 -s 'redirectUris=[${dq}http://localhost:3000/*${dq}]' -s 'webOrigins=[${dq}http://localhost:3000${dq}]' -s baseUrl=http://localhost:3000 -s adminUrl=http://localhost:3000 -s directAccessGrantsEnabled=true >/dev/null 2>&1`n" +
+        "`n" +
+        "echo CSP_OK`n"
+    )
+    $asciiBytes = [System.Text.Encoding]::ASCII.GetBytes($scriptContent)
+    [System.IO.File]::WriteAllBytes($tmpScript, $asciiBytes)
+
+    $null = docker cp "$tmpScript" "elys_stay_keycloak:/tmp/kc-csp-fix.sh" 2>&1
+    $prevEA = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    $result = docker exec elys_stay_keycloak bash /tmp/kc-csp-fix.sh
+    $ErrorActionPreference = $prevEA
+    Remove-Item $tmpScript -ErrorAction SilentlyContinue
+    # Note: the /tmp file in the container is ephemeral -- no need to delete it.
+
+    if ($result -match "CSP_OK") {
+        Write-Status "Keycloak dev fixes applied (CSP + client redirect URIs)" "OK"
+    } else {
+        Write-Status "Keycloak fix may have failed -- check Keycloak logs if login hangs" "WARN"
+    }
+}
+
 function Repair-Keycloak {
     # Keycloak in this project uses Postgres (not H2), but the container
     # itself can get into bad state. Recovery: remove container + recreate.
-    # Realm re-imports from the mounted /opt/keycloak/data/import volume.
+    # NOTE: --import-realm only runs on FIRST boot (realm not in DB).
+    # After that, realm changes must be applied via kcadm.sh (see Apply-KeycloakCspFix).
 
     Show-Banner
     Write-Status "Stopping Keycloak container..." "WAIT"
@@ -445,16 +537,27 @@ function Repair-Keycloak {
     $ErrorActionPreference = $prevEA
     Pop-Location
 
-    # Wait for Keycloak to initialize (imports realm on fresh start)
+    # Wait for Keycloak to initialize
     $deadline = (Get-Date).AddSeconds(120)
+    $isUp = $false
     while ((Get-Date) -lt $deadline) {
         if (Test-Port 8080) {
             Write-Status "Keycloak is UP on :8080" "OK"
-            return
+            $isUp = $true
+            break
         }
         Start-Sleep -Seconds 3
     }
-    Write-Status "Keycloak did not respond within 120s -- check: docker logs elys_stay_keycloak" "FAIL"
+
+    if (-not $isUp) {
+        Write-Status "Keycloak did not respond within 120s -- check: docker logs elys_stay_keycloak" "FAIL"
+        return
+    }
+
+    # Apply CSP fix -- allows silent-check-sso iframe from localhost:3000
+    # Give Keycloak a few extra seconds to fully initialize before admin API calls
+    Start-Sleep -Seconds 5
+    Apply-KeycloakCspFix
 }
 
 # ============================================================================
@@ -801,6 +904,10 @@ if ($Clean) {
     exit 0
 }
 
+if ($Reseed) {
+    Reset-DemoData
+}
+
 if ($Infra) {
     Show-Banner
     Start-InfrastructureOnly
@@ -917,6 +1024,7 @@ Write-Host "    .\dev.bat -Status       Check all services" -ForegroundColor Dar
 Write-Host "    .\dev.bat -Logs         Open logs folder" -ForegroundColor DarkGray
 Write-Host "    .\dev.bat -Kill         Stop all dev processes" -ForegroundColor DarkGray
 Write-Host "    .\dev.bat -Clean        Clean all build artifacts" -ForegroundColor DarkGray
+Write-Host "    .\dev.bat -Reseed       Reset demo DB and boot a fresh seeded stack" -ForegroundColor DarkGray
 Write-Host "    .\dev.bat -FixKeycloak  Fix Keycloak issues" -ForegroundColor DarkGray
 Write-Host "    .\dev.bat -Backend      Start backend only" -ForegroundColor DarkGray
 Write-Host "    .\dev.bat -Frontend     Start frontend only" -ForegroundColor DarkGray

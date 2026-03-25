@@ -11,6 +11,7 @@ REM   dev.bat -Logs        Open logs folder
 REM   dev.bat -ClearLogs   Clear logs only (no restart)
 REM   dev.bat -Kill        Kill all dev processes
 REM   dev.bat -Clean       Clean all build artifacts (use after branch switch!)
+REM   dev.bat -Reseed      Reset demo DB and boot a fresh seeded stack
 REM   dev.bat -Infra       Start infrastructure only (Docker)
 REM   dev.bat -InfraDown   Stop infrastructure (Docker)
 REM   dev.bat -FixKeycloak Fix Keycloak issues

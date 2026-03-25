@@ -35,6 +35,7 @@ This will:
 .\dev-tools\dev.bat -InfraDown    # Stop Docker containers
 .\dev-tools\dev.bat -Logs         # Open logs folder
 .\dev-tools\dev.bat -Clean        # Wipe all build artifacts (bin/obj/.next)
+.\dev-tools\dev.bat -Reseed       # Reset demo DB volume and boot fresh seeded data
 .\dev-tools\dev.bat -Backend      # Start only backend (infra must be up)
 .\dev-tools\dev.bat -Frontend     # Start only frontend
 .\dev-tools\dev.bat -Infra        # Start only Docker services
@@ -43,6 +44,8 @@ This will:
 ```
 
 > Full documentation: [`dev-tools/README.md`](dev-tools/README.md)
+>
+> For demos / alpha testing, use `.\dev-tools\dev.bat -Reseed` to rebuild the local database and auto-load the demo dataset.
 
 ### Service ports
 

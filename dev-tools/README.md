@@ -80,10 +80,39 @@ First boot is slower (~60-90s) due to Keycloak initialization and .NET cold comp
 # ── Recovery ──────────────────────────────────────────────
 .\dev-tools\dev.bat -FixKeycloak  # remove + recreate Keycloak container (re-imports realm)
 .\dev-tools\dev.bat -Clean        # kill processes + wipe all build artifacts (bin/obj/.next)
+.\dev-tools\dev.bat -Reseed       # wipe local Postgres volume and boot a fresh seeded demo stack
 ```
 
 > **After switching git branches:** always run `-Kill` then `-Clean` before booting again.  
 > Stale build artifacts from a different branch will cause silent runtime failures.
+
+> **Before demos / alpha testing:** run `.\dev-tools\dev.bat -Reseed`.  
+> That gives you a guaranteed fresh database with the demo users and sample operational data below.
+
+---
+
+## Seeded Demo Accounts
+
+All demo accounts use password `Demo@123`.
+
+| Role | Email | What you can test immediately |
+|------|-------|-------------------------------|
+| Owner | `demo-owner@elysstay.com` | Dashboard, building overview, occupied rooms, invoices, reports, expenses |
+| Staff | `demo-staff@elysstay.com` | Building operations, meter readings, maintenance, payment recording |
+| Tenant | `demo-tenant1@elysstay.com` | Active contract in room 101, paid invoice history |
+| Tenant | `demo-tenant2@elysstay.com` | Active contract in room 201, current invoice partially paid |
+| Tenant | `demo-tenant3@elysstay.com` | Confirmed reservation for room 102, deposit already recorded |
+
+Seed contents:
+- 1 building: `Chung cư Mini An Phú`
+- 6 rooms: occupied, booked, available, and maintenance states all represented
+- 3 services: điện, nước, internet
+- 2 active contracts
+- 1 confirmed reservation
+- 8 invoices with payments/history for reporting
+- 3 expenses
+- 2 maintenance issues
+- owner/staff notifications for live UI states
 
 ---
 

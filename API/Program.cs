@@ -153,13 +153,16 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 var app = builder.Build();
 
 // ==========================================
-// AUTO MIGRATE (DEV ONLY)
+// AUTO MIGRATE + DEV SEED
 // ==========================================
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate();
+
+    var seedLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await Infrastructure.Persistence.DevDataSeeder.SeedAsync(dbContext, seedLogger);
 }
 
 // ==========================================
