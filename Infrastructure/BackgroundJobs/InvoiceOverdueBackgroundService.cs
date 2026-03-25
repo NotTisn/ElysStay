@@ -114,6 +114,10 @@ public class InvoiceOverdueBackgroundService : BackgroundService
         invoice.Status = InvoiceStatus.Overdue;
         invoice.UpdatedAt = now;
 
+        _logger.LogInformation(
+            "BG-02 InvoiceOverdueJob: marking invoice {InvoiceId} (month {Month}/{Year}, total {Total:N0}) as Overdue for tenant {TenantId}",
+            invoice.Id, invoice.BillingMonth, invoice.BillingYear, invoice.TotalAmount, invoice.Contract?.TenantUserId);
+
         db.Notifications.Add(new Notification
         {
             UserId = invoice.Contract!.TenantUserId,

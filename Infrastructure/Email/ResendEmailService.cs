@@ -44,7 +44,7 @@ public sealed class ResendEmailService : IEmailService
         }
         else
         {
-            _logger.LogInformation("Email service disabled — Email:ApiKey not configured. Notifications will be in-app only.");
+            _logger.LogWarning("Email service is DISABLED — Email:ApiKey is not configured. All transactional emails will be silently skipped. Configure Email:ApiKey to enable email delivery.");
         }
     }
 

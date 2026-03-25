@@ -22,9 +22,9 @@ Building,InvoiceDueDay,int,Không,,"Ngày trong tháng (1-28) hạn thanh toán 
 Building,CreatedAt,DateTime,Không,,
 Building,UpdatedAt,DateTime,Không,,
 Building,DeletedAt,DateTime,Có,,Xóa mềm
-BuildingStaff,BuildingId,int,Không,"Composite PK, FK→Building",Bảng liên kết
-BuildingStaff,StaffId,int,Không,"Composite PK, FK→User",
-BuildingStaff,AssignedAt,DateTime,Không,,
+StaffAssignment,BuildingId,Guid,Không,"Composite PK, FK→Building",Bảng liên kết (code name: StaffAssignment)
+StaffAssignment,StaffId,Guid,Không,"Composite PK, FK→User",
+StaffAssignment,AssignedAt,DateTime,Không,,
 Room,Id,int,Không,PK,
 Room,BuildingId,int,Không,FK→Building,
 Room,RoomNumber,string,Không,Unique(BuildingId+RoomNumber),"VD: ""301"""

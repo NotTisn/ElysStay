@@ -85,7 +85,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
 
             if (request.DepositAmount < reservation.DepositAmount)
                 throw new BadRequestException(
-                    $"Contract deposit ({request.DepositAmount}) cannot be lower than existing reservation deposit ({reservation.DepositAmount}).");
+                    $"Tiền cọc hợp đồng ({request.DepositAmount:N0}đ) không được thấp hơn tiền cọc đặt phòng hiện tại ({reservation.DepositAmount:N0}đ).");
         }
         else
         {

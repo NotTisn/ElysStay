@@ -37,7 +37,7 @@ Ongoing: handles Issues, tracks Expenses → views Reports/PnL
 ```
 User (OWNER/STAFF/TENANT)
  ├── 1:N Building (as owner)
- │    ├── N:N User/Staff (via BuildingStaff)
+ │    ├── N:N User/Staff (via StaffAssignment)
  │    ├── 1:N Room
  │    │    ├── 1:N Reservation
  │    │    ├── 1:N Contract (max 1 ACTIVE per room)
@@ -157,7 +157,7 @@ Every endpoint that touches building-owned data passes through a filter:
 
 ```
 1. OWNER → pass (owns everything)
-2. STAFF → check BuildingStaff.Exists(buildingId, staffUserId)
+2. STAFF → check StaffAssignment.Exists(buildingId, staffUserId)
    Not assigned → 403
 3. TENANT → entity-level ownership (own contracts, invoices, etc.)
 ```

@@ -163,6 +163,10 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
 
         await db.SaveChangesAsync(ct);
 
+        _logger.LogInformation(
+            "BG-03 ContractExpiryAlertJob: alerted contract {ContractId} (ends {EndDate:yyyy-MM-dd}, room {RoomNumber}) — tenant notified: {TenantNotified}, owner notified: {OwnerNotified}",
+            contract.Id, contract.EndDate, contract.Room?.RoomNumber, !tenantNotified, !ownerNotified);
+
         var tenant = contract.TenantUser;
         var room = contract.Room;
         var building = room?.Building;

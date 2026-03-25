@@ -41,7 +41,10 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
         if (oldContract.Status != ContractStatus.Active)
             throw new ConflictException("Chỉ có thể gia hạn hợp đồng đang hoạt động.");
 
-        // Deposit must still be held to carry over
+        // DESIGN: Deposit carry-over requires DepositStatus == Held.
+        // If the deposit was already refunded or forfeited, a renewal would silently
+        // create a new contract with a fictitious DepositIn payment (no real cash).
+        // This guard ensures only genuinely held deposits are transferred.
         if (oldContract.DepositStatus != DepositStatus.Held)
             throw new ConflictException("Không thể gia hạn: tiền cọc không còn được giữ (trạng thái hiện tại: " + oldContract.DepositStatus + ").");
 

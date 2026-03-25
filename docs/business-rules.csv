@@ -17,7 +17,7 @@ Ràng buộc duy nhất,UQ-02,Chỉ 1 hóa đơn mỗi HĐ mỗi tháng,Invoice,
 Ràng buộc duy nhất,UQ-03,Chỉ 1 chỉ số mỗi phòng mỗi DV mỗi tháng,MeterReading,4,"Unique (RoomId, ServiceId, BillingYear, BillingMonth)"
 Ràng buộc duy nhất,UQ-04,Số phòng duy nhất trong tòa nhà,Room,2,"Unique (BuildingId, RoomNumber)"
 Ràng buộc duy nhất,UQ-05,Chỉ 1 override mỗi phòng mỗi DV,RoomService,2,"Unique (RoomId, ServiceId)"
-Ràng buộc duy nhất,UQ-06,Chỉ 1 phân công mỗi tòa nhà mỗi NV,BuildingStaff,2,"Unique (BuildingId, StaffId)"
+Ràng buộc duy nhất,UQ-06,Chỉ 1 phân công mỗi tòa nhà mỗi NV,StaffAssignment,2,"Unique (BuildingId, StaffId)"
 Ràng buộc duy nhất,UQ-07,Email duy nhất,User,1,
 Ràng buộc duy nhất,UQ-08,SĐT duy nhất (nếu có),User,1,
 Mặc định tòa nhà,BD-01,"Tạo tòa nhà tự tạo 5 DV: Điện 3500/kWh, Nước 20000/m³, Internet 100k/tháng, Rác 20k/tháng, Gửi xe 100k/người/tháng",Building,2,Cấu hình trong appsettings
@@ -51,7 +51,7 @@ Xác thực & Bảo mật,AUTH-01,Access token TTL: 30 phút. Refresh token TTL:
 Xác thực & Bảo mật,AUTH-02,User bị vô hiệu hóa → 403 khi đăng nhập + xóa RefreshToken,User,1,
 Xác thực & Bảo mật,AUTH-03,Mật khẩu tối thiểu 8 ký tự,Auth,1,
 Xác thực & Bảo mật,AUTH-04,"Giới hạn: đăng nhập 5/phút, quên mật khẩu 3/phút (fixed window)",Auth,1,ASP.NET Core Rate Limiting
-Xác thực & Bảo mật,AUTH-05,Phân quyền theo tòa nhà: NV chỉ truy cập tòa nhà được phân công,Middleware,2,BuildingScopeFilter kiểm tra bảng BuildingStaff
+Xác thực & Bảo mật,AUTH-05,Phân quyền theo tòa nhà: NV chỉ truy cập tòa nhà được phân công,Middleware,2,BuildingScopeFilter kiểm tra bảng StaffAssignment
 Xác thực & Bảo mật,AUTH-06,KT tự lọc: endpoint danh sách tự lọc theo JWT UserId cho KT,Service Layer,1-5,Không cần route riêng cho KT
 Xóa mềm,SD-01,"User, Building, Room có DeletedAt",Multiple,1-2,GET danh sách mặc định loại trừ DeletedAt IS NOT NULL
 Xóa mềm,SD-02,ContractTenant gỡ mềm: set MoveOutDate,ContractTenant,4,KT vẫn còn trong lịch sử

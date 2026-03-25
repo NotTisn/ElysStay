@@ -69,6 +69,16 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto
                 throw new ForbiddenException("Người dùng này không thuộc tòa nhà nào của bạn.");
         }
 
+        // Populate assigned buildings for staff users
+        IReadOnlyList<string>? assignedBuildingNames = null;
+        if (user.Role == UserRole.Staff)
+        {
+            assignedBuildingNames = await _db.StaffAssignments
+                .Where(sa => sa.StaffId == user.Id)
+                .Select(sa => sa.Building!.Name)
+                .ToListAsync(ct);
+        }
+
         return new UserDto
         {
             Id = user.Id,
@@ -78,7 +88,8 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto
             AvatarUrl = user.AvatarUrl,
             Role = user.Role.ToString(),
             Status = user.Status.ToString(),
-            CreatedAt = user.CreatedAt
+            CreatedAt = user.CreatedAt,
+            AssignedBuildingNames = assignedBuildingNames
         };
     }
 }

@@ -13,6 +13,11 @@ public record UserDto
     public required string Role { get; init; }
     public required string Status { get; init; }
     public required DateTime CreatedAt { get; init; }
+    /// <summary>
+    /// Populated for Staff users only. Names of buildings the staff member is currently assigned to.
+    /// Null/empty for Owner and Tenant users.
+    /// </summary>
+    public IReadOnlyList<string>? AssignedBuildingNames { get; init; }
 }
 
 /// <summary>

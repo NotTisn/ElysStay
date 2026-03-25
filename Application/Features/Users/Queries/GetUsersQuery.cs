@@ -119,7 +119,10 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PagedResult<U
                 AvatarUrl = u.AvatarUrl,
                 Role = u.Role.ToString(),
                 Status = u.Status.ToString(),
-                CreatedAt = u.CreatedAt
+                CreatedAt = u.CreatedAt,
+                AssignedBuildingNames = u.Role == Domain.Enums.UserRole.Staff
+                    ? u.BuildingStaffAssignments.Select(sa => sa.Building!.Name).ToList()
+                    : null
             })
             .ToPagedResultAsync(paging, ct);
     }
