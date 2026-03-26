@@ -163,10 +163,27 @@ if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.Migrate();
+    var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-    var seedLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    await Infrastructure.Persistence.DevDataSeeder.SeedAsync(dbContext, seedLogger);
+    // Retry migration up to 5 times (2s backoff) — covers Docker container startup race
+    const int maxRetries = 5;
+    for (var attempt = 1; attempt <= maxRetries; attempt++)
+    {
+        try
+        {
+            dbContext.Database.Migrate();
+            break;
+        }
+        catch (Npgsql.NpgsqlException ex) when (attempt < maxRetries)
+        {
+            startupLogger.LogWarning(ex,
+                "Database connection failed (attempt {Attempt}/{Max}). Retrying in 2s...",
+                attempt, maxRetries);
+            await Task.Delay(2000);
+        }
+    }
+
+    await Infrastructure.Persistence.DevDataSeeder.SeedAsync(dbContext, startupLogger);
 }
 
 // ==========================================

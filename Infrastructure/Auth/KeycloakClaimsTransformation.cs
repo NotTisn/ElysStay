@@ -28,9 +28,16 @@ public class KeycloakClaimsTransformation : IClaimsTransformation
             foreach (var role in rolesElement.EnumerateArray())
             {
                 var roleValue = role.GetString();
-                if (roleValue is not null && !identity.HasClaim(ClaimTypes.Role, roleValue))
+                if (roleValue is null) continue;
+
+                // Keycloak realm roles are lowercase (e.g. "owner", "staff", "tenant")
+                // but ASP.NET Core [Authorize(Roles = "Owner,Staff")] is case-sensitive.
+                // Normalize to PascalCase so both sides match.
+                var normalized = char.ToUpperInvariant(roleValue[0]) + roleValue[1..];
+
+                if (!identity.HasClaim(ClaimTypes.Role, normalized))
                 {
-                    identity.AddClaim(new Claim(ClaimTypes.Role, roleValue));
+                    identity.AddClaim(new Claim(ClaimTypes.Role, normalized));
                 }
             }
         }
