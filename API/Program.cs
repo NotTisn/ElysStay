@@ -70,6 +70,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         var keycloak = builder.Configuration.GetSection("Keycloak");
 
         options.Authority = keycloak["Authority"];
+        // Accept tokens issued by the frontend (elysstay-fe) as well as
+        // Keycloak's default "account" audience and the backend's own client-id.
         options.Audience = keycloak["ClientId"];
 
         // Allow override for reverse-proxy deployments (internal HTTP to Keycloak)
@@ -81,6 +83,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateAudience = true,
+            ValidAudiences = keycloak.GetSection("ValidAudiences").Get<string[]>()
+                ?? [keycloak["ClientId"]!, "account"],
             ValidateIssuer = true,
             ValidateLifetime = true
         };

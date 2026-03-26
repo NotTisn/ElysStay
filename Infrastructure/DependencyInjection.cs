@@ -24,7 +24,11 @@ public static class DependencyInjection
     {
         // ── Persistence ──
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"))
+                   // Soft-delete query filters on User/Building/Room/Expense intentionally
+                   // affect required navigations — suppress the resulting startup warnings.
+                   .ConfigureWarnings(w => w.Ignore(
+                       Microsoft.EntityFrameworkCore.Diagnostics.CoreEventId.PossibleIncorrectRequiredNavigationWithQueryFilterInteraction)));
 
         // Expose the DbContext via the IApplicationDbContext interface
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
