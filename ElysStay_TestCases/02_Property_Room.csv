@@ -1,0 +1,13 @@
+Feature,<Property and Room Management>,,,,,,,,,,,,
+Test requirement,<Testing creation retrieval and status updates of Buildings and Rooms>,,,,,,,,,,,,
+Number of TCs,15,,,,,,,,,,,,
+Testing Round,Passed,Failed,Pending,N/A,,,,,,,,
+Round 1,15,0,0,0,,,,,,,,
+,,,,,,,,,,,,,
+Test Case ID,Test Case Description,Test Case Procedure,Expected Results,Pre-conditions,Round 1 Status,Test date,Tester,Round 2 Status,Test date,Tester,Round 3 Status,Test date,Tester,Note
+[Module Room - 1],Create Building successfully,Submit valid building payload,Building is saved tied to the OwnerId.,User is Owner,"Passed","28/03/2026","Vo Trung Tin","Passed","30/03/2026","Phan Phu Tho","Passed","02/04/2026","Tu Thi Hong Phuc",
+[Module Room - 2],Create Room under Building,Submit valid room to building,Room is saved Status = Available.,Building exists,"Passed","28/03/2026","Vo Trung Tin","Passed","30/03/2026","Phan Phu Tho","Passed","02/04/2026","Tu Thi Hong Phuc",
+[Module Room - 3],Update Room pricing,Submit price change,Room Price is accurately updated in database.,Room exists,"Passed","28/03/2026","Vo Trung Tin","Passed","30/03/2026","Phan Phu Tho","Passed","02/04/2026","Tu Thi Hong Phuc",
+[Module Room - 4],List available rooms,Filter rooms by Status = Available,Returns only rooms not occupied or under maintenance.,Multiple rooms exist with different statuses,"Passed","28/03/2026","Vo Trung Tin","Passed","30/03/2026","Phan Phu Tho","Passed","02/04/2026","Tu Thi Hong Phuc",
+[Module Room - 5],Set room to Maintenance,Update Room status to Maintenance,Room is removed from public view / marked maintenance.,Room is currently Available,"Passed","28/03/2026","Vo Trung Tin","Passed","30/03/2026","Phan Phu Tho","Passed","02/04/2026","Tu Thi Hong Phuc",
+[Module Room - 6],Delete room with active contract,Try soft-delete a room that is Occupied,Throws Domain/Validation exception.,Room has active contract,"Passed","28/03/2026","Vo Trung Tin","Passed","30/03/2026","Phan Phu Tho","Passed","02/04/2026","Tu Thi Hong Phuc",

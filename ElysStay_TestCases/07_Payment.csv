@@ -1,0 +1,12 @@
+Feature,<Payment Processing>,,,,,,,,,,,,
+Test requirement,<Testing accurate receiving tracking and validation of payments>,,,,,,,,,,,,
+Number of TCs,10,,,,,,,,,,,,
+Testing Round,Passed,Failed,Pending,N/A,,,,,,,,
+Round 1,10,0,0,0,,,,,,,,
+,,,,,,,,,,,,,
+Test Case ID,Test Case Description,Test Case Procedure,Expected Results,Pre-conditions,Round 1 Status,Test date,Tester,Round 2 Status,Test date,Tester,Round 3 Status,Test date,Tester,Note
+[Module Pay - 1],Process Full Cash Payment,Staff inputs exact cash payment for an unpaid invoice,Invoice status changes to Paid Payment recorded.,Invoice is Unpaid,"Passed","28/03/2026","Phan Phu Tho","Passed","30/03/2026","Tu Thi Hong Phuc","Passed","02/04/2026","Vo Trung Tin",
+[Module Pay - 2],Process Partial Transfer Payment,Bank transfer webhook inputs partial payment for invoice,Invoice status changes to Partially Paid Payment recorded.,Invoice is Unpaid,"Passed","28/03/2026","Phan Phu Tho","Passed","30/03/2026","Tu Thi Hong Phuc","Passed","02/04/2026","Vo Trung Tin",
+[Module Pay - 3],Process Multiple Payments,Input second payment resolving remainder on partially paid invoice,Invoice status changes to Paid Payment recorded.,Invoice is Partially Paid,"Passed","28/03/2026","Phan Phu Tho","Passed","30/03/2026","Tu Thi Hong Phuc","Passed","02/04/2026","Vo Trung Tin",
+[Module Pay - 4],Process Overpayment,Input a payment larger than the invoice total,Throws OverpaymentException Payment rejected.,Invoice is Partially Paid or Unpaid,"Passed","28/03/2026","Phan Phu Tho","Passed","30/03/2026","Tu Thi Hong Phuc","Passed","02/04/2026","Vo Trung Tin",
+[Module Pay - 5],Generate Payment Receipt,Tenant requests receipt for a paid invoice,Receipt PDF generated and linked to Payment.,Invoice is Paid Payment exists,"Passed","28/03/2026","Phan Phu Tho","Passed","30/03/2026","Tu Thi Hong Phuc","Passed","02/04/2026","Vo Trung Tin",

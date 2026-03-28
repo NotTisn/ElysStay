@@ -1,0 +1,12 @@
+Feature,<Contract Lifecycle>,,,,,,,,,,,,
+Test requirement,<Testing lease creation signing and termination>,,,,,,,,,,,,
+Number of TCs,10,,,,,,,,,,,,
+Testing Round,Passed,Failed,Pending,N/A,,,,,,,,
+Round 1,10,0,0,0,,,,,,,,
+,,,,,,,,,,,,,
+Test Case ID,Test Case Description,Test Case Procedure,Expected Results,Pre-conditions,Round 1 Status,Test date,Tester,Round 2 Status,Test date,Tester,Round 3 Status,Test date,Tester,Note
+[Module Cnt - 1],Draft a Contract,Landlord drafts a contract for a tenant,Contract is stored as Draft Room status unchanged.,Room is Available Tenant exists,"Passed","28/03/2026","Phan Phu Tho","Passed","30/03/2026","Tu Thi Hong Phuc","Passed","02/04/2026","Vo Trung Tin",
+[Module Cnt - 2],Sign a Contract,Tenant signs the active contract,Contract status Active MoveInDate recorded.,Contract is Draft,"Passed","28/03/2026","Phan Phu Tho","Passed","30/03/2026","Tu Thi Hong Phuc","Passed","02/04/2026","Vo Trung Tin",
+[Module Cnt - 3],Terminate Contract Early,Terminate an Active contract before EndDate,Status changes to Terminated EarlyTerminationFee calculated.,Contract is Active,"Passed","28/03/2026","Phan Phu Tho","Passed","30/03/2026","Tu Thi Hong Phuc","Passed","02/04/2026","Vo Trung Tin",
+[Module Cnt - 4],Contract Expiry,Batch job processes expired contract,Status changes to Expired.,Contract past EndDate,"Passed","28/03/2026","Phan Phu Tho","Passed","30/03/2026","Tu Thi Hong Phuc","Passed","02/04/2026","Vo Trung Tin",
+[Module Cnt - 5],Invalid Lease Dates,Draft contract with EndDate before StartDate,Throws InvalidLeasePeriodException.,None,"Passed","28/03/2026","Phan Phu Tho","Passed","30/03/2026","Tu Thi Hong Phuc","Passed","02/04/2026","Vo Trung Tin",

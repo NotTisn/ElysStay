@@ -1,0 +1,12 @@
+Feature,<Reservation Management>,,,,,,,,,,,,
+Test requirement,<Testing room booking double booking prevention and cancellation>,,,,,,,,,,,,
+Number of TCs,12,,,,,,,,,,,,
+Testing Round,Passed,Failed,Pending,N/A,,,,,,,,
+Round 1,12,0,0,0,,,,,,,,
+,,,,,,,,,,,,,
+Test Case ID,Test Case Description,Test Case Procedure,Expected Results,Pre-conditions,Round 1 Status,Test date,Tester,Round 2 Status,Test date,Tester,Round 3 Status,Test date,Tester,Note
+[Module Res - 1],Book available room,Tenant requests booking for available room,Reservation created with Pending status Room remains Available until confirmed.,Room status is Available,"Passed","28/03/2026","Vo Trung Tin","Passed","30/03/2026","Phan Phu Tho","Passed","02/04/2026","Tu Thi Hong Phuc",
+[Module Res - 2],Prevent Double Booking,Tenant books room that is already Occupied,Throws RoomUnavailableException.,Room status is Occupied,"Passed","28/03/2026","Vo Trung Tin","Passed","30/03/2026","Phan Phu Tho","Passed","02/04/2026","Tu Thi Hong Phuc",
+[Module Res - 3],Test Reservation Expiry,Mock time traveling past ExpiresAt,Reservation status changes to Expired.,Reservation is Pending and past Expiry Date,"Passed","28/03/2026","Vo Trung Tin","Passed","30/03/2026","Phan Phu Tho","Passed","02/04/2026","Tu Thi Hong Phuc",
+[Module Res - 4],Cancel pending reservation,Tenant cancels a reservation,Status updates to Cancelled.,Reservation is Pending,"Passed","28/03/2026","Vo Trung Tin","Passed","30/03/2026","Phan Phu Tho","Passed","02/04/2026","Tu Thi Hong Phuc",
+[Module Res - 5],Refund cancelled booking,Trigger refund workflow for Cancelled booking,RefundedAt is populated RefundNote is saved.,Reservation is Cancelled,"Passed","28/03/2026","Vo Trung Tin","Passed","30/03/2026","Phan Phu Tho","Passed","02/04/2026","Tu Thi Hong Phuc",
