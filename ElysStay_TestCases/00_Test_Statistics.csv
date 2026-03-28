@@ -10,8 +10,12 @@ No,Module code,Passed,Failed,Pending,N/A,Number of test cases
 5,Module Meter Reading,8,0,0,N,8
 6,Module Invoice,15,0,0,N,15
 7,Module Payment,15,0,0,N,15
+8,Module Maintenance Issues,15,0,0,N,15
+9,Module Expense Tracking,10,0,0,N,10
+10,Module Service Management,12,0,0,N,12
+11,Module Dashboard & Reporting,20,0,0,N,20
 ,,,
-,Sub total,100,0,0,0,100
+,Sub total,157,0,0,0,157
 ,,,
 ,Test coverage,100.00%,,,
 ,Test successful coverage,100.00%,,,
