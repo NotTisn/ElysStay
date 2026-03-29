@@ -1,0 +1,218 @@
+PROJECT REPORT,,,,
+Group,6,,,
+Week,<31/03/2026-06/04/2026>,,,
+I. Status Report,,,,
+Module,Project Task,In-charge,Status,Notes (Work Item in Details)
+Module Auth / Users,Verify User Registration & Login (12 testcases),Vo Trung Tin,In Progress,Drafting and running initial auth tests
+Module Property & Room,Verify Property Creation (5/15 testcases),Phan Phu Tho,In Progress,Testing mandatory and optional fields
+Module Property & Room,Verify Room Creation,Vo Trung Tin,Pending,None
+Module Reservation,Verify Booking Logic,Vo Trung Tin,Pending,None
+,,,,
+II. Project Issues,,,,
+Module,Project Issue,Owner,Status,"Notes (Solution, Suggestion, etc.)"
+1,Duplicate Email Validation,Vo Trung Tin,In Progress,"Throws 500 server error instead of 400 Bad Request, checking DB constraint."
+2,Property Default Values,Phan Phu Tho,Pending,"Optional fields show null instead of default values on UI."
+,,,,
+III. Next Week Plan,,,,
+Module,Project Work Item,In-charge,Deadline,"Notes (Task Details, etc.)"
+1,Continue verify Auth / Users (remaining 12 testcases),Vo Trung Tin,13/04/2026,"Write system testcase, unit testcase"
+2,Continue verify Property & Room (remaining 10 testcases),Vo Trung Tin,13/04/2026,"Write system testcase, unit testcase"
+3,Start verify Reservation (18 testcases),Vo Trung Tin,13/04/2026,"Write system testcase, unit testcase"
+4,Start verify Contract (15 testcases),Phan Phu Tho,13/04/2026,"Write system testcase, unit testcase"
+,,,,
+IV. Other Project Masters/Suggestions,,,,
+Module,Project Matter/Suggestions,Raised By,Date,Notes
+,,,,
+,,,,
+,,,,
+PROJECT REPORT,,,,
+Group,6,,,
+Week,<07/04/2026-13/04/2026>,,,
+I. Status Report,,,,
+Module,Project Task,In-charge,Status,Notes (Work Item in Details)
+Module Auth / Users,Verify all 12 testcases,Vo Trung Tin,Completed,All roles and JWT scenarios passing
+Module Property & Room,Verify all 15 testcases,Vo Trung Tin,Completed,Rooms mapped to properties successfully
+Module Reservation,Verify Booking Logic (18 testcases),Vo Trung Tin,In Progress,Testing reservation overlap logic
+Module Contract,Verify Lease Agreements (15 testcases),Phan Phu Tho,In Progress,Testing Draft to Active transitions
+,,,,
+II. Project Issues,,,,
+Module,Project Issue,Owner,Status,"Notes (Solution, Suggestion, etc.)"
+1,Duplicate Email Validation,Vo Trung Tin,Completed,Added proper exception handling in Auth controller.
+2,Property Default Values,Phan Phu Tho,Completed,Updated Entity constructor to populate default values.
+3,Reservation Double Booking,Vo Trung Tin,In Progress,"System allows two pending books on same dates, needs RoomUnavailableException."
+4,Contract Expiry Cron,Phan Phu Tho,Pending,"Batch job not updating status to Expired reliably."
+,,,,
+III. Next Week Plan,,,,
+Module,Project Work Item,In-charge,Deadline,"Notes (Task Details, etc.)"
+1,Continue verify Reservation,Vo Trung Tin,20/04/2026,"Write system testcase, unit testcase"
+2,Continue verify Contract,Phan Phu Tho,20/04/2026,"Write system testcase, unit testcase"
+3,Start verify Meter Reading (10 testcases),Tu Thi Hong Phuc,20/04/2026,"Write system testcase, unit testcase"
+4,Start verify Invoice (15 testcases),Vo Trung Tin,20/04/2026,"Write system testcase, unit testcase"
+5,Start verify Payment (15 testcases),Phan Phu Tho,20/04/2026,"Write system testcase, unit testcase"
+,,,,
+IV. Other Project Masters/Suggestions,,,,
+Module,Project Matter/Suggestions,Raised By,Date,Notes
+,,,,
+,,,,
+,,,,
+PROJECT REPORT,,,,
+Group,6,,,
+Week,<14/04/2026-20/04/2026>,,,
+I. Status Report,,,,
+Module,Project Task,In-charge,Status,Notes (Work Item in Details)
+Module Reservation,Verify all 18 testcases,Vo Trung Tin,Completed,Overlap checking active
+Module Contract,Verify all 15 testcases,Phan Phu Tho,Completed,Statuses update accurately
+Module Meter Reading,Verify Utility reading (10 testcases),Tu Thi Hong Phuc,In Progress,Testing consumption diff math
+Module Invoice,Verify Invoice generation (15 testcases),Vo Trung Tin,In Progress,Validating rent and service fees combinations
+Module Payment,Verify Webhooks & Processing (15 testcases),Phan Phu Tho,Pending,None
+,,,,
+II. Project Issues,,,,
+Module,Project Issue,Owner,Status,"Notes (Solution, Suggestion, etc.)"
+3,Reservation Double Booking,Vo Trung Tin,Completed,Added lock and isolation DB logic for bookings.
+4,Contract Expiry Cron,Phan Phu Tho,Completed,Cron configured correctly inside BackgroundJobs.
+5,Decreasing Meter Stats,Tu Thi Hong Phuc,In Progress,"System accepts reading lower than previous month, missing InvalidReadingException."
+6,Invoice Late Fees,Vo Trung Tin,Pending,"Late fees recalculating infinitely instead of one-time."
+,,,,
+III. Next Week Plan,,,,
+Module,Project Work Item,In-charge,Deadline,"Notes (Task Details, etc.)"
+1,Continue verify Meter Reading,Tu Thi Hong Phuc,27/04/2026,"Write system testcase, unit testcase"
+2,Continue verify Invoice,Vo Trung Tin,27/04/2026,"Write system testcase, unit testcase"
+3,Continue verify Payment,Phan Phu Tho,27/04/2026,"Write system testcase, unit testcase"
+4,Start verify Maintenance Issues (15 testcases),Vo Trung Tin,27/04/2026,"Write system testcase, unit testcase"
+,,,,
+IV. Other Project Masters/Suggestions,,,,
+Module,Project Matter/Suggestions,Raised By,Date,Notes
+,,,,
+,,,,
+,,,,
+PROJECT REPORT,,,,
+Group,6,,,
+Week,<21/04/2026-27/04/2026>,,,
+I. Status Report,,,,
+Module,Project Task,In-charge,Status,Notes (Work Item in Details)
+Module Meter Reading,Verify all 10 testcases,Tu Thi Hong Phuc,Completed,Consumption calculation correct
+Module Invoice,Verify all 15 testcases,Vo Trung Tin,Completed,Late fees and auto-bills successfully generate
+Module Payment,Verify Payment Processing (15 testcases),Phan Phu Tho,In Progress,Testing Cash and Webhook transfers
+Module Maintenance Issues,Verify Issue tracking (15 testcases),Vo Trung Tin,In Progress,Testing photo uploads and resolution flags
+Module Expense Tracking,Verify Expense logs (10 testcases),Tu Thi Hong Phuc,Pending,None
+,,,,
+II. Project Issues,,,,
+Module,Project Issue,Owner,Status,"Notes (Solution, Suggestion, etc.)"
+5,Decreasing Meter Stats,Tu Thi Hong Phuc,Completed,Validation trigger fixed.
+6,Invoice Late Fees,Vo Trung Tin,Completed,Job locks late fee application.
+7,Payment Webhook Duplication,Phan Phu Tho,In Progress,"Duplicate payloads from bank crediting balance twice."
+8,Maintenance Image Load,Vo Trung Tin,Pending,"Issues viewing high-res attached gallery images."
+,,,,
+III. Next Week Plan,,,,
+Module,Project Work Item,In-charge,Deadline,"Notes (Task Details, etc.)"
+1,Continue verify Payment,Phan Phu Tho,04/05/2026,"Write system testcase, unit testcase"
+2,Continue verify Maintenance Issues,Vo Trung Tin,04/05/2026,"Write system testcase, unit testcase"
+3,Start verify Expense Tracking,Tu Thi Hong Phuc,04/05/2026,"Write system testcase, unit testcase"
+4,Start verify Service Management,Phan Phu Tho,04/05/2026,"Write system testcase, unit testcase"
+,,,,
+IV. Other Project Masters/Suggestions,,,,
+Module,Project Matter/Suggestions,Raised By,Date,Notes
+,,,,
+,,,,
+,,,,
+PROJECT REPORT,,,,
+Group,6,,,
+Week,<28/04/2026-04/05/2026>,,,
+I. Status Report,,,,
+Module,Project Task,In-charge,Status,Notes (Work Item in Details)
+Module Payment,Verify all 15 testcases,Phan Phu Tho,Completed,Overpayments and partials map accurately
+Module Maintenance Issues,Verify all 15 testcases,Vo Trung Tin,Completed,Transitions matching Domain state machines
+Module Expense Tracking,Verify Expense logs (10 testcases),Tu Thi Hong Phuc,In Progress,Verifying building operations deductions
+Module Service Management,Verify Service assignment (12 testcases),Phan Phu Tho,In Progress,Checking metered vs standard services mapping to rooms
+Module Dashboard & Reporting,Verify analytics (20 testcases),Vo Trung Tin,Pending,None
+,,,,
+II. Project Issues,,,,
+Module,Project Issue,Owner,Status,"Notes (Solution, Suggestion, etc.)"
+7,Payment Webhook Duplication,Phan Phu Tho,Completed,Added unique TxId trace tracking in PaymentService.
+8,Maintenance Image Load,Vo Trung Tin,Completed,URL string formatting updated.
+9,Negative Expense Validation,Tu Thi Hong Phuc,In Progress,"Allows inputs below zero, polluting DB."
+10,Service Price Decimals,Phan Phu Tho,Pending,"Need rounded constraints to exactly 2 decimals on prices."
+,,,,
+III. Next Week Plan,,,,
+Module,Project Work Item,In-charge,Deadline,"Notes (Task Details, etc.)"
+1,Continue verify Expense Tracking,Tu Thi Hong Phuc,11/05/2026,"Write system testcase, unit testcase"
+2,Continue verify Service Management,Phan Phu Tho,11/05/2026,"Write system testcase, unit testcase"
+3,Start verify Dashboard & Reporting,Vo Trung Tin,11/05/2026,"Write system testcase, unit testcase"
+,,,,
+IV. Other Project Masters/Suggestions,,,,
+Module,Project Matter/Suggestions,Raised By,Date,Notes
+,,,,
+,,,,
+,,,,
+PROJECT REPORT,,,,
+Group,6,,,
+Week,<05/05/2026-11/05/2026>,,,
+I. Status Report,,,,
+Module,Project Task,In-charge,Status,Notes (Work Item in Details)
+Module Expense Tracking,Verify all 10 testcases,Tu Thi Hong Phuc,Completed,Data exports smoothly
+Module Service Management,Verify all 12 testcases,Phan Phu Tho,Completed,Pricing overlaps cleanly overriden
+Module Dashboard & Reporting,Verify Notifications & PnL (10/20 testcases),Vo Trung Tin,In Progress,Testing push notifications explicitly
+Global,All modules cross-verification,Group 6,Pending,Checking exactly 157 sync map
+,,,,
+II. Project Issues,,,,
+Module,Project Issue,Owner,Status,"Notes (Solution, Suggestion, etc.)"
+9,Negative Expense Validation,Tu Thi Hong Phuc,Completed,Data-annotation added to prohibit zeroes.
+10,Service Price Decimals,Phan Phu Tho,Completed,Auto-floor math injected before saving.
+11,Dashboard Total Refresh,Vo Trung Tin,In Progress,"Dashboard stats fetch is very slow with large mocked datasets."
+,,,,
+III. Next Week Plan,,,,
+Module,Project Work Item,In-charge,Deadline,"Notes (Task Details, etc.)"
+1,Continue verify Dashboard & Reporting,Vo Trung Tin,18/05/2026,"Write system testcase, unit testcase"
+2,Verify Test Synchronizations (157 combined),Group 6,18/05/2026,"Full review of matrices, LATO format, and source validation"
+,,,,
+IV. Other Project Masters/Suggestions,,,,
+Module,Project Matter/Suggestions,Raised By,Date,Notes
+,,,,
+,,,,
+,,,,
+PROJECT REPORT,,,,
+Group,6,,,
+Week,<12/05/2026-18/05/2026>,,,
+I. Status Report,,,,
+Module,Project Task,In-charge,Status,Notes (Work Item in Details)
+Module Dashboard & Reporting,Verify all 20 testcases,Vo Trung Tin,Completed,PnL and stats matching exactly
+Documentation,Verify Test Synchronizations (157 combined),Group 6,In Progress,Compiling detailed normal/abnormal bounds
+Global,End-to-end integration scenarios,Group 6,In Progress,None
+,,,,
+II. Project Issues,,,,
+Module,Project Issue,Owner,Status,"Notes (Solution, Suggestion, etc.)"
+11,Dashboard Total Refresh,Vo Trung Tin,Completed,Applied localized cache policies.
+12,Test Matrix alignment,Tu Thi Hong Phuc,In Progress,"Missed merging some modules into LATO format accurately."
+,,,,
+III. Next Week Plan,,,,
+Module,Project Work Item,In-charge,Deadline,"Notes (Task Details, etc.)"
+1,Finalize documentation alignment,Group 6,25/05/2026,Convert all records to Excel standard
+2,Package deliverables for Submission,Group 6,25/05/2026,Prepare release candidate internally
+,,,,
+IV. Other Project Masters/Suggestions,,,,
+Module,Project Matter/Suggestions,Raised By,Date,Notes
+,,,,
+,,,,
+,,,,
+PROJECT REPORT,,,,
+Group,6,,,
+Week,<19/05/2026-25/05/2026>,,,
+I. Status Report,,,,
+Module,Project Task,In-charge,Status,Notes (Work Item in Details)
+Documentation,Verify Test Synchronizations (157 combined),Group 6,Completed,Exactly 157 Test Cases aligned across documentation and CS unit tests
+Global,End-to-end integration scenarios,Group 6,Completed,All flow interactions stable
+Global,Package deliverables for Submission,Group 6,Completed,Zip built
+,,,,
+II. Project Issues,,,,
+Module,Project Issue,Owner,Status,"Notes (Solution, Suggestion, etc.)"
+12,Test Matrix alignment,Tu Thi Hong Phuc,Completed,Generated all 11 detailed files conforming accurately.
+13,No active bugs remaining,Group 6,Completed,ElysStay tested smoothly.
+,,,,
+III. Next Week Plan,,,,
+Module,Project Work Item,In-charge,Deadline,"Notes (Task Details, etc.)"
+1,Submit Project to system,Tu Thi Hong Phuc,26/05/2026,Uploading to evaluation platform
+2,Prepare Presentation Demo Deck,Vo Trung Tin,28/05/2026,Recording demo flows of the successful test runs
+,,,,
+IV. Other Project Masters/Suggestions,,,,
+Module,Project Matter/Suggestions,Raised By,Date,Notes
+All,Project complete,"Truc (Supervisor)",25/05/2026,Excellent parity between manual test cases and backend automation.
