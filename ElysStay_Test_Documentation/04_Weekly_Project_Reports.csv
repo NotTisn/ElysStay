@@ -3,7 +3,7 @@ Group,6,,,
 Week,<31/03/2026-06/04/2026>,,,
 I. Status Report,,,,
 Module,Project Task,In-charge,Status,Notes (Work Item in Details)
-Module Auth / Users,Verify User Registration & Login (12 testcases),Vo Trung Tin,In Progress,Drafting and running initial auth tests
+Module Auth / Users,Verify User Registration & Login (10/20 testcases),Vo Trung Tin,In Progress,Drafting and running initial auth tests
 Module Property & Room,Verify Property Creation (5/15 testcases),Phan Phu Tho,In Progress,Testing mandatory and optional fields
 Module Property & Room,Verify Room Creation,Vo Trung Tin,Pending,None
 Module Reservation,Verify Booking Logic,Vo Trung Tin,Pending,None
@@ -15,9 +15,9 @@ Module,Project Issue,Owner,Status,"Notes (Solution, Suggestion, etc.)"
 ,,,,
 III. Next Week Plan,,,,
 Module,Project Work Item,In-charge,Deadline,"Notes (Task Details, etc.)"
-1,Continue verify Auth / Users (remaining 12 testcases),Vo Trung Tin,13/04/2026,"Write system testcase, unit testcase"
+1,Continue verify Auth / Users (remaining 10 testcases),Vo Trung Tin,13/04/2026,"Write system testcase, unit testcase"
 2,Continue verify Property & Room (remaining 10 testcases),Vo Trung Tin,13/04/2026,"Write system testcase, unit testcase"
-3,Start verify Reservation (18 testcases),Vo Trung Tin,13/04/2026,"Write system testcase, unit testcase"
+3,Start verify Reservation (12 testcases),Vo Trung Tin,13/04/2026,"Write system testcase, unit testcase"
 4,Start verify Contract (15 testcases),Phan Phu Tho,13/04/2026,"Write system testcase, unit testcase"
 ,,,,
 IV. Other Project Masters/Suggestions,,,,
@@ -30,9 +30,9 @@ Group,6,,,
 Week,<07/04/2026-13/04/2026>,,,
 I. Status Report,,,,
 Module,Project Task,In-charge,Status,Notes (Work Item in Details)
-Module Auth / Users,Verify all 12 testcases,Vo Trung Tin,Completed,All roles and JWT scenarios passing
+Module Auth / Users,Verify all 20 testcases,Vo Trung Tin,Completed,All roles and JWT scenarios passing
 Module Property & Room,Verify all 15 testcases,Vo Trung Tin,Completed,Rooms mapped to properties successfully
-Module Reservation,Verify Booking Logic (18 testcases),Vo Trung Tin,In Progress,Testing reservation overlap logic
+Module Reservation,Verify Booking Logic (12 testcases),Vo Trung Tin,In Progress,Testing reservation overlap logic
 Module Contract,Verify Lease Agreements (15 testcases),Phan Phu Tho,In Progress,Testing Draft to Active transitions
 ,,,,
 II. Project Issues,,,,
@@ -46,7 +46,7 @@ III. Next Week Plan,,,,
 Module,Project Work Item,In-charge,Deadline,"Notes (Task Details, etc.)"
 1,Continue verify Reservation,Vo Trung Tin,20/04/2026,"Write system testcase, unit testcase"
 2,Continue verify Contract,Phan Phu Tho,20/04/2026,"Write system testcase, unit testcase"
-3,Start verify Meter Reading (10 testcases),Tu Thi Hong Phuc,20/04/2026,"Write system testcase, unit testcase"
+3,Start verify Meter Reading (8 testcases),Tu Thi Hong Phuc,20/04/2026,"Write system testcase, unit testcase"
 4,Start verify Invoice (15 testcases),Vo Trung Tin,20/04/2026,"Write system testcase, unit testcase"
 5,Start verify Payment (15 testcases),Phan Phu Tho,20/04/2026,"Write system testcase, unit testcase"
 ,,,,
@@ -60,11 +60,11 @@ Group,6,,,
 Week,<14/04/2026-20/04/2026>,,,
 I. Status Report,,,,
 Module,Project Task,In-charge,Status,Notes (Work Item in Details)
-Module Reservation,Verify all 18 testcases,Vo Trung Tin,Completed,Overlap checking active
+Module Reservation,Verify all 12 testcases,Vo Trung Tin,Completed,Overlap checking active
 Module Contract,Verify all 15 testcases,Phan Phu Tho,Completed,Statuses update accurately
-Module Meter Reading,Verify Utility reading (10 testcases),Tu Thi Hong Phuc,In Progress,Testing consumption diff math
+Module Meter Reading,Verify Utility reading (8 testcases),Tu Thi Hong Phuc,In Progress,Testing consumption diff math
 Module Invoice,Verify Invoice generation (15 testcases),Vo Trung Tin,In Progress,Validating rent and service fees combinations
-Module Payment,Verify Webhooks & Processing (15 testcases),Phan Phu Tho,Pending,None
+Module Payment,Verify Webhooks & Processing (10 testcases),Phan Phu Tho,Pending,None
 ,,,,
 II. Project Issues,,,,
 Module,Project Issue,Owner,Status,"Notes (Solution, Suggestion, etc.)"
@@ -90,7 +90,7 @@ Group,6,,,
 Week,<21/04/2026-27/04/2026>,,,
 I. Status Report,,,,
 Module,Project Task,In-charge,Status,Notes (Work Item in Details)
-Module Meter Reading,Verify all 10 testcases,Tu Thi Hong Phuc,Completed,Consumption calculation correct
+Module Meter Reading,Verify all 8 testcases,Tu Thi Hong Phuc,Completed,Consumption calculation correct
 Module Invoice,Verify all 15 testcases,Vo Trung Tin,Completed,Late fees and auto-bills successfully generate
 Module Payment,Verify Payment Processing (15 testcases),Phan Phu Tho,In Progress,Testing Cash and Webhook transfers
 Module Maintenance Issues,Verify Issue tracking (15 testcases),Vo Trung Tin,In Progress,Testing photo uploads and resolution flags
@@ -148,7 +148,6 @@ PROJECT REPORT,,,,
 Group,6,,,
 Week,<05/05/2026-11/05/2026>,,,
 I. Status Report,,,,
-Module,Project Task,In-charge,Status,Notes (Work Item in Details)
 Module Expense Tracking,Verify all 10 testcases,Tu Thi Hong Phuc,Completed,Data exports smoothly
 Module Service Management,Verify all 12 testcases,Phan Phu Tho,Completed,Pricing overlaps cleanly overriden
 Module Dashboard & Reporting,Verify Notifications & PnL (10/20 testcases),Vo Trung Tin,In Progress,Testing push notifications explicitly
