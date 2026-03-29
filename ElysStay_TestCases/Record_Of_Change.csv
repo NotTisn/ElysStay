@@ -1,0 +1,77 @@
+Project Name,ElysStay,,Creator,Group 6
+Project Code,ES-RM,,Issue Date,29/03/2026
+Document Code,ElysStay_TestCases_V1,,Version,"1.0, 1.1, 1.2"
+,,,,,
+,,,,,
+Record of change,,,,,
+Effective Date,Version,Change Item,*A/D/M,Change description,Reference
+25 Tháng Ba 2026,1.0,Auth,A,Verify valid Email Signup,Module Auth
+,,Auth,A,Verify duplicate Email Signup,
+,,Auth,A,Verify Role Assignment (Tenant),
+,,Auth,A,Verify Role Assignment (Owner),
+,,Auth,A,Verify Role Assignment (Staff),
+,,Auth,A,Login with correct credentials,
+,,Auth,A,Login with invalid password,
+,,Auth,A,Login with non-existent email,
+,,Auth,A,Update user profile name,
+,,Auth,A,Soft delete user,
+,,Property & Room,A,Create Building successfully,Module Property & Room
+,,Property & Room,A,Create Room under Building,
+,,Property & Room,A,Update Room pricing,
+,,Property & Room,A,List available rooms,
+,,Property & Room,A,Set room to Maintenance,
+,,Property & Room,A,Delete room with active contract,
+,,Property & Room,A,Create Property with mandatory fields,
+,,Property & Room,A,Create Property with all fields,
+,,Property & Room,A,Update Property details,
+,,Property & Room,A,Delete Property,
+,,Reservation,A,Book available room,Module Reservation
+,,Reservation,A,Prevent Double Booking,
+,,Reservation,A,Test Reservation Expiry,
+,,Reservation,A,Cancel pending reservation,
+,,Reservation,A,Refund cancelled booking,
+,,Reservation,A,Search Reservation by Status,
+,,Contract,A,Draft a Contract,Module Contract
+,,Contract,A,Sign a Contract,
+,,Contract,A,Terminate Contract Early,
+,,Contract,A,Contract Expiry,
+,,Contract,A,Invalid Lease Dates,
+,,Contract,A,Search contracts by active status,
+27 Tháng Ba 2026,1.1,Utility,A,Input Monthly Water Reading,Module Utility
+,,Utility,A,Input Monthly Electricity Reading,
+,,Utility,A,Validate Decreasing Reading,
+,,Utility,A,Calculate Consumption Cost,
+,,Utility,A,Update Meter Reading Image,
+,,Finance,A,Generate Monthly Rent Invoice,Module Finance
+,,Finance,A,Add Utilities to Invoice,
+,,Finance,A,Add Service Fees to Invoice,
+,,Finance,A,Calculate Late Fees,
+,,Finance,A,Send Invoice Notification,
+,,Payment,A,Process Full Cash Payment,Module Payment
+,,Payment,A,Process Partial Transfer Payment,
+,,Payment,A,Process Multiple Payments,
+,,Payment,A,Process Overpayment,
+,,Payment,A,Generate Payment Receipt,
+,,Payment,A,Search Payment History,
+29 Tháng Ba 2026,1.2,Maintenance,A,Report new issue,Module Maintenance
+,,Maintenance,A,Upload issue images,
+,,Maintenance,A,Assign staff to issue,
+,,Maintenance,A,Mark issue as In Progress,
+,,Maintenance,A,Resolve issue,
+,,Maintenance,A,View issue history,
+,,Expense,A,Record new expense,Module Expense
+,,Expense,A,Upload expense receipt,
+,,Expense,A,Calculate total expenses,
+,,Expense,A,Delete expense,
+,,Expense,A,Update expense amount,
+,,Service,A,Create new global service,Module Service
+,,Service,A,Update service cost,
+,,Service,A,Deactivate service,
+,,Service,A,Assign service to Room,
+,,Service,A,Override service usage cost for room,
+,,Dashboard,A,Calculate monthly Revenue,Module Dashboard
+,,Dashboard,A,Calculate monthly Expenses,
+,,Dashboard,A,Calculate PnL,
+,,Dashboard,A,Calculate Occupancy Rate,
+,,Dashboard,A,Pending Issues Count,
+,,Dashboard,A,Overdue Invoices Count,
