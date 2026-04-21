@@ -1,0 +1,70 @@
+,,UNIT TESTCASE,,,,
+,,,,,
+Project Name,ElysStay,,Creator,Group 6,
+Project Code,ElysStay,,Issue Date,29/03/2026,
+Document Code,29/03/2026,,Version,1.0,
+,,,,,
+,,,,,
+Record of change,,,,,
+Effective Date,Version,Change Item,*A/D/M,Change description,Reference
+25 Tháng Chín 2026,1.0,Signup,A,Tests verify name,Module Login/Signup
+,,,,,Test verify email,
+,,,,,Test verify password,
+,,,,,Test verifying signup button,
+,,User Interface,A,Test search box functionality,Module Dashboard
+,,,,,Test brand filter functionality,
+,,,,,Test details button functionality,
+,,,,,Test post details button functionality,
+,,,,,Test pressing an image to zoom in,
+,,,,,Test pressing close button on the zoomed image,
+,,,,,Test pressing the back button while an image is zoomed in,
+,,,,,Test order details button functionality,
+,,,,,Test profile picture functionality,
+,,View Active Reservation,A,Test viewing confirmed reservations form,Module Reservation
+,,,,,Test clicking on the details of a confirmed reservation,
+,,,,,Test behavior when there are no confirmed reservations,
+,,View Pending Reservation,A,Test viewing pending reservations form,Module Reservation
+,,,,,Test clicking on the details of a pending reservation,
+,,View Cancel Reservation,A,Test viewing canceled reservations form,Module Reservation
+,,,,,Test clicking on the details of a canceled reservation,
+,,Cancel Reservation,A,Test cancel reservation option,Module Reservation
+,,,,,Test canceling a reservation,
+,,View Contract Details,A,Test viewing contract details form,Module Contract
+,,,,,Test behavior when there are no items in the contract,
+,,,,,Test behavior when contract status is "Draft",
+,,,,,Test behavior when contract status is "Active",
+20 Tháng Mười 2026,1.1,View Invoice,A,Test viewing invoices form,Module Invoice
+,,,,,Test clicking on the details of a invoice,
+,,,,,Test behavior when there are no invoices,
+,,,,,Test the refresh of invoices list,
+,,Login,A,Test viewing login form,Module Login
+,,,,,Test input into email field,
+,,,,,Test input into password field,
+,,,,,Test behavior when only password is provided,
+,,,,,Test behavior when only email is provided,
+,,,,,Test behavior when invalid email is entered,
+,,,,,Test behavior when invalid password is entered,
+,,,,,Test successful login,
+30 Tháng Mười 2026,1.2,Property Management,A,Verify the screen "available",Module Property
+,,,,,Verify the screen "occupied",
+,,,,,Verify the screen "maintenance",
+,,Account Management,A,Test that creates a new user.,Module Auth/Users
+,,,,,Test Creating a new user but before saving canceling the update.,
+,,,,,Test Creating a new user with empty username.,
+,,,,,Test Creating a new user with empty e-mail.,
+,,,,,Test Creating a new user with no roles.,
+,,,,,Test Creating a new user with the same username as an existing user.,
+,,,,,Test Creating a new user with the same e-mail as an existing user.,
+,,,,,Test updating data of the selected account,
+,,,,,Test updating an user but before saving cancel the update.,
+,,,,,"Test updating an user's e-mail to that of an existing user.",
+,,,,,Test deleting a selected account,
+,,Search,A,Test Searching for an existing item,Module Property
+,,,,,Test Searching for a non-existent item,
+,,,,,"Test Searching with additional filters",
+,,,,,"Test Searching with misspelled query",
+,,,,,"Test Searching with empty query",
+,,,,,"Test Searching with Previous search query history browsing",
+,,Issue Management,A,Test that creates a new issue.,Module Maintenance
+,,,,,Test Editing an existing issue.,
+,,,,,Test Deleting an issue.,

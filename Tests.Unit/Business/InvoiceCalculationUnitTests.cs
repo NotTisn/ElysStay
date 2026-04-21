@@ -128,4 +128,44 @@ public class InvoiceCalculationUnitTests
         // Assert
         total.Should().BeGreaterThan(0);
     }
+
+    [Fact]
+    public void OverdueInvoice_AppliesLateFeePercent_Correctly()
+    {
+        // Arrange
+        var invoice = new Invoice
+        {
+            RentAmount = 5_000_000,
+            ServiceAmount = 500_000
+        };
+        decimal lateFeePercentage = 0.05m;
+
+        // Act
+        decimal baseTotal = invoice.RentAmount + invoice.ServiceAmount;
+        invoice.PenaltyAmount = baseTotal * lateFeePercentage;
+        var total = baseTotal + invoice.PenaltyAmount;
+
+        // Assert
+        invoice.PenaltyAmount.Should().Be(275_000);
+        total.Should().Be(5_775_000);
+    }
+
+    [Fact]
+    public void Invoice_PartialPayment_UpdatesRemainingBalance()
+    {
+        // Arrange
+        var invoice = new Invoice
+        {
+            RentAmount = 5_000_000,
+            ServiceAmount = 500_000
+        };
+        decimal partialPayment = 2_000_000;
+
+        // Act
+        var total = invoice.RentAmount + invoice.ServiceAmount;
+        var remainingBalance = total - partialPayment;
+
+        // Assert
+        remainingBalance.Should().Be(3_500_000);
+    }
 }

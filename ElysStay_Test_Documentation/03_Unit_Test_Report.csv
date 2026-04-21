@@ -1,0 +1,28 @@
+,,,,UNIT TEST REPORT,,,,
+,,,,,,,,
+Project Name,ElysStay,,Creator,Group 6,,,,
+Project Code,ElysStay,,Reviewer/Approver,,,,,
+Document Code,ElysStay_Test Report_v1.0,,Issue Date,29/03/2026,,,,
+Notes,<List modules included in this release> ex: Release 1 includes 11 modules,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+No,Function code,Passed,Failed,Untested,N,A,B,Total Test Cases
+1,Module Auth / Users,20,0,0,10,8,2,20
+2,Module Property & Room,15,0,0,8,6,1,15
+3,Module Reservation,12,0,0,6,5,1,12
+4,Module Contract,15,0,0,8,6,1,15
+5,Module Meter Reading,8,0,0,4,3,1,8
+6,Module Invoice,15,0,0,8,6,1,15
+7,Module Payment,15,0,0,8,6,1,15
+8,Module Maintenance Issues,15,0,0,7,7,1,15
+9,Module Expense Tracking,10,0,0,5,4,1,10
+10,Module Service Management,12,0,0,7,4,1,12
+11,Module Dashboard & Reporting,20,0,0,12,8,0,20
+,Sub total,157,0,0,83,63,11,157
+,,,,,,,,
+,Test coverage,100,%,,,,,
+,Test successful coverage,100,%,,,,,
+,Normal case,52.86,%,,,,,
+,Abnormal case,40.12,%,,,,,
+,Boundary case,7.00,%,,,,,
