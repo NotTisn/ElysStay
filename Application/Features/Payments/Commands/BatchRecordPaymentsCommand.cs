@@ -146,6 +146,7 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
                 Type = payment.Type.ToString(),
                 Amount = payment.Amount,
                 PaymentMethod = payment.PaymentMethod,
+                ReferenceCode = payment.ReferenceCode,
                 Note = payment.Note,
                 PaidAt = payment.PaidAt,
                 RecordedBy = payment.RecordedBy,

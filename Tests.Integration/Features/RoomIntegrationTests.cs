@@ -64,6 +64,26 @@ public class RoomIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task UpdateRoom_ChangesArea_UpdatesSuccessfully()
+    {
+        // Arrange
+        await SetupTestData();
+        var room = TestDataBuilder.CreateRoom(_building.Id);
+        await _fixture.DbContext.Rooms.AddAsync(room);
+        await _fixture.DbContext.SaveChangesAsync();
+
+        // Act
+        const decimal newArea = 35.75m;
+        room.Area = newArea;
+        _fixture.DbContext.Rooms.Update(room);
+        await _fixture.DbContext.SaveChangesAsync();
+
+        // Assert
+        var updated = _fixture.DbContext.Rooms.FirstOrDefault(r => r.Id == room.Id);
+        updated!.Area.Should().Be(newArea);
+    }
+
+    [Fact]
     public async Task UpdateRoomStatus_ToOccupied_UpdatesSuccessfully()
     {
         // Arrange

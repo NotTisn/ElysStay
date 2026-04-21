@@ -59,11 +59,18 @@ public class UpdateServiceCommandHandler : IRequestHandler<UpdateServiceCommand,
             service.Unit = request.Unit.Trim();
 
         // PR-03: Track price change
-        if (request.UnitPrice.HasValue && request.UnitPrice.Value != service.UnitPrice)
+        if (request.UnitPrice.HasValue)
         {
-            service.PreviousUnitPrice = service.UnitPrice;
-            service.PriceUpdatedAt = DateTime.UtcNow;
-            service.UnitPrice = request.UnitPrice.Value;
+            var normalizedUnitPrice = decimal.Round(request.UnitPrice.Value, 2, MidpointRounding.AwayFromZero);
+            if (normalizedUnitPrice <= 0)
+                throw new BadRequestException("Đơn giá phải lớn hơn 0 sau khi chuẩn hóa đến 2 chữ số thập phân.");
+
+            if (normalizedUnitPrice != service.UnitPrice)
+            {
+                service.PreviousUnitPrice = service.UnitPrice;
+                service.PriceUpdatedAt = DateTime.UtcNow;
+                service.UnitPrice = normalizedUnitPrice;
+            }
         }
 
         if (request.IsMetered.HasValue)

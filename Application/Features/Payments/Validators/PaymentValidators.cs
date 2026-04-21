@@ -44,6 +44,21 @@ public class BatchRecordPaymentsCommandValidator : AbstractValidator<BatchRecord
     }
 }
 
+public class ProcessPaymentWebhookCommandValidator : AbstractValidator<ProcessPaymentWebhookCommand>
+{
+    public ProcessPaymentWebhookCommandValidator()
+    {
+        RuleFor(x => x.InvoiceId).NotEmpty().WithMessage("Mã hóa đơn là bắt buộc.");
+        RuleFor(x => x.Amount).GreaterThan(0).WithMessage("Số tiền phải lớn hơn 0.");
+        RuleFor(x => x.ReferenceCode)
+            .NotEmpty().WithMessage("Mã giao dịch ngân hàng là bắt buộc.")
+            .MaximumLength(100).WithMessage("Mã giao dịch ngân hàng không được vượt quá 100 ký tự.");
+        RuleFor(x => x.Note)
+            .MaximumLength(1000).When(x => x.Note is not null)
+            .WithMessage("Ghi chú không được vượt quá 1000 ký tự.");
+    }
+}
+
 public class GetPaymentsQueryValidator : AbstractValidator<GetPaymentsQuery>
 {
     public GetPaymentsQueryValidator()
