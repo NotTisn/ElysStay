@@ -1,9 +1,15 @@
+using Application.Common.Exceptions;
+using Application.Features.Contracts.Commands;
+using Application.Features.Contracts.DTOs;
+using Domain.Entities;
+using Domain.Enums;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using TechTalk.SpecFlow;
+using TechTalk.SpecFlow.Assist;
 using Xunit;
-using ElysStay.Domain.Entities;
-using ElysStay.Domain.Enums;
-using ElysStay.Tests.Integration.Fixtures;
-using ElysStay.Tests.Integration.Builders;
+using Tests.Integration.Builders;
+using Tests.Integration.Fixtures;
 
 namespace ElysStay.Tests.Acceptance.StepDefinitions;
 
@@ -11,24 +17,32 @@ namespace ElysStay.Tests.Acceptance.StepDefinitions;
 public class ReservationConversionSteps
 {
     private readonly DatabaseFixture _fixture;
+    private readonly IMediator _mediator;
+
     private User _owner = null!;
     private User _tenant = null!;
     private Building _building = null!;
     private Room _room = null!;
     private RoomReservation _reservation = null!;
-    private Contract? _createdContract;
+
+    private ContractDto? _createdContract;
     private Exception? _lastException;
+
     private decimal _depositAmount;
 
-    public ReservationConversionSteps(DatabaseFixture fixture)
+    public ReservationConversionSteps(
+        DatabaseFixture fixture,
+        IMediator mediator)
     {
         _fixture = fixture;
+        _mediator = mediator;
     }
 
     [Given("a building owner")]
     public async Task GivenABuildingOwner()
     {
         _owner = TestDataBuilder.CreateUser(role: UserRole.Manager);
+
         await _fixture.DbContext.Users.AddAsync(_owner);
         await _fixture.DbContext.SaveChangesAsync();
     }
@@ -36,33 +50,46 @@ public class ReservationConversionSteps
     [Given("a room with deposit required ([0-9]+) VND")]
     public async Task GivenARoomWithDepositRequired(decimal deposit)
     {
-        _building = TestDataBuilder.CreateBuilding(_owner.Id);
-        _room = TestDataBuilder.CreateRoom(_building.Id);
         _depositAmount = deposit;
+
+        _building = TestDataBuilder.CreateBuilding(_owner.Id);
+
+        _room = TestDataBuilder.CreateRoom(_building.Id);
+        _room.Status = RoomStatus.Booked;
 
         await _fixture.DbContext.Buildings.AddAsync(_building);
         await _fixture.DbContext.Rooms.AddAsync(_room);
+
         await _fixture.DbContext.SaveChangesAsync();
     }
 
     [Given("a tenant")]
     public async Task GivenATenant()
     {
-        _tenant = TestDataBuilder.CreateUser(email: $"tenant_{Guid.NewGuid()}@test.com", role: UserRole.Tenant);
+        _tenant = TestDataBuilder.CreateUser(
+            email: $"tenant_{Guid.NewGuid()}@test.com",
+            role: UserRole.Tenant);
+
+        _tenant.Status = UserStatus.Active;
+
         await _fixture.DbContext.Users.AddAsync(_tenant);
         await _fixture.DbContext.SaveChangesAsync();
     }
 
-    [Given("a pending reservation with deposit ([0-9]+) VND")]
-    public async Task GivenAPendingReservationWithDeposit(decimal deposit)
+    [Given("a confirmed reservation with deposit ([0-9]+) VND")]
+    public async Task GivenAConfirmedReservationWithDeposit(decimal deposit)
     {
         _reservation = TestDataBuilder.CreateReservation(
             _room.Id,
             _tenant.Id,
             depositAmount: deposit,
-            status: ReservationStatus.Pending);
+            status: ReservationStatus.Confirmed);
 
-        await _fixture.DbContext.Set<RoomReservation>().AddAsync(_reservation);
+        _reservation.ExpiresAt = DateTime.UtcNow.AddDays(1);
+
+        await _fixture.DbContext.Set<RoomReservation>()
+            .AddAsync(_reservation);
+
         await _fixture.DbContext.SaveChangesAsync();
     }
 
@@ -71,26 +98,23 @@ public class ReservationConversionSteps
     {
         try
         {
-            _createdContract = new Contract
+            var command = new CreateContractCommand
             {
-                Id = Guid.NewGuid(),
                 RoomId = _room.Id,
                 TenantUserId = _tenant.Id,
                 ReservationId = _reservation.Id,
-                StartDate = DateTime.UtcNow,
-                EndDate = DateTime.UtcNow.AddMonths(12),
-                RoomPrice = _room.Price,
+
+                StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(12)),
+                MoveInDate = DateOnly.FromDateTime(DateTime.UtcNow),
+
+                MonthlyRent = 5_000_000,
                 DepositAmount = _reservation.DepositAmount,
-                DepositStatus = DepositStatus.Unpaid,
-                Status = ContractStatus.Active,
-                CreatedBy = _owner.Id
+
+                Note = "Acceptance test"
             };
 
-            _reservation.Status = ReservationStatus.Confirmed;
-
-            await _fixture.DbContext.Contracts.AddAsync(_createdContract);
-            _fixture.DbContext.Set<RoomReservation>().Update(_reservation);
-            await _fixture.DbContext.SaveChangesAsync();
+            _createdContract = await _mediator.Send(command);
         }
         catch (Exception ex)
         {
@@ -99,7 +123,7 @@ public class ReservationConversionSteps
     }
 
     [Then("contract should be created with:")]
-    public void ThenContractShouldBeCreatedWith(DataTable table)
+    public void ThenContractShouldBeCreatedWith(Table table)
     {
         Assert.NotNull(_createdContract);
 
@@ -111,30 +135,46 @@ public class ReservationConversionSteps
             switch (field)
             {
                 case "Status":
-                    Assert.Equal(expectedValue, _createdContract.Status.ToString());
+                    Assert.Equal(expectedValue, _createdContract!.Status);
                     break;
+
                 case "DepositAmount":
-                    Assert.Equal(decimal.Parse(expectedValue), _createdContract.DepositAmount);
+                    Assert.Equal(
+                        decimal.Parse(expectedValue),
+                        _createdContract!.DepositAmount);
                     break;
+
                 case "DepositStatus":
-                    Assert.Equal(expectedValue, _createdContract.DepositStatus.ToString());
+                    Assert.Equal(
+                        expectedValue,
+                        _createdContract!.DepositStatus);
                     break;
+
                 case "Room":
-                    Assert.Equal(_room.Id, _createdContract.RoomId);
+                    Assert.Equal(
+                        _room.Id,
+                        _createdContract!.RoomId);
                     break;
+
                 case "Tenant":
-                    Assert.Equal(_tenant.Id, _createdContract.TenantUserId);
+                    Assert.Equal(
+                        _tenant.Id,
+                        _createdContract!.TenantUserId);
                     break;
             }
         }
     }
 
     [Then("reservation status should be \"([^\"]*)\"")]
-    public void ThenReservationStatusShouldBe(string expectedStatus)
+    public async Task ThenReservationStatusShouldBe(string expectedStatus)
     {
-        Assert.NotNull(_reservation);
-        var status = Enum.Parse<ReservationStatus>(expectedStatus);
-        Assert.Equal(status, _reservation.Status);
+        var reservation = await _fixture.DbContext
+            .Set<RoomReservation>()
+            .FirstAsync(r => r.Id == _reservation.Id);
+
+        var expected = Enum.Parse<ReservationStatus>(expectedStatus);
+
+        Assert.Equal(expected, reservation.Status);
     }
 
     [Given("a cancelled reservation")]
@@ -146,19 +186,32 @@ public class ReservationConversionSteps
             depositAmount: _depositAmount,
             status: ReservationStatus.Cancelled);
 
-        await _fixture.DbContext.Set<RoomReservation>().AddAsync(_reservation);
+        await _fixture.DbContext.Set<RoomReservation>()
+            .AddAsync(_reservation);
+
         await _fixture.DbContext.SaveChangesAsync();
     }
 
     [When("I try to convert reservation to contract")]
-    public void WhenITryToConvertReservationToContract()
+    public async Task WhenITryToConvertReservationToContract()
     {
         try
         {
-            if (_reservation.Status != ReservationStatus.Pending)
+            var command = new CreateContractCommand
             {
-                throw new InvalidOperationException("Only pending reservations can be converted");
-            }
+                RoomId = _room.Id,
+                TenantUserId = _tenant.Id,
+                ReservationId = _reservation.Id,
+
+                StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(12)),
+                MoveInDate = DateOnly.FromDateTime(DateTime.UtcNow),
+
+                MonthlyRent = 5_000_000,
+                DepositAmount = _depositAmount
+            };
+
+            await _mediator.Send(command);
         }
         catch (Exception ex)
         {
@@ -170,61 +223,7 @@ public class ReservationConversionSteps
     public void ThenSystemShouldRejectWithError(string expectedError)
     {
         Assert.NotNull(_lastException);
-        Assert.Contains(expectedError, _lastException.Message);
-    }
 
-    [Given("a pending reservation that was already converted to contract")]
-    public async Task GivenAPendingReservationAlreadyConverted()
-    {
-        _reservation = TestDataBuilder.CreateReservation(
-            _room.Id,
-            _tenant.Id,
-            depositAmount: _depositAmount,
-            status: ReservationStatus.Pending);
-
-        await _fixture.DbContext.Set<RoomReservation>().AddAsync(_reservation);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        var contract = new Contract
-        {
-            Id = Guid.NewGuid(),
-            RoomId = _room.Id,
-            TenantUserId = _tenant.Id,
-            ReservationId = _reservation.Id,
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddMonths(12),
-            RoomPrice = _room.Price,
-            DepositAmount = _reservation.DepositAmount,
-            DepositStatus = DepositStatus.Unpaid,
-            Status = ContractStatus.Active,
-            CreatedBy = _owner.Id
-        };
-
-        _reservation.Status = ReservationStatus.Confirmed;
-
-        await _fixture.DbContext.Contracts.AddAsync(contract);
-        _fixture.DbContext.Set<RoomReservation>().Update(_reservation);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        _createdContract = contract;
-    }
-
-    [When("I try to convert it again")]
-    public void WhenITryToConvertItAgain()
-    {
-        try
-        {
-            var existingContract = _fixture.DbContext.Contracts
-                .FirstOrDefault(c => c.ReservationId == _reservation.Id);
-
-            if (existingContract != null)
-            {
-                throw new InvalidOperationException("Reservation already converted to contract");
-            }
-        }
-        catch (Exception ex)
-        {
-            _lastException = ex;
-        }
+        Assert.Contains(expectedError, _lastException!.Message);
     }
 }

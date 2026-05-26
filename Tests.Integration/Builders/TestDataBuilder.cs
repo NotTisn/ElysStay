@@ -90,9 +90,12 @@ public class TestDataBuilder
         Guid createdBy,
         decimal monthlyRent = 5_000_000,
         decimal depositAmount = 10_000_000,
-        ContractStatus status = ContractStatus.Active)
+        ContractStatus status = ContractStatus.Active,
+        DateOnly? MoveInDate = null,
+        DateOnly? StartDate = null,
+        DateOnly? EndDate = null
+        )
     {
-        var startDate = DateOnly.FromDateTime(DateTime.UtcNow);
         return new Contract
         {
             Id = Guid.NewGuid(),
@@ -103,9 +106,9 @@ public class TestDataBuilder
             DepositAmount = depositAmount,
             DepositStatus = DepositStatus.Held,
             Status = status,
-            StartDate = startDate,
-            MoveInDate = startDate,
-            EndDate = startDate.AddMonths(12),
+            StartDate = StartDate??DateOnly.FromDateTime(DateTime.UtcNow),
+            MoveInDate = MoveInDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
+            EndDate = EndDate ?? StartDate?.AddMonths(6) ?? DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(6),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

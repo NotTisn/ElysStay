@@ -199,6 +199,10 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
                 "Phòng đã bị thay đổi bởi thao tác khác. Vui lòng thử lại.",
                 "CONCURRENCY_CONFLICT");
         }
+        catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_Contracts_RoomId_Active") == true)
+        {
+            throw new ConflictException("Phòng này đã có hợp đồng đang hoạt động. Phát hiện tạo hợp đồng đồng thời.", "ROOM_OCCUPIED");
+        }
 
         // Best-effort email to tenant (after successful save)
         var (subject, html) = Application.Common.Email.EmailTemplates.ContractCreated(

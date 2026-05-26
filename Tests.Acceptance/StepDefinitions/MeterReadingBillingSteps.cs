@@ -1,9 +1,9 @@
 using TechTalk.SpecFlow;
 using Xunit;
-using ElysStay.Domain.Entities;
-using ElysStay.Domain.Enums;
-using ElysStay.Tests.Integration.Fixtures;
-using ElysStay.Tests.Integration.Builders;
+using Domain.Entities;
+using Domain.Enums;
+using Tests.Integration.Fixtures;
+using Tests.Integration.Builders;
 
 namespace ElysStay.Tests.Acceptance.StepDefinitions;
 
@@ -61,7 +61,7 @@ public class MeterReadingBillingSteps
             _room.Id,
             tenant.Id,
             _owner.Id,
-            roomPrice: 5_000_000,
+            monthlyRent: 5_000_000,
             depositAmount: 10_000_000,
             status: ContractStatus.Active);
 
@@ -120,10 +120,10 @@ public class MeterReadingBillingSteps
             ContractId = _contract.Id,
             BillingMonth = month,
             BillingYear = year,
-            RoomAmount = 5_000_000,
+            RentAmount = 5_000_000,
             ServiceAmount = serviceAmount,
             Status = InvoiceStatus.Unpaid,
-            DueDate = DateTime.UtcNow.AddDays(7),
+            DueDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(7),
             CreatedBy = _owner.Id
         };
 
@@ -132,7 +132,7 @@ public class MeterReadingBillingSteps
     }
 
     [Then("the invoice should include water charge:")]
-    public void ThenTheInvoiceShouldIncludeWaterCharge(DataTable table)
+    public void ThenTheInvoiceShouldIncludeWaterCharge(Table table)
     {
         Assert.NotNull(_meterReading);
         Assert.NotNull(_invoice);
@@ -180,7 +180,7 @@ public class MeterReadingBillingSteps
     }
 
     [Then("the invoice should include electricity charge:")]
-    public void ThenTheInvoiceShouldIncludeElectricityCharge(DataTable table)
+    public void ThenTheInvoiceShouldIncludeElectricityCharge(Table table)
     {
         Assert.NotNull(_meterReading);
         Assert.NotNull(_invoice);

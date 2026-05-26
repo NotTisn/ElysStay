@@ -10,6 +10,7 @@ using Serilog;
 using System.Threading.RateLimiting;
 using API.Middleware;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,33 @@ builder.Host.UseSerilog();
 
 // OpenAPI
 builder.Services.AddOpenApi();
+
+// Swagger UI (Swashbuckle)
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "ElysStay API",
+        Version = "v1",
+        Description = "Property Management API for ElysStay"
+    });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
+
+   c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+{
+    {
+        new OpenApiSecuritySchemeReference("Bearer"),
+        []
+    }
+});
+});
 
 // Lowercase URLs globally
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
@@ -202,14 +230,35 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
-    context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
+    context.Response.Headers["Permissions-Policy"] =
+        "camera=(), microphone=(), geolocation=()";
+
+    if (context.Request.Path.StartsWithSegments("/swagger"))
+    {
+        context.Response.Headers["Content-Security-Policy"] =
+            "default-src 'self'; " +
+            "img-src 'self' data:; " +
+            "style-src 'self' 'unsafe-inline'; " +
+            "script-src 'self' 'unsafe-inline';";
+    }
+    else
+    {
+        context.Response.Headers["Content-Security-Policy"] =
+            "default-src 'self'; frame-ancestors 'none'";
+    }
+
     await next();
 });
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "ElysStay API v1");
+        c.RoutePrefix = "swagger";
+    });
 }
 else
 {

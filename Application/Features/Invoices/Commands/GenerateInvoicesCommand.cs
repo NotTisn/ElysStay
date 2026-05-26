@@ -299,8 +299,9 @@ public class GenerateInvoicesCommandHandler : IRequestHandler<GenerateInvoicesCo
 
     /// <summary>
     /// Calculates rent with proration for first/last month (PR-05/PR-06).
+    /// internal for unit testing.
     /// </summary>
-    private static decimal CalculateRentAmount(Contract contract, DateOnly periodStart, DateOnly periodEnd, int daysInMonth)
+    internal static decimal CalculateRentAmount(Contract contract, DateOnly periodStart, DateOnly periodEnd, int daysInMonth)
     {
         var effectiveStart = periodStart;
         var effectiveEnd = periodEnd;

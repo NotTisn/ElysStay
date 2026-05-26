@@ -1,9 +1,9 @@
 using TechTalk.SpecFlow;
 using Xunit;
-using ElysStay.Domain.Entities;
-using ElysStay.Domain.Enums;
-using ElysStay.Tests.Integration.Fixtures;
-using ElysStay.Tests.Integration.Builders;
+using Domain.Entities;
+using Domain.Enums;
+using Tests.Integration.Fixtures;
+using Tests.Integration.Builders;
 
 namespace ElysStay.Tests.Acceptance.StepDefinitions;
 
@@ -25,7 +25,7 @@ public class PaymentTrackingSteps
     [Given("a building owner")]
     public async Task GivenABuildingOwner()
     {
-        _owner = TestDataBuilder.CreateUser(role: UserRole.Manager);
+        _owner = TestDataBuilder.CreateUser(role: UserRole.Owner);
         await _fixture.DbContext.Users.AddAsync(_owner);
         await _fixture.DbContext.SaveChangesAsync();
     }
@@ -50,9 +50,10 @@ public class PaymentTrackingSteps
             ContractId = contract.Id,
             BillingMonth = DateTime.UtcNow.Month,
             BillingYear = DateTime.UtcNow.Year,
-            RoomAmount = amount,
-            Status = InvoiceStatus.Unpaid,
-            DueDate = DateTime.UtcNow.AddDays(7),
+            RentAmount = amount,
+            TotalAmount = amount,
+            Status = InvoiceStatus.Sent,
+            DueDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7)),
             CreatedBy = _owner.Id
         };
 
@@ -74,8 +75,7 @@ public class PaymentTrackingSteps
             Id = Guid.NewGuid(),
             InvoiceId = _invoice.Id,
             Amount = amount,
-            Method = PaymentMethod.BankTransfer,
-            Status = PaymentStatus.Completed,
+            PaymentMethod = "BankTransfer",
             RecordedBy = _owner.Id
         };
 
@@ -88,7 +88,7 @@ public class PaymentTrackingSteps
     }
 
     [Then("payment should be created with:")]
-    public void ThenPaymentShouldBeCreatedWith(DataTable table)
+    public void ThenPaymentShouldBeCreatedWith(Table table)
     {
         Assert.NotNull(_lastPayment);
 
@@ -103,10 +103,7 @@ public class PaymentTrackingSteps
                     Assert.Equal(decimal.Parse(expectedValue), _lastPayment.Amount);
                     break;
                 case "Method":
-                    Assert.Equal(expectedValue, _lastPayment.Method.ToString());
-                    break;
-                case "Status":
-                    Assert.Equal(expectedValue, _lastPayment.Status.ToString());
+                    Assert.Equal(expectedValue, _lastPayment.PaymentMethod);
                     break;
                 case "Invoice":
                     Assert.NotNull(_lastPayment.InvoiceId);
@@ -132,13 +129,12 @@ public class PaymentTrackingSteps
             Id = Guid.NewGuid(),
             InvoiceId = _invoice.Id,
             Amount = amount,
-            Method = PaymentMethod.Cash,
-            Status = PaymentStatus.Completed,
+            PaymentMethod = "Cash",
             RecordedBy = _owner.Id
         };
 
         _totalPaid += amount;
-        _invoice.Status = _totalPaid < _invoice.RoomAmount ? InvoiceStatus.PartialPaid : InvoiceStatus.Paid;
+        _invoice.Status = _totalPaid < _invoice.TotalAmount ? InvoiceStatus.PartiallyPaid : InvoiceStatus.Paid;
 
         await _fixture.DbContext.Set<Payment>().AddAsync(_lastPayment);
         _fixture.DbContext.Invoices.Update(_invoice);
@@ -155,7 +151,7 @@ public class PaymentTrackingSteps
     [Then("remaining amount should be ([0-9]+) VND")]
     public void ThenRemainingAmountShouldBe(decimal expectedRemaining)
     {
-        var remaining = _invoice.RoomAmount - _totalPaid;
+        var remaining = _invoice.TotalAmount - _totalPaid;
         Assert.Equal(expectedRemaining, remaining);
     }
 
@@ -173,13 +169,12 @@ public class PaymentTrackingSteps
             Id = Guid.NewGuid(),
             InvoiceId = _invoice.Id,
             Amount = amount,
-            Method = PaymentMethod.BankTransfer,
-            Status = PaymentStatus.Completed,
+            PaymentMethod = "BankTransfer",
             RecordedBy = _owner.Id
         };
 
         _totalPaid += amount;
-        _invoice.Status = _totalPaid >= _invoice.RoomAmount ? InvoiceStatus.Paid : InvoiceStatus.PartialPaid;
+        _invoice.Status = _totalPaid >= _invoice.TotalAmount ? InvoiceStatus.Paid : InvoiceStatus.PartiallyPaid;
 
         await _fixture.DbContext.Set<Payment>().AddAsync(_lastPayment);
         _fixture.DbContext.Invoices.Update(_invoice);
@@ -200,14 +195,13 @@ public class PaymentTrackingSteps
             Id = Guid.NewGuid(),
             InvoiceId = _invoice.Id,
             Amount = amount,
-            Method = PaymentMethod.Momo,
-            Status = PaymentStatus.Completed,
+            PaymentMethod = "Momo",
             ReferenceCode = reference,
             RecordedBy = _owner.Id
         };
 
         _totalPaid += amount;
-        _invoice.Status = _totalPaid >= _invoice.RoomAmount ? InvoiceStatus.Paid : InvoiceStatus.PartialPaid;
+        _invoice.Status = _totalPaid >= _invoice.TotalAmount ? InvoiceStatus.Paid : InvoiceStatus.PartiallyPaid;
 
         await _fixture.DbContext.Set<Payment>().AddAsync(_lastPayment);
         _fixture.DbContext.Invoices.Update(_invoice);

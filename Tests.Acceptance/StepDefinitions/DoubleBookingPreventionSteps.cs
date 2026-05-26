@@ -1,9 +1,9 @@
 using TechTalk.SpecFlow;
 using Xunit;
-using ElysStay.Domain.Entities;
-using ElysStay.Domain.Enums;
-using ElysStay.Tests.Integration.Fixtures;
-using ElysStay.Tests.Integration.Builders;
+using Domain.Entities;
+using Domain.Enums;
+using Tests.Integration.Fixtures;
+using Tests.Integration.Builders;
 
 namespace ElysStay.Tests.Acceptance.StepDefinitions;
 

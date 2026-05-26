@@ -1,9 +1,9 @@
 using TechTalk.SpecFlow;
 using Xunit;
-using ElysStay.Domain.Entities;
-using ElysStay.Domain.Enums;
-using ElysStay.Tests.Integration.Fixtures;
-using ElysStay.Tests.Integration.Builders;
+using Domain.Entities;
+using Domain.Enums;
+using Tests.Integration.Fixtures;
+using Tests.Integration.Builders;
 
 namespace ElysStay.Tests.Acceptance.StepDefinitions;
 
@@ -27,7 +27,7 @@ public class ContractLifecycleSteps
     [Given("a building owner")]
     public async Task GivenABuildingOwner()
     {
-        _owner = TestDataBuilder.CreateUser(role: UserRole.Manager);
+        _owner = TestDataBuilder.CreateUser(role: UserRole.Owner);
         await _fixture.DbContext.Users.AddAsync(_owner);
         await _fixture.DbContext.SaveChangesAsync();
     }
@@ -36,7 +36,7 @@ public class ContractLifecycleSteps
     public async Task GivenABuildingWithAvailableRoom()
     {
         _building = TestDataBuilder.CreateBuilding(_owner.Id);
-        _room = TestDataBuilder.CreateRoom(_building.Id, status: RoomStatus.Available);
+        _room = TestDataBuilder.CreateRoom(_building.Id);
 
         await _fixture.DbContext.Buildings.AddAsync(_building);
         await _fixture.DbContext.Rooms.AddAsync(_room);
@@ -64,7 +64,7 @@ public class ContractLifecycleSteps
             _room.Id,
             _tenant.Id,
             _owner.Id,
-            roomPrice: _room.Price,
+            monthlyRent: _room.Price,
             depositAmount: _depositAmount,
             status: ContractStatus.Active);
 
@@ -91,7 +91,7 @@ public class ContractLifecycleSteps
     [Given("an active contract with unpaid deposit")]
     public async Task GivenAnActiveContractWithUnpaidDeposit()
     {
-        _owner = TestDataBuilder.CreateUser(role: UserRole.Manager);
+        _owner = TestDataBuilder.CreateUser(role: UserRole.Owner);
         _tenant = TestDataBuilder.CreateUser(role: UserRole.Tenant);
         _building = TestDataBuilder.CreateBuilding(_owner.Id);
         _room = TestDataBuilder.CreateRoom(_building.Id);
@@ -107,7 +107,7 @@ public class ContractLifecycleSteps
             _room.Id,
             _tenant.Id,
             _owner.Id,
-            roomPrice: _room.Price,
+            monthlyRent: _room.Price,
             depositAmount: _depositAmount,
             status: ContractStatus.Active);
 
@@ -119,7 +119,7 @@ public class ContractLifecycleSteps
     public async Task WhenIRecordPaymentForDeposit(decimal amount)
     {
         Assert.NotNull(_contract);
-        _contract.DepositStatus = DepositStatus.Paid;
+        _contract.DepositStatus = DepositStatus.Held;
 
         // Create Invoice and Payment
         var invoice = new Invoice
@@ -128,9 +128,10 @@ public class ContractLifecycleSteps
             ContractId = _contract.Id,
             BillingMonth = DateTime.UtcNow.Month,
             BillingYear = DateTime.UtcNow.Year,
-            RoomAmount = amount,
+            RentAmount = amount,
+            TotalAmount = amount,
             Status = InvoiceStatus.Paid,
-            DueDate = DateTime.UtcNow.AddDays(7),
+            DueDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7)),
             CreatedBy = _owner.Id
         };
 
@@ -139,8 +140,7 @@ public class ContractLifecycleSteps
             Id = Guid.NewGuid(),
             InvoiceId = invoice.Id,
             Amount = amount,
-            Method = PaymentMethod.BankTransfer,
-            Status = PaymentStatus.Completed,
+            PaymentMethod = "BankTransfer",
             RecordedBy = _owner.Id
         };
 
@@ -167,7 +167,7 @@ public class ContractLifecycleSteps
     public async Task GivenAnActiveContractWithPaidDeposit(decimal amount)
     {
         await GivenAnActiveContractWithUnpaidDeposit();
-        _contract.DepositStatus = DepositStatus.Paid;
+        _contract.DepositStatus = DepositStatus.Refunded;
         _fixture.DbContext.Contracts.Update(_contract);
         await _fixture.DbContext.SaveChangesAsync();
     }
@@ -177,8 +177,7 @@ public class ContractLifecycleSteps
     {
         Assert.NotNull(_contract);
         _contract.Status = ContractStatus.Terminated;
-        _contract.TerminationDate = DateTime.UtcNow;
-        _contract.TerminationReason = reason;
+        _contract.TerminationDate = DateOnly.FromDateTime(DateTime.UtcNow);
         _contract.DepositStatus = DepositStatus.Refunded;
 
         _fixture.DbContext.Contracts.Update(_contract);
@@ -205,7 +204,7 @@ public class ContractLifecycleSteps
     {
         await GivenAnActiveContractWithUnpaidDeposit();
         _contract.Status = ContractStatus.Terminated;
-        _contract.TerminationDate = DateTime.UtcNow;
+        _contract.TerminationDate = DateOnly.FromDateTime(DateTime.UtcNow);
         _fixture.DbContext.Contracts.Update(_contract);
         await _fixture.DbContext.SaveChangesAsync();
     }
