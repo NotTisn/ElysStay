@@ -2,6 +2,7 @@ using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 using Xunit;
+using System.Threading;
 
 namespace Tests.Integration.Fixtures;
 
@@ -10,33 +11,50 @@ namespace Tests.Integration.Fixtures;
 /// </summary>
 public class DatabaseFixture : IAsyncLifetime
 {
-    private PostgreSqlContainer? _container;
+    private static readonly SemaphoreSlim ContainerLock = new(1, 1);
+    private static PostgreSqlContainer? _sharedContainer;
+    private static bool _schemaMigrated;
+
     public ApplicationDbContext DbContext { get; private set; } = null!;
 
     public async Task InitializeAsync()
     {
-        _container = new PostgreSqlBuilder()
-            .WithImage("postgres:15")
-            .Build();
+        await ContainerLock.WaitAsync();
+        try
+        {
+            if (_sharedContainer is null)
+            {
+                _sharedContainer = new PostgreSqlBuilder()
+                    .WithImage("postgres:15")
+                    .Build();
 
-        await _container.StartAsync();
+                await _sharedContainer.StartAsync();
+            }
 
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseNpgsql(_container.GetConnectionString())
-            .Options;
+            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseNpgsql(_sharedContainer.GetConnectionString())
+                .Options;
 
-        DbContext = new ApplicationDbContext(options);
-        await DbContext.Database.MigrateAsync();
+            DbContext = new ApplicationDbContext(options);
+
+            if (!_schemaMigrated)
+            {
+                await DbContext.Database.MigrateAsync();
+                _schemaMigrated = true;
+            }
+        }
+        finally
+        {
+            ContainerLock.Release();
+        }
     }
 
     public async Task DisposeAsync()
     {
-        if (_container != null)
+        if (DbContext is not null)
         {
-            await _container.StopAsync();
-            await _container.DisposeAsync();
+            await DbContext.DisposeAsync();
         }
-        DbContext?.Dispose();
     }
 
     public async Task ResetAsync()

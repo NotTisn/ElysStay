@@ -3,4 +3,10 @@
   <Project Path="Application/Application.csproj" />
   <Project Path="Domain/Domain.csproj" />
   <Project Path="Infrastructure/Infrastructure.csproj" />
+  <Project Path="Tests.Unit/Tests.Unit.csproj" />
+  <Project Path="Tests.Unit.Domain/Tests.Unit.Domain.csproj" />
+  <Project Path="Tests.Unit.Application/Tests.Unit.Application.csproj" />
+  <Project Path="Tests.Integration/Tests.Integration.csproj" />
+  <Project Path="Tests.Integration.EFCore/Tests.Integration.EFCore.csproj" />
+  <Project Path="Tests.Acceptance/Tests.Acceptance.csproj" />
 </Solution>
