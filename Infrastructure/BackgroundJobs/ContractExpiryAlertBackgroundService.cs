@@ -19,13 +19,16 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ContractExpiryAlertBackgroundService> _logger;
+    private readonly BackgroundJobHealthCheck _healthCheck;
 
     public ContractExpiryAlertBackgroundService(
         IServiceProvider serviceProvider,
-        ILogger<ContractExpiryAlertBackgroundService> logger)
+        ILogger<ContractExpiryAlertBackgroundService> logger,
+        BackgroundJobHealthCheck healthCheck)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _healthCheck = healthCheck;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -36,15 +39,34 @@ public class ContractExpiryAlertBackgroundService : BackgroundService
         {
             try
             {
-                await RunOnceAsync(stoppingToken);
+                var retries = 3;
+                while (retries > 0)
+                {
+                    try
+                    {
+                        await RunOnceAsync(stoppingToken);
+                        _healthCheck.ReportJobRun("ContractExpiryAlert");
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        retries--;
+                        if (retries == 0)
+                        {
+                            _logger.LogError(ex, "ContractExpiryAlertJob failed after retries.");
+                            _healthCheck.ReportJobError("ContractExpiryAlert", ex);
+                        }
+                        else
+                        {
+                            _logger.LogWarning(ex, "ContractExpiryAlertJob error, retrying... ({RetriesLeft} retries left)", retries);
+                            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                        }
+                    }
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 break;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Contract expiry alert background job failed");
             }
 
             var now = DateTime.UtcNow;

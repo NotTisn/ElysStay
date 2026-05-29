@@ -55,7 +55,8 @@ builder.Services.AddCors(options =>
 });
 
 // Basic health checks
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddCheck<Infrastructure.BackgroundJobs.BackgroundJobHealthCheck>("background_jobs");
 
 // Infrastructure: DbContext, Auth services, Keycloak admin client
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -99,6 +100,9 @@ builder.Services.AddAuthorization();
 
 // ================= RATE LIMITING =================
 // AUTH-04: Fixed window rate limiting per IP address.
+var rateLimitMeter = new System.Diagnostics.Metrics.Meter("ElysStay.RateLimiting");
+var rateLimitRejectedCounter = rateLimitMeter.CreateCounter<int>("rate_limit_rejected_requests", description: "Number of rejected requests due to rate limiting");
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -106,7 +110,9 @@ builder.Services.AddRateLimiter(options =>
     options.OnRejected = async (context, _) =>
     {
         context.HttpContext.Response.Headers.RetryAfter = "60";
-        Log.Warning("Rate limit exceeded for {IP}", GetClientIp(context.HttpContext));
+        var ip = GetClientIp(context.HttpContext);
+        Log.Warning("Rate limit exceeded for {IP}", ip);
+        rateLimitRejectedCounter.Add(1, new KeyValuePair<string, object?>("client_ip", ip));
         await Task.CompletedTask;
     };
 
