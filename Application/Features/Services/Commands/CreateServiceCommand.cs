@@ -47,12 +47,16 @@ public class CreateServiceCommandHandler : IRequestHandler<CreateServiceCommand,
         if (duplicateExists)
             throw new ConflictException($"Dịch vụ tên '{request.Name.Trim()}' đã tồn tại trong tòa nhà này.", "DUPLICATE_SERVICE_NAME");
 
+        var normalizedUnitPrice = decimal.Round(request.UnitPrice, 2, MidpointRounding.AwayFromZero);
+        if (normalizedUnitPrice <= 0)
+            throw new BadRequestException("Đơn giá phải lớn hơn 0 sau khi chuẩn hóa đến 2 chữ số thập phân.");
+
         var service = new Service
         {
             BuildingId = request.BuildingId,
             Name = request.Name.Trim(),
             Unit = request.Unit.Trim(),
-            UnitPrice = request.UnitPrice,
+            UnitPrice = normalizedUnitPrice,
             IsMetered = request.IsMetered
         };
 

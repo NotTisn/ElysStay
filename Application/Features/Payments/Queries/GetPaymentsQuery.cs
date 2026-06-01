@@ -106,6 +106,7 @@ public class GetPaymentsQueryHandler : IRequestHandler<GetPaymentsQuery, PagedRe
                 Type = p.Type.ToString(),
                 Amount = p.Amount,
                 PaymentMethod = p.PaymentMethod,
+                ReferenceCode = p.ReferenceCode,
                 Note = p.Note,
                 PaidAt = p.PaidAt,
                 RecordedBy = p.RecordedBy,

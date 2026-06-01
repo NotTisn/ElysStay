@@ -12,6 +12,7 @@ public record PaymentDto
     public required string Type { get; init; }
     public required decimal Amount { get; init; }
     public string? PaymentMethod { get; init; }
+    public string? ReferenceCode { get; init; }
     public string? Note { get; init; }
     public required DateTime PaidAt { get; init; }
     public required Guid RecordedBy { get; init; }

@@ -85,4 +85,17 @@ public class PaymentsController : BaseApiController
         var result = await _mediator.Send(command, ct);
         return OkResponse(result, $"Ghi nhận thành công {result.Count} thanh toán");
     }
+
+    /// <summary>
+    /// Process a bank-transfer webhook payload with idempotency on ReferenceCode.
+    /// PAY-07 / PAY-08: apply once, ignore duplicate replay.
+    /// </summary>
+    [HttpPost("webhook/bank-transfer")]
+    [Authorize(Roles = "Owner,Staff")]
+    [EnableRateLimiting("sensitive")]
+    public async Task<IActionResult> ProcessBankTransferWebhook([FromBody] ProcessPaymentWebhookCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return OkResponse(result, "Đã xử lý webhook thanh toán ngân hàng");
+    }
 }
