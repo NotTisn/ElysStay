@@ -61,8 +61,7 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PagedResult<U
             // Tenants: linked via Contract.TenantUserId or ContractTenants (roommates)
             var tenantIdsInOwnedBuildings = _db.Contracts
                 .Where(c => ownedBuildingIds.Contains(c.Room!.BuildingId))
-                .SelectMany(c => new[] { c.TenantUserId }
-                    .Concat(c.ContractTenants.Select(ct => ct.TenantUserId)))
+                .SelectMany(c => c.ContractTenants.Select(ct => ct.TenantUserId))
                 .Distinct();
 
             // Staff: linked via StaffAssignments
@@ -86,8 +85,7 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PagedResult<U
 
             var tenantIdsInAssignedBuildings = _db.Contracts
                 .Where(c => assignedBuildingIds.Contains(c.Room!.BuildingId))
-                .SelectMany(c => new[] { c.TenantUserId }
-                    .Concat(c.ContractTenants.Select(ct => ct.TenantUserId)))
+                .SelectMany(c => c.ContractTenants.Select(ct => ct.TenantUserId))
                 .Distinct();
 
             query = query.Where(u => tenantIdsInAssignedBuildings.Contains(u.Id));

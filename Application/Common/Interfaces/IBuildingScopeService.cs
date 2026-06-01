@@ -11,6 +11,7 @@ public interface IBuildingScopeService
     /// Owner: always allowed.
     /// Staff: must have StaffAssignment for buildingId.
     /// Tenant: always denied (tenant access is per-endpoint).
+    /// Throws ForbiddenException if not authorized.
     /// </summary>
     Task AuthorizeAsync(Guid buildingId, CancellationToken ct = default);
 }

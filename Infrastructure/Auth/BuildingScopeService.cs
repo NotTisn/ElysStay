@@ -5,12 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Auth;
 
-/// <summary>
-/// Verifies the current user has access to a specific building.
-/// Owner: only own buildings.
-/// Staff: must have a StaffAssignment for the building.
-/// Tenant: denied (tenant access is handled per-endpoint).
-/// </summary>
 public class BuildingScopeService : IBuildingScopeService
 {
     private readonly IApplicationDbContext _db;

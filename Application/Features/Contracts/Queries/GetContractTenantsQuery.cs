@@ -36,7 +36,9 @@ public class GetContractTenantsQueryHandler : IRequestHandler<GetContractTenants
         // Tenant access check
         if (_currentUser.IsTenant)
         {
-            var isTenantOnContract = contract.TenantUserId == userId ||
+            var isTenantOnContract = contract.ContractTenants.Any(ct => ct.TenantUserId == userId);
+            if (!isTenantOnContract)
+                throw new Common.Exceptions.ForbiddenException("Bạn chỉ có thể xem danh sách người ở trong hợp đồng của mình.");
                 await _db.ContractTenants.AnyAsync(
                     ct => ct.ContractId == request.ContractId && ct.TenantUserId == userId,
                     cancellationToken);

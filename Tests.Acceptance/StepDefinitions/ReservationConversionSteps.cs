@@ -55,7 +55,7 @@ public class ReservationConversionSteps
         _building = TestDataBuilder.CreateBuilding(_owner.Id);
 
         _room = TestDataBuilder.CreateRoom(_building.Id);
-        _room.Status = RoomStatus.Booked;
+        _room.Status = RoomStatus.Reserved;
 
         await _fixture.DbContext.Buildings.AddAsync(_building);
         await _fixture.DbContext.Rooms.AddAsync(_room);

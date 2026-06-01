@@ -176,7 +176,7 @@ public class ChangeReservationStatusCommandHandler : IRequestHandler<ChangeReser
         }
 
         // SM-03: Room BOOKED → AVAILABLE (only if currently Booked)
-        if (reservation.Room!.Status == RoomStatus.Booked)
+        if (reservation.Room!.Status == RoomStatus.Reserved)
         {
             reservation.Room.Status = RoomStatus.Available;
             reservation.Room.UpdatedAt = DateTime.UtcNow;

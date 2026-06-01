@@ -57,13 +57,9 @@ public class GetPaymentsQueryHandler : IRequestHandler<GetPaymentsQuery, PagedRe
         }
         else if (_currentUser.IsTenant)
         {
-            // Only show payments for contracts where the tenant hasn't moved out.
-            // Without the MoveOutDate check, tenants see payments from old contracts forever.
             query = query.Where(p =>
-                (p.Invoice != null && (p.Invoice.Contract!.TenantUserId == userId ||
-                    p.Invoice.Contract!.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null))) ||
-                (p.Contract != null && (p.Contract.TenantUserId == userId ||
-                    p.Contract.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null))) ||
+                (p.Invoice != null && p.Invoice.Contract!.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null)) ||
+                (p.Contract != null && p.Contract.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null)) ||
                 (p.Reservation != null && p.Reservation.TenantUserId == userId));
         }
         else

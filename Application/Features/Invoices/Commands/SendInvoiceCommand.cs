@@ -6,10 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Invoices.Commands;
 
-/// <summary>
-/// Sends an invoice: DRAFT → SENT.
-/// SM-11.
-/// </summary>
 public record SendInvoiceCommand(Guid Id) : IRequest<Unit>;
 
 public class SendInvoiceCommandHandler : IRequestHandler<SendInvoiceCommand, Unit>
@@ -33,7 +29,7 @@ public class SendInvoiceCommandHandler : IRequestHandler<SendInvoiceCommand, Uni
 
         var invoice = await _db.Invoices
             .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
-            .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
+            .Include(i => i.Contract!).ThenInclude(c => c.ContractTenants).ThenInclude(ct => ct.Tenant!)
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Hóa đơn", request.Id);
 
@@ -48,7 +44,7 @@ public class SendInvoiceCommandHandler : IRequestHandler<SendInvoiceCommand, Uni
         // NT-01: Notify tenant about new invoice
         _db.Notifications.Add(new Domain.Entities.Notification
         {
-            UserId = invoice.Contract!.TenantUserId,
+            UserId = invoice.Contract!.ContractTenants.First(ct => ct.IsMainTenant).TenantUserId,
             Title = "Hóa đơn mới",
             Message = $"Hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear} đã được gửi.",
             Type = Domain.Constants.NotificationTypes.InvoiceSent,
@@ -65,12 +61,12 @@ public class SendInvoiceCommandHandler : IRequestHandler<SendInvoiceCommand, Uni
         }
 
         // Best-effort email to tenant (after successful save)
-        var tenant = invoice.Contract!.TenantUser!;
+        var mainTenant = invoice.Contract!.ContractTenants.First(ct => ct.IsMainTenant);
         var room = invoice.Contract!.Room!;
         var (subject, html) = Application.Common.Email.EmailTemplates.InvoiceSent(
-            tenant.FullName, room.RoomNumber, room.Building!.Name,
+            mainTenant.Tenant!.FullName, room.RoomNumber, room.Building!.Name,
             invoice.BillingMonth, invoice.BillingYear, invoice.TotalAmount, invoice.DueDate);
-        await _emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, cancellationToken);
+        await _emailService.TrySendAsync(mainTenant.Tenant!.Email, mainTenant.Tenant!.FullName, subject, html, cancellationToken);
 
         return Unit.Value;
     }

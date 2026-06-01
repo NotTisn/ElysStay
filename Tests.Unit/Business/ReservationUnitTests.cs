@@ -65,14 +65,17 @@ public class ReservationUnitTests
         var contract = new Contract
         {
             RoomId = reservation.RoomId,
-            TenantUserId = reservation.TenantUserId,
-            Status = ContractStatus.Active
+            Status = ContractStatus.Active,
+            ContractTenants = new List<ContractTenant>
+            {
+                new() { TenantUserId = reservation.TenantUserId, IsMainTenant = true, MoveInDate = DateOnly.FromDateTime(DateTime.UtcNow) }
+            }
         };
 
         // Assert
         reservation.Status.Should().Be(ReservationStatus.Converted);
         contract.Status.Should().Be(ContractStatus.Active);
         contract.RoomId.Should().Be(reservation.RoomId);
-        contract.TenantUserId.Should().Be(reservation.TenantUserId);
+        contract.ContractTenants.First(ct => ct.IsMainTenant).TenantUserId.Should().Be(reservation.TenantUserId);
     }
 }

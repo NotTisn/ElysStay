@@ -52,10 +52,8 @@ public class GetPaymentSummaryQueryHandler : IRequestHandler<GetPaymentSummaryQu
         else if (_currentUser.IsTenant)
         {
             query = query.Where(p =>
-                (p.Invoice != null && (p.Invoice.Contract!.TenantUserId == userId ||
-                    p.Invoice.Contract!.ContractTenants.Any(ct => ct.TenantUserId == userId))) ||
-                (p.Contract != null && (p.Contract.TenantUserId == userId ||
-                    p.Contract.ContractTenants.Any(ct => ct.TenantUserId == userId))) ||
+                (p.Invoice != null && p.Invoice.Contract!.ContractTenants.Any(ct => ct.TenantUserId == userId)) ||
+                (p.Contract != null && p.Contract.ContractTenants.Any(ct => ct.TenantUserId == userId)) ||
                 (p.Reservation != null && p.Reservation.TenantUserId == userId));
         }
         else

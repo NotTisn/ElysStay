@@ -54,7 +54,7 @@ public class RecordPaymentCommandHandler : IRequestHandler<RecordPaymentCommand,
         {
             var invoice = await _db.Invoices
                 .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
-                .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
+                .Include(i => i.Contract!).ThenInclude(c => c.ContractTenants).ThenInclude(ct => ct.Tenant!)
                 .Include(i => i.Payments)
                 .FirstOrDefaultAsync(i => i.Id == request.InvoiceId, cancellationToken)
                 ?? throw new NotFoundException("Hóa đơn", request.InvoiceId);
@@ -100,10 +100,12 @@ public class RecordPaymentCommandHandler : IRequestHandler<RecordPaymentCommand,
 
             invoice.UpdatedAt = DateTime.UtcNow;
 
+            var mainTenant = invoice.Contract!.ContractTenants.First(ct => ct.IsMainTenant);
+
             // NT-05: Notify tenant that payment was recorded
             _db.Notifications.Add(new Domain.Entities.Notification
             {
-                UserId = invoice.Contract!.TenantUserId,
+                UserId = mainTenant.TenantUserId,
                 Title = "Thanh toán ghi nhận",
                 Message = $"Thanh toán {request.Amount:N0}đ đã được ghi nhận cho hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear}.",
                 Type = Domain.Constants.NotificationTypes.PaymentRecorded,
@@ -114,7 +116,7 @@ public class RecordPaymentCommandHandler : IRequestHandler<RecordPaymentCommand,
             await transaction.CommitAsync(cancellationToken);
 
             // Best-effort email to tenant (after successful commit)
-            var tenant = invoice.Contract!.TenantUser!;
+            var tenant = mainTenant.Tenant!;
             var room = invoice.Contract!.Room!;
             var (subject, html) = Application.Common.Email.EmailTemplates.PaymentRecorded(
                 tenant.FullName, room.RoomNumber, room.Building!.Name,

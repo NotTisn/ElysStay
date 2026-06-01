@@ -94,7 +94,7 @@ public class CreateReservationCommandHandler : IRequestHandler<CreateReservation
         _db.RoomReservations.Add(reservation);
 
         // SM-01: AVAILABLE → BOOKED
-        room.Status = RoomStatus.Booked;
+        room.Status = RoomStatus.Reserved;
         room.UpdatedAt = DateTime.UtcNow;
 
         try

@@ -126,7 +126,7 @@ public class ReservationExpiryBackgroundService : BackgroundService
             });
         }
 
-        if (reservation.Room is not null && reservation.Room.Status == RoomStatus.Booked)
+        if (reservation.Room is not null && reservation.Room.Status == RoomStatus.Reserved)
         {
             reservation.Room.Status = RoomStatus.Available;
             reservation.Room.UpdatedAt = now;

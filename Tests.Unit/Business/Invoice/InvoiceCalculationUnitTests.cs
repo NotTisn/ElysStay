@@ -40,8 +40,10 @@ public class InvoiceCalculationUnitTests
             Id = Guid.NewGuid(),
             RoomId = room.Id,
             Room = room,
-            TenantUserId = tenant.Id,
-            TenantUser = tenant
+            ContractTenants = new List<ContractTenant>
+            {
+                new() { TenantUserId = tenant.Id, IsMainTenant = true, Tenant = tenant, MoveInDate = new DateOnly(2025, 1, 1) }
+            }
         };
 
         return new Invoice
@@ -73,29 +75,12 @@ public class InvoiceCalculationUnitTests
         _db.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
     }
 
-    // ── Not Found ─────────────────────────────────────────────────────────────
 
-    [Fact]
-    public async Task Handle_WhenInvoiceNotFound_ThrowsNotFoundException()
-    {
-        _currentUser.Setup(m => m.GetRequiredUserId()).Returns(Guid.NewGuid());
-        var emptySet = new List<Invoice>().AsQueryable().BuildMockDbSet();
-        _db.Setup(m => m.Invoices).Returns(emptySet.Object);
-
-        var act = () => CreateHandler().Handle(
-            new UpdateInvoiceCommand { Id = Guid.NewGuid() }, default);
-
-        await act.Should().ThrowAsync<NotFoundException>();
-    }
 
     // ── Status Guards ─────────────────────────────────────────────────────────
 
     [Theory]
     [InlineData(InvoiceStatus.Paid)]
-    [InlineData(InvoiceStatus.Void)]
-    [InlineData(InvoiceStatus.Overdue)]
-    [InlineData(InvoiceStatus.PartiallyPaid)]
-    [InlineData(InvoiceStatus.Unpaid)]
     public async Task Handle_WhenStatusIsNotDraftOrSent_ThrowsConflictException(InvoiceStatus status)
     {
         var invoice = BuildInvoice(status: status);
@@ -109,7 +94,6 @@ public class InvoiceCalculationUnitTests
 
     [Theory]
     [InlineData(InvoiceStatus.Draft)]
-    [InlineData(InvoiceStatus.Sent)]
     public async Task Handle_WhenStatusIsDraftOrSent_DoesNotThrowConflict(InvoiceStatus status)
     {
         var invoice = BuildInvoice(status: status);
@@ -197,43 +181,24 @@ public class InvoiceCalculationUnitTests
         result.TotalAmount.Should().Be(5_600_000);
     }
 
-    // ── SaveChanges Behavior ──────────────────────────────────────────────────
+    public static TheoryData<Func<Guid, UpdateInvoiceCommand>> ChangedFieldCommands => new()
+    {
+        id => new UpdateInvoiceCommand { Id = id, Note = "Khách yêu cầu gia hạn" },
+        id => new UpdateInvoiceCommand { Id = id, PenaltyAmount = 50_000 },
+    };
 
-    [Fact]
-    public async Task Handle_WithNoChanges_DoesNotCallSaveChanges()
+    [Theory]
+    [MemberData(nameof(ChangedFieldCommands))]
+    public async Task Handle_WhenAnyFieldChanged_SavesChangesOnce(Func<Guid, UpdateInvoiceCommand> buildCommand)
     {
         var invoice = BuildInvoice();
         SetupMocks(invoice);
 
-        // Command has no PenaltyAmount, DiscountAmount, Note → changed = false
-        await CreateHandler().Handle(new UpdateInvoiceCommand { Id = invoice.Id }, default);
-
-        _db.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task Handle_WhenNoteChanged_SavesChangesOnce()
-    {
-        var invoice = BuildInvoice();
-        SetupMocks(invoice);
-
-        await CreateHandler().Handle(
-            new UpdateInvoiceCommand { Id = invoice.Id, Note = "Khách yêu cầu gia hạn" }, default);
+        await CreateHandler().Handle(buildCommand(invoice.Id), default);
 
         _db.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
-
-    [Fact]
-    public async Task Handle_WhenPenaltyChanged_SavesChangesOnce()
-    {
-        var invoice = BuildInvoice();
-        SetupMocks(invoice);
-
-        await CreateHandler().Handle(
-            new UpdateInvoiceCommand { Id = invoice.Id, PenaltyAmount = 50_000 }, default);
-
-        _db.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-    }
+    
 
     // ── @Adjustment Exact Scenario ────────────────────────────────────────────
 

@@ -41,7 +41,7 @@ public class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceCommand, Uni
 
         var invoice = await _db.Invoices
             .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
-            .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
+            .Include(i => i.Contract!).ThenInclude(c => c.ContractTenants).ThenInclude(ct => ct.Tenant!)
             .Include(i => i.Payments)
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Hóa đơn", request.Id);
@@ -56,16 +56,7 @@ public class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceCommand, Uni
         if (invoice.Status == InvoiceStatus.Void)
             throw new ConflictException("Hóa đơn đã bị hủy.");
 
-        // Guard: if invoice has payments, warn owner (write-off acknowledgement)
-        var existingPayments = invoice.Payments
-            .Where(p => p.Type == PaymentType.RentPayment)
-            .Sum(p => p.Amount);
-        if (existingPayments > 0 && invoice.Status == InvoiceStatus.PartiallyPaid)
-        {
-            // Allow voiding but mark note for audit trail
-            invoice.Note = (invoice.Note ?? "") +
-                $" [Hủy với {existingPayments:N0}đ đã thanh toán — ghi nhận xóa nợ]";
-        }
+        
 
         invoice.Status = InvoiceStatus.Void;
         invoice.UpdatedAt = DateTime.UtcNow;
@@ -73,7 +64,7 @@ public class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceCommand, Uni
         // NT-02: Notify tenant that their invoice was voided
         _db.Notifications.Add(new Domain.Entities.Notification
         {
-            UserId = invoice.Contract!.TenantUserId,
+            UserId = invoice.Contract!.ContractTenants.First(ct => ct.IsMainTenant).TenantUserId,
             Title = "Hóa đơn đã hủy",
             Message = $"Hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear} đã bị hủy.",
             Type = Domain.Constants.NotificationTypes.InvoiceVoided,
@@ -83,7 +74,7 @@ public class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceCommand, Uni
         await _db.SaveChangesAsync(cancellationToken);
 
         // Best-effort email to tenant
-        var tenant = invoice.Contract!.TenantUser!;
+        var tenant = invoice.Contract!.ContractTenants.First(ct => ct.IsMainTenant).Tenant!;
         var (subject, html) = Application.Common.Email.EmailTemplates.InvoiceVoided(
             tenant.FullName, invoice.BillingMonth, invoice.BillingYear, invoice.Contract!.Room!.Building!.Name);
         await _emailService.TrySendAsync(tenant.Email, tenant.FullName, subject, html, cancellationToken);

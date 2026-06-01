@@ -6,7 +6,13 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Contracts.Commands;
-
+    public record UpdateContractCommand : IRequest<ContractDto>
+{
+    public Guid Id { get; init; }
+    public DateOnly? EndDate { get; init; }
+    public decimal? MonthlyRent { get; init; }
+    public string? Note { get; init; }
+}
 public class UpdateContractCommandHandler : IRequestHandler<UpdateContractCommand, ContractDto>
 {
     private readonly IApplicationDbContext _db;
@@ -23,65 +29,65 @@ public class UpdateContractCommandHandler : IRequestHandler<UpdateContractComman
         _buildingScope = buildingScope;
     }
 
-    public async Task<ContractDto> Handle(UpdateContractCommand request, CancellationToken cancellationToken)
+
+    public async Task<ContractDto> Handle(
+    UpdateContractCommand request,
+    CancellationToken cancellationToken)
     {
         _currentUser.GetRequiredUserId();
 
         var contract = await _db.Contracts
-            .Include(c => c.Room!).ThenInclude(r => r.Building!)
-            .Include(c => c.TenantUser!)
+            .Include(c => c.Room!)
+                .ThenInclude(r => r.Building!)
+            .Include(c => c.ContractTenants)
+                .ThenInclude(ct => ct.Tenant!)
+            .Include(c => c.Creator!)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Hợp đồng", request.Id);
 
-        // Must be active
         if (contract.Status != ContractStatus.Active)
             throw new ConflictException("Chỉ có thể cập nhật hợp đồng đang hoạt động.");
 
-        // Building scope auth
         await _buildingScope.AuthorizeAsync(contract.Room!.BuildingId, cancellationToken);
-
-        // Apply partial updates (CT-03: cannot change roomId, tenantUserId)
-        var changed = false;
-
-        if (request.EndDate.HasValue)
+        // Status transitions for contracts are handled by dedicated commands:
+        //   Active → Terminated : TerminateContractCommand (with deposit refund + room status)
+        //   Active → Renewed    : RenewContractCommand (creates new contract)
+        // UpdateContractCommand intentionally does not support status changes.
+        // Gia han hop dong 
+        if (request.EndDate is not null)
         {
             if (request.EndDate.Value <= contract.StartDate)
                 throw new BadRequestException("Ngày kết thúc phải sau ngày bắt đầu.");
 
             contract.EndDate = request.EndDate.Value;
-            changed = true;
         }
 
-        if (request.MonthlyRent.HasValue)
+        if (request.MonthlyRent is not null)
         {
             if (request.MonthlyRent.Value <= 0)
                 throw new BadRequestException("Tiền thuê hàng tháng phải lớn hơn 0.");
 
             contract.MonthlyRent = request.MonthlyRent.Value;
-            changed = true;
         }
 
         if (request.Note is not null)
-        {
             contract.Note = request.Note;
-            changed = true;
-        }
 
-        if (changed)
-        {
-            contract.UpdatedAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync(cancellationToken);
-        }
+        contract.UpdatedAt = DateTime.UtcNow;
 
+        await _db.SaveChangesAsync(cancellationToken);
+
+        var mainTenant = contract.ContractTenants.FirstOrDefault(ct => ct.IsMainTenant)
+            ?? throw new InvalidOperationException("Hợp đồng không có tenant chính.");
         return new ContractDto
         {
             Id = contract.Id,
             RoomId = contract.RoomId,
-            RoomNumber = contract.Room!.RoomNumber,
+            RoomNumber = contract.Room.RoomNumber,
             BuildingId = contract.Room.BuildingId,
             BuildingName = contract.Room.Building!.Name,
-            TenantUserId = contract.TenantUserId,
-            TenantName = contract.TenantUser!.FullName,
+            TenantUserId = mainTenant.TenantUserId,
+            TenantName = mainTenant.Tenant!.FullName,
             ReservationId = contract.ReservationId,
             StartDate = contract.StartDate,
             EndDate = contract.EndDate,
@@ -93,8 +99,8 @@ public class UpdateContractCommandHandler : IRequestHandler<UpdateContractComman
             TerminationDate = contract.TerminationDate,
             TerminationNote = contract.TerminationNote,
             RefundAmount = contract.RefundAmount,
-            Note = contract.Note,
             CreatedBy = contract.CreatedBy,
+            Note = contract.Note,
             CreatedAt = contract.CreatedAt,
             UpdatedAt = contract.UpdatedAt
         };

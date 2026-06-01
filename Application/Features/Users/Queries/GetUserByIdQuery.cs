@@ -43,8 +43,7 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto
                 throw new ForbiddenException("Nhân viên chỉ có thể xem hồ sơ của mình và khách thuê trong tòa nhà được phân công.");
 
             var canViewTenant = await _db.Contracts
-                .AnyAsync(c => (c.TenantUserId == user.Id
-                        || c.ContractTenants.Any(ctn => ctn.TenantUserId == user.Id && ctn.MoveOutDate == null))
+                .AnyAsync(c => c.ContractTenants.Any(ctn => ctn.TenantUserId == user.Id)
                     && c.Room!.Building!.BuildingStaffs.Any(bs => bs.StaffId == callerId), ct);
 
             if (!canViewTenant)
@@ -59,8 +58,7 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto
                 UserRole.Staff => await _db.StaffAssignments
                     .AnyAsync(sa => sa.StaffId == user.Id && sa.Building!.OwnerId == callerId, ct),
                 UserRole.Tenant => await _db.Contracts
-                    .AnyAsync(c => (c.TenantUserId == user.Id
-                            || c.ContractTenants.Any(ctn => ctn.TenantUserId == user.Id && ctn.MoveOutDate == null))
+                    .AnyAsync(c => c.ContractTenants.Any(ctn => ctn.TenantUserId == user.Id)
                         && c.Room!.Building!.OwnerId == callerId, ct),
                 _ => false
             };

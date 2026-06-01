@@ -149,7 +149,7 @@ public class ChangeRoomStatusIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Handle_BookedRoom_ThrowsConflict_StatusUnchangedInDatabase()
     {
-        await SeedAsync(RoomStatus.Booked);
+        await SeedAsync(RoomStatus.Reserved);
 
         var act = () => CreateHandler().Handle(
             new ChangeRoomStatusCommand { Id = _room.Id, Status = "Available" }, default);
@@ -157,7 +157,7 @@ public class ChangeRoomStatusIntegrationTests : IAsyncLifetime
         await act.Should().ThrowAsync<ConflictException>();
 
         var dbRoom = await _fixture.DbContext.Rooms.FindAsync(_room.Id);
-        dbRoom!.Status.Should().Be(RoomStatus.Booked);
+        dbRoom!.Status.Should().Be(RoomStatus.Reserved);
     }
 
     [Fact]

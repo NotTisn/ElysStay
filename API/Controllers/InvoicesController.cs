@@ -6,13 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
-
-/// <summary>
-/// Invoice management endpoints.
-/// All authenticated users can list/view (scoped by role).
-/// Owner/Staff can generate, edit, send.
-/// Owner only can void.
-/// </summary>
 [Authorize]
 public class InvoicesController : BaseApiController
 {
@@ -23,10 +16,6 @@ public class InvoicesController : BaseApiController
         _mediator = mediator;
     }
 
-    /// <summary>
-    /// List invoices with filters and pagination.
-    /// Tenant: auto-filtered to own invoices.
-    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetInvoices(
         [FromQuery] Guid? buildingId,
@@ -81,6 +70,27 @@ public class InvoicesController : BaseApiController
     }
 
     /// <summary>
+    /// Generate invoice for a single room's active contract.
+    /// Owner/Staff only.
+    /// </summary>
+    [HttpPost("generate/room/{roomId:guid}")]
+    [Authorize(Roles = "Owner,Staff")]
+    public async Task<IActionResult> GenerateRoomInvoice(
+        Guid roomId,
+        [FromBody] GenerateRoomInvoiceRequest request,
+        CancellationToken ct)
+    {
+        var command = new GenerateRoomInvoiceCommand
+        {
+            RoomId = roomId,
+            BillingYear = request.BillingYear,
+            BillingMonth = request.BillingMonth
+        };
+        var result = await _mediator.Send(command, ct);
+        return CreatedResponse(result, message: "Tạo hóa đơn thành công");
+    }
+
+    /// <summary>
     /// Edit penalty/discount on an invoice.
     /// Only DRAFT or SENT invoices. Owner/Staff only.
     /// </summary>
@@ -100,10 +110,6 @@ public class InvoicesController : BaseApiController
         return OkResponse(result);
     }
 
-    /// <summary>
-    /// Send invoice: DRAFT → SENT.
-    /// Owner/Staff only.
-    /// </summary>
     [HttpPatch("{id:guid}/send")]
     [Authorize(Roles = "Owner,Staff")]
     public async Task<IActionResult> SendInvoice(Guid id, CancellationToken ct)
@@ -170,6 +176,12 @@ public class InvoicesController : BaseApiController
 }
 
 // ── Request DTOs ──────────────────────────────────────────────
+
+public record GenerateRoomInvoiceRequest
+{
+    public required int BillingYear { get; init; }
+    public required int BillingMonth { get; init; }
+}
 
 public record UpdateInvoiceRequest
 {

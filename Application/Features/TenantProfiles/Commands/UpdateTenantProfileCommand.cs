@@ -54,8 +54,7 @@ public class UpdateTenantProfileCommandHandler : IRequestHandler<UpdateTenantPro
         if (_currentUser.IsOwner)
         {
             var hasTenantInBuildings = await _db.Contracts
-                .AnyAsync(c => (c.TenantUserId == request.UserId
-                        || c.ContractTenants.Any(ctn => ctn.TenantUserId == request.UserId && ctn.MoveOutDate == null))
+                .AnyAsync(c => c.ContractTenants.Any(ctn => ctn.TenantUserId == request.UserId)
                     && c.Room!.Building!.OwnerId == userId, ct);
             if (!hasTenantInBuildings)
                 throw new ForbiddenException("Khách thuê này không thuộc tòa nhà nào của bạn.");
@@ -63,8 +62,7 @@ public class UpdateTenantProfileCommandHandler : IRequestHandler<UpdateTenantPro
         else if (_currentUser.IsStaff)
         {
             var hasTenantInBuildings = await _db.Contracts
-                .AnyAsync(c => (c.TenantUserId == request.UserId
-                        || c.ContractTenants.Any(ctn => ctn.TenantUserId == request.UserId && ctn.MoveOutDate == null))
+                .AnyAsync(c => c.ContractTenants.Any(ctn => ctn.TenantUserId == request.UserId)
                     && c.Room!.Building!.BuildingStaffs.Any(s => s.StaffId == userId), ct);
             if (!hasTenantInBuildings)
                 throw new ForbiddenException("Khách thuê này không thuộc tòa nhà nào bạn được phân công.");

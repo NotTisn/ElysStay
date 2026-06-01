@@ -244,7 +244,7 @@ public static class DevDataSeeder
             Area = 28,
             Price = 4_500_000,
             MaxOccupants = 2,
-            Status = RoomStatus.Booked,
+            Status = RoomStatus.Reserved,
         };
 
         var room103 = new Room

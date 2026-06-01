@@ -33,8 +33,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
 
         var oldContract = await _db.Contracts
             .Include(c => c.Room!).ThenInclude(r => r.Building!)
-            .Include(c => c.TenantUser!)
-            .Include(c => c.ContractTenants)
+            .Include(c => c.ContractTenants).ThenInclude(ct => ct.Tenant!)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Hợp đồng", request.Id);
 
@@ -66,11 +65,12 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
         // Deposit carries over — deposit status stays Held on old contract
         // (the deposit is logically transferred to the new contract)
 
+        var oldMainTenant = oldContract.ContractTenants.First(ct => ct.IsMainTenant);
+
         // 2. Create new contract
         var newContract = new Contract
         {
             RoomId = oldContract.RoomId,
-            TenantUserId = oldContract.TenantUserId,
             StartDate = newStartDate,
             EndDate = request.NewEndDate,
             MoveInDate = newStartDate, // same as start for renewal
@@ -133,7 +133,7 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
         // Notify tenant about contract renewal
         _db.Notifications.Add(new Notification
         {
-            UserId = oldContract.TenantUserId,
+            UserId = oldMainTenant.TenantUserId,
             Title = "Hợp đồng đã gia hạn",
             Message = $"Hợp đồng phòng {oldContract.Room!.RoomNumber} tại {oldContract.Room.Building!.Name} đã được gia hạn đến {request.NewEndDate:dd/MM/yyyy}.",
             Type = Domain.Constants.NotificationTypes.ContractRenewed,
@@ -153,9 +153,9 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
 
         // Best-effort email to tenant (after successful save)
         var (subject, html) = Application.Common.Email.EmailTemplates.ContractRenewed(
-            oldContract.TenantUser!.FullName, oldContract.Room!.RoomNumber,
+            oldMainTenant.Tenant!.FullName, oldContract.Room!.RoomNumber,
             oldContract.Room.Building!.Name, request.NewEndDate);
-        await _emailService.TrySendAsync(oldContract.TenantUser.Email, oldContract.TenantUser.FullName, subject, html, cancellationToken);
+        await _emailService.TrySendAsync(oldMainTenant.Tenant.Email, oldMainTenant.Tenant.FullName, subject, html, cancellationToken);
 
         return new ContractDto
         {
@@ -164,8 +164,8 @@ public class RenewContractCommandHandler : IRequestHandler<RenewContractCommand,
             RoomNumber = oldContract.Room!.RoomNumber,
             BuildingId = oldContract.Room.BuildingId,
             BuildingName = oldContract.Room.Building!.Name,
-            TenantUserId = newContract.TenantUserId,
-            TenantName = oldContract.TenantUser!.FullName,
+            TenantUserId = oldMainTenant.TenantUserId,
+            TenantName = oldMainTenant.Tenant!.FullName,
             ReservationId = newContract.ReservationId,
             StartDate = newContract.StartDate,
             EndDate = newContract.EndDate,

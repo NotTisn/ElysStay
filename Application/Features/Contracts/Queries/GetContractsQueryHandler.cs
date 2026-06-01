@@ -35,10 +35,7 @@ public class GetContractsQueryHandler : IRequestHandler<GetContractsQuery, Paged
         }
         else if (_currentUser.IsTenant)
         {
-            // Tenant sees only contracts where they are the main tenant or a roommate
-            query = query.Where(c =>
-                c.TenantUserId == userId ||
-                c.ContractTenants.Any(ct => ct.TenantUserId == userId));
+            query = query.Where(c => c.ContractTenants.Any(ct => ct.TenantUserId == userId));
         }
 
         // Filters
@@ -49,9 +46,7 @@ public class GetContractsQueryHandler : IRequestHandler<GetContractsQuery, Paged
             query = query.Where(c => c.RoomId == request.RoomId.Value);
 
         if (request.TenantUserId.HasValue)
-            query = query.Where(c =>
-                c.TenantUserId == request.TenantUserId.Value ||
-                c.ContractTenants.Any(ct => ct.TenantUserId == request.TenantUserId.Value));
+            query = query.Where(c => c.ContractTenants.Any(ct => ct.TenantUserId == request.TenantUserId.Value));
 
         if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<ContractStatus>(request.Status, true, out var status))
             query = query.Where(c => c.Status == status);
@@ -68,8 +63,8 @@ public class GetContractsQueryHandler : IRequestHandler<GetContractsQuery, Paged
                 RoomNumber = c.Room!.RoomNumber,
                 BuildingId = c.Room.BuildingId,
                 BuildingName = c.Room.Building!.Name,
-                TenantUserId = c.TenantUserId,
-                TenantName = c.TenantUser!.FullName,
+                TenantUserId = c.ContractTenants.Where(ct => ct.IsMainTenant).Select(ct => ct.TenantUserId).FirstOrDefault(),
+                TenantName = c.ContractTenants.Where(ct => ct.IsMainTenant).Select(ct => ct.Tenant!.FullName).FirstOrDefault() ?? "",
                 ReservationId = c.ReservationId,
                 StartDate = c.StartDate,
                 EndDate = c.EndDate,

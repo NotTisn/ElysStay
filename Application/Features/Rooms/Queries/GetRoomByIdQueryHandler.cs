@@ -38,7 +38,7 @@ public class GetRoomByIdQueryHandler : IRequestHandler<GetRoomByIdQuery, RoomDto
             var hasContract = await _db.Contracts
                 .AnyAsync(c => c.RoomId == request.Id
                     && c.Status == ContractStatus.Active
-                    && (c.TenantUserId == userId || c.ContractTenants.Any(ct => ct.TenantUserId == userId)),
+                    && c.ContractTenants.Any(ct => ct.TenantUserId == userId),
                     cancellationToken);
             if (!hasContract)
                 throw new ForbiddenException("Bạn chỉ có thể xem phòng mà bạn có hợp đồng đang hoạt động.");

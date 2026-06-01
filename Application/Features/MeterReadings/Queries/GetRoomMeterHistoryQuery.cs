@@ -32,7 +32,7 @@ public class GetRoomMeterHistoryQueryHandler : IRequestHandler<GetRoomMeterHisto
 
         var room = await _db.Rooms
             .AsNoTracking()
-            .Include(r => r.Building!)
+            .Include(r => r.Building!).ThenInclude(b => b.BuildingStaffs)
             .FirstOrDefaultAsync(r => r.Id == request.RoomId, cancellationToken)
             ?? throw new NotFoundException("Phòng", request.RoomId);
 
@@ -44,9 +44,7 @@ public class GetRoomMeterHistoryQueryHandler : IRequestHandler<GetRoomMeterHisto
         }
         else if (_currentUser.IsStaff)
         {
-            var isAssigned = await _db.StaffAssignments
-                .AnyAsync(sa => sa.BuildingId == room.BuildingId && sa.StaffId == userId, cancellationToken);
-            if (!isAssigned)
+            if (!room.Building!.BuildingStaffs.Any(bs => bs.StaffId == userId))
                 throw new ForbiddenException("Bạn không được phân công cho tòa nhà này.");
         }
         else if (_currentUser.IsTenant)
@@ -54,7 +52,7 @@ public class GetRoomMeterHistoryQueryHandler : IRequestHandler<GetRoomMeterHisto
             var hasTenantAccess = await _db.Contracts
                 .AnyAsync(c => c.RoomId == request.RoomId &&
                               c.Status == Domain.Enums.ContractStatus.Active &&
-                              (c.TenantUserId == userId || c.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null)),
+                              c.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null),
                           cancellationToken);
             if (!hasTenantAccess)
                 throw new ForbiddenException("Bạn không có quyền truy cập chỉ số của phòng này.");

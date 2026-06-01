@@ -98,7 +98,7 @@ public class PostMoveOutMaintenanceSteps
     [Given("the room is in Booked status")]
     public async Task GivenTheRoomIsInBookedStatus()
     {
-        _room.Status = RoomStatus.Booked;
+        _room.Status = RoomStatus.Reserved;
         _fixture.DbContext.Rooms.Update(_room);
         await _fixture.DbContext.SaveChangesAsync();
         _fixture.DbContext.ChangeTracker.Clear();

@@ -42,10 +42,10 @@ public class RoomAvailabilityUnitTests
     public void RoomStatus_Booked_CannotBeReserved()
     {
         // Arrange & Act
-        var status = RoomStatus.Booked;
+        var status = RoomStatus.Reserved;
 
         // Assert
-        status.Should().Be(RoomStatus.Booked);
+        status.Should().Be(RoomStatus.Reserved);
         status.Should().NotBe(RoomStatus.Available);
     }
 
@@ -58,7 +58,7 @@ public class RoomAvailabilityUnitTests
             RoomStatus.Available,
             RoomStatus.Occupied,
             RoomStatus.Maintenance,
-            RoomStatus.Booked
+            RoomStatus.Reserved
         };
 
         // Assert

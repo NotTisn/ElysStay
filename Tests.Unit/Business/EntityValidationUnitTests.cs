@@ -53,14 +53,18 @@ public class EntityValidationUnitTests
     public void Contract_MustHaveTenant_RequiredField()
     {
         // Arrange
+        var tenantId = Guid.NewGuid();
         var contract = new Contract
         {
-            TenantUserId = Guid.NewGuid(),
-            RoomId = Guid.NewGuid()
+            RoomId = Guid.NewGuid(),
+            ContractTenants = new List<ContractTenant>
+            {
+                new() { TenantUserId = tenantId, IsMainTenant = true, MoveInDate = DateOnly.FromDateTime(DateTime.UtcNow) }
+            }
         };
 
         // Act & Assert
-        contract.TenantUserId.Should().NotBe(Guid.Empty);
+        contract.ContractTenants.First(ct => ct.IsMainTenant).TenantUserId.Should().NotBe(Guid.Empty);
     }
 
     [Fact]

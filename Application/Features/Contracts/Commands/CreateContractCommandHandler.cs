@@ -37,7 +37,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             .FirstOrDefaultAsync(r => r.Id == request.RoomId && r.DeletedAt == null, cancellationToken)
             ?? throw new NotFoundException("Phòng", request.RoomId);
 
-        // Building scope authorization
+        // Kiểm tra user có sở hữu building không 
         await _buildingScope.AuthorizeAsync(room.BuildingId, cancellationToken);
 
         // Verify tenant user exists and has Tenant role
@@ -80,7 +80,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             if (reservation.ExpiresAt <= DateTime.UtcNow)
                 throw new ConflictException("Không thể tạo hợp đồng từ đặt phòng đã hết hạn.", "RESERVATION_EXPIRED");
 
-            if (room.Status != RoomStatus.Booked)
+            if (room.Status != RoomStatus.Reserved)
                 throw new ConflictException($"Phòng phải ở trạng thái Đã đặt để tạo hợp đồng từ đặt phòng. Hiện tại: {room.Status}");
 
             if (request.DepositAmount < reservation.DepositAmount)
@@ -93,35 +93,34 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             if (room.Status != RoomStatus.Available)
                 throw new ConflictException($"Phòng phải ở trạng thái Trống để tạo hợp đồng trực tiếp. Hiện tại: {room.Status}");
         }
+        var creator = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
 
         // Create the contract
         var contract = new Contract
         {
             RoomId = request.RoomId,
-            TenantUserId = request.TenantUserId,
             ReservationId = request.ReservationId,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             MoveInDate = request.MoveInDate,
             MonthlyRent = request.MonthlyRent,
             DepositAmount = request.DepositAmount,
-            DepositStatus = DepositStatus.Held,
             Status = ContractStatus.Active,
             Note = request.Note,
-            CreatedBy = userId,
+            Creator = creator,
+            ContractTenants =
+            [
+                new ContractTenant
+                {
+                    TenantUserId = request.TenantUserId,
+                    IsMainTenant = true,
+                    MoveInDate = request.MoveInDate
+                }
+            ]
         };
 
         _db.Contracts.Add(contract);
-
-        // Auto-create ContractTenant (IsMainTenant=true)
-        var mainTenant = new ContractTenant
-        {
-            ContractId = contract.Id,
-            TenantUserId = request.TenantUserId,
-            IsMainTenant = true,
-            MoveInDate = request.MoveInDate
-        };
-        _db.ContractTenants.Add(mainTenant);
 
         // Notify tenant about new contract
         _db.Notifications.Add(new Notification
@@ -217,7 +216,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             RoomNumber = room.RoomNumber,
             BuildingId = room.BuildingId,
             BuildingName = room.Building!.Name,
-            TenantUserId = contract.TenantUserId,
+            TenantUserId = tenantUser.Id,
             TenantName = tenantUser.FullName,
             ReservationId = contract.ReservationId,
             StartDate = contract.StartDate,
@@ -231,7 +230,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             TerminationNote = contract.TerminationNote,
             RefundAmount = contract.RefundAmount,
             Note = contract.Note,
-            CreatedBy = contract.CreatedBy,
+            CreatedBy = contract.Creator?.Id ?? userId,
             CreatedAt = contract.CreatedAt,
             UpdatedAt = contract.UpdatedAt
         };

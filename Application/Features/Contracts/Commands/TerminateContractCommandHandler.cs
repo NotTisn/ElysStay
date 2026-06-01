@@ -33,8 +33,7 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
 
         var contract = await _db.Contracts
             .Include(c => c.Room!).ThenInclude(r => r.Building!)
-            .Include(c => c.TenantUser!)
-            .Include(c => c.ContractTenants)
+            .Include(c => c.ContractTenants).ThenInclude(ct => ct.Tenant!)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Hợp đồng", request.Id);
 
@@ -140,10 +139,12 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
             });
         }
 
+        var mainTenant = contract.ContractTenants.First(ct => ct.IsMainTenant);
+
         // Notify tenant about contract termination
         _db.Notifications.Add(new Notification
         {
-            UserId = contract.TenantUserId,
+            UserId = mainTenant.TenantUserId,
             Title = "Hợp đồng đã chấm dứt",
             Message = $"Hợp đồng phòng {contract.Room!.RoomNumber} tại {contract.Room.Building!.Name} đã được chấm dứt.",
             Type = Domain.Constants.NotificationTypes.ContractTerminated,
@@ -161,9 +162,9 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
 
         // Best-effort email to tenant (after successful save)
         var (subject, html) = Application.Common.Email.EmailTemplates.ContractTerminated(
-            contract.TenantUser!.FullName, contract.Room.RoomNumber,
+            mainTenant.Tenant!.FullName, contract.Room.RoomNumber,
             contract.Room.Building!.Name, refundAmount);
-        await _emailService.TrySendAsync(contract.TenantUser.Email, contract.TenantUser.FullName, subject, html, cancellationToken);
+        await _emailService.TrySendAsync(mainTenant.Tenant.Email, mainTenant.Tenant.FullName, subject, html, cancellationToken);
 
         return new ContractDto
         {
@@ -172,8 +173,8 @@ public class TerminateContractCommandHandler : IRequestHandler<TerminateContract
             RoomNumber = contract.Room.RoomNumber,
             BuildingId = contract.Room.BuildingId,
             BuildingName = contract.Room.Building!.Name,
-            TenantUserId = contract.TenantUserId,
-            TenantName = contract.TenantUser!.FullName,
+            TenantUserId = mainTenant.TenantUserId,
+            TenantName = mainTenant.Tenant!.FullName,
             ReservationId = contract.ReservationId,
             StartDate = contract.StartDate,
             EndDate = contract.EndDate,

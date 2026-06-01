@@ -52,10 +52,9 @@ public class GetMeterReadingsQueryHandler : IRequestHandler<GetMeterReadingsQuer
         }
         else if (_currentUser.IsTenant)
         {
-            // Tenant sees only readings for rooms where they have an active contract
             query = query.Where(mr => mr.Room!.Contracts.Any(c =>
                 c.Status == Domain.Enums.ContractStatus.Active &&
-                (c.TenantUserId == userId || c.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null))));
+                c.ContractTenants.Any(ct => ct.TenantUserId == userId && ct.MoveOutDate == null)));
         }
 
         return await query

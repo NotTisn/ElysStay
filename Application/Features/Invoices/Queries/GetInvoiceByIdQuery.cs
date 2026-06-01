@@ -30,8 +30,8 @@ public class GetInvoiceByIdQueryHandler : IRequestHandler<GetInvoiceByIdQuery, I
 
         var invoice = await _db.Invoices
             .AsNoTracking()
-            .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
-            .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
+            .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!).ThenInclude(b => b.BuildingStaffs)
+            .Include(i => i.Contract!).ThenInclude(c => c.ContractTenants).ThenInclude(ct => ct.Tenant!)
             .Include(i => i.InvoiceDetails)
             .Include(i => i.Payments).ThenInclude(p => p.Recorder!)
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken)
@@ -40,10 +40,7 @@ public class GetInvoiceByIdQueryHandler : IRequestHandler<GetInvoiceByIdQuery, I
         // Authorization
         if (_currentUser.IsTenant)
         {
-            var contract = invoice.Contract!;
-            var isOnContract = contract.TenantUserId == userId ||
-                await _db.ContractTenants.AnyAsync(
-                    ct => ct.ContractId == contract.Id && ct.TenantUserId == userId, cancellationToken);
+            var isOnContract = invoice.Contract!.ContractTenants.Any(ct => ct.TenantUserId == userId);
             if (!isOnContract)
                 throw new ForbiddenException("Bạn chỉ có thể xem hóa đơn của mình.");
         }
@@ -54,8 +51,7 @@ public class GetInvoiceByIdQueryHandler : IRequestHandler<GetInvoiceByIdQuery, I
         }
         else if (_currentUser.IsStaff)
         {
-            var isAssigned = await _db.StaffAssignments
-                .AnyAsync(sa => sa.BuildingId == invoice.Contract!.Room!.BuildingId && sa.StaffId == userId, cancellationToken);
+            var isAssigned = invoice.Contract!.Room!.Building!.BuildingStaffs.Any(bs => bs.StaffId == userId);
             if (!isAssigned)
                 throw new ForbiddenException("Bạn không được phân công cho tòa nhà này.");
         }
@@ -72,8 +68,9 @@ public class GetInvoiceByIdQueryHandler : IRequestHandler<GetInvoiceByIdQuery, I
             RoomNumber = invoice.Contract.Room!.RoomNumber,
             BuildingId = invoice.Contract.Room.BuildingId,
             BuildingName = invoice.Contract.Room.Building!.Name,
-            TenantUserId = invoice.Contract.TenantUserId,
-            TenantName = invoice.Contract.TenantUser!.FullName,
+            TenantUserId = invoice.Contract.ContractTenants.FirstOrDefault(ct => ct.IsMainTenant)?.TenantUserId
+                ?? throw new InvalidOperationException($"Hợp đồng {invoice.ContractId} không có người thuê chính."),
+            TenantName = invoice.Contract.ContractTenants.First(ct => ct.IsMainTenant).Tenant!.FullName,
             BillingYear = invoice.BillingYear,
             BillingMonth = invoice.BillingMonth,
             RentAmount = invoice.RentAmount,

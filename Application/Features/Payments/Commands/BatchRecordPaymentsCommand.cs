@@ -60,7 +60,7 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
         var invoices = await _db.Invoices
             .Include(i => i.Payments)
             .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
-            .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
+            .Include(i => i.Contract!).ThenInclude(c => c.ContractTenants).ThenInclude(ct => ct.Tenant!)
             .Where(i => invoiceIds.Contains(i.Id))
             .ToDictionaryAsync(i => i.Id, cancellationToken);
 
@@ -128,10 +128,12 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
 
             invoice.UpdatedAt = DateTime.UtcNow;
 
+            var mainTenant = invoice.Contract!.ContractTenants.First(ct => ct.IsMainTenant);
+
             // NT-05: Notify tenant that payment was recorded
             _db.Notifications.Add(new Notification
             {
-                UserId = invoice.Contract!.TenantUserId,
+                UserId = mainTenant.TenantUserId,
                 Title = "Thanh toán ghi nhận",
                 Message = $"Thanh toán {entry.Amount:N0}đ đã được ghi nhận cho hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear}.",
                 Type = Domain.Constants.NotificationTypes.PaymentRecorded,
@@ -162,7 +164,7 @@ public class BatchRecordPaymentsCommandHandler : IRequestHandler<BatchRecordPaym
         {
             if (result.InvoiceId.HasValue && invoices.TryGetValue(result.InvoiceId.Value, out var inv))
             {
-                var tenant = inv.Contract!.TenantUser!;
+                var tenant = inv.Contract!.ContractTenants.First(ct => ct.IsMainTenant).Tenant!;
                 var room = inv.Contract!.Room!;
                 var totalPaid = inv.Payments.Where(p => p.Type == PaymentType.RentPayment).Sum(p => p.Amount);
                 var (subject, html) = Application.Common.Email.EmailTemplates.PaymentRecorded(

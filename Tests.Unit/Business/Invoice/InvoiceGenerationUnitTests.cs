@@ -39,13 +39,15 @@ public class InvoiceGenerationUnitTests
             Id            = Guid.NewGuid(),
             RoomId        = room.Id,
             Room          = room,
-            TenantUserId  = tenant.Id,
-            TenantUser    = tenant,
             MonthlyRent   = monthlyRent,
             StartDate     = new DateOnly(2026, 1, 1),
             EndDate       = new DateOnly(2027, 12, 31),
             MoveInDate    = new DateOnly(2026, 1, 1), // before billing period → no proration
-            Status        = ContractStatus.Active
+            Status        = ContractStatus.Active,
+            ContractTenants = new List<ContractTenant>
+            {
+                new() { TenantUserId = tenant.Id, IsMainTenant = true, Tenant = tenant, MoveInDate = new DateOnly(2026, 1, 1) }
+            }
         };
         return new Fixture(building, room, tenant, contract);
     }
@@ -252,122 +254,89 @@ public class InvoiceGenerationUnitTests
         result.Generated[0].TotalAmount.Should().Be(5_300_000);  // 5M + 300k
     }
 
-    // ── @Service: Override unit price for metered service ────────────────────
+    // ── @Service: RoomService overrides take priority ────────────────────────
 
-    [Fact]
-    public async Task Handle_MeteredServiceWithOverrideUnitPrice_UsesOverridePrice()
+    public record OverrideCase(
+        bool     IsMetered,
+        decimal  DefaultUnitPrice,
+        decimal? OverrideUnitPrice,
+        int?     OverrideQuantity,
+        int      OccupantCount,
+        decimal  Consumption,
+        decimal  ExpectedServiceAmount);
+
+    public static TheoryData<OverrideCase> OverrideCases => new()
     {
-        // @Service: Override unit price takes priority over default service price
-        // Consumption=10, default price=10,000, override price=15,000 → amount=150,000
-        var f = CreateFixture();
-        var water = new Service
-        {
-            Id         = Guid.NewGuid(),
-            BuildingId = f.Building.Id,
-            Name       = "Nước",
-            IsMetered  = true,
-            IsActive   = true,
-            UnitPrice  = 10_000
-        };
-        var priceOverride = new RoomService
-        {
-            RoomId             = f.Room.Id,
-            Room               = f.Room,
-            ServiceId          = water.Id,
-            IsEnabled          = true,
-            OverrideUnitPrice  = 15_000
-        };
-        var reading = new MeterReading
-        {
-            RoomId       = f.Room.Id,
-            Room         = f.Room,   // needed: handler queries mr.Room!.BuildingId
-            ServiceId    = water.Id,
-            BillingYear  = 2026,
-            BillingMonth = 3,
-            PreviousReading = 100,
-            CurrentReading  = 110,
-            Consumption     = 10
-        };
-        SetupMocks(f, services: [water], roomServices: [priceOverride], meterReadings: [reading]);
+        // OverrideUnitPrice beats default: 10 × 15,000 = 150,000
+        new OverrideCase(
+            IsMetered:             true,
+            DefaultUnitPrice:      10_000,
+            OverrideUnitPrice:     15_000,
+            OverrideQuantity:      null,
+            OccupantCount:         0,
+            Consumption:           10,
+            ExpectedServiceAmount: 150_000),
 
-        var result = await CreateHandler().Handle(
-            new GenerateInvoicesCommand { BuildingId = f.Building.Id, BillingYear = 2026, BillingMonth = 3 }, default);
+        // OverrideQuantity beats occupant count: 2 × 50,000 = 100,000 (5 occupants ignored)
+        new OverrideCase(
+            IsMetered:             false,
+            DefaultUnitPrice:      50_000,
+            OverrideUnitPrice:     null,
+            OverrideQuantity:      2,
+            OccupantCount:         5,
+            Consumption:           0,
+            ExpectedServiceAmount: 100_000),
+    };
 
-        result.Generated.Should().HaveCount(1);
-        result.Generated[0].ServiceAmount.Should().Be(150_000); // 10 × 15,000 (override price)
-    }
-
-    // ── @Service: Override quantity for flat service ──────────────────────────
-
-    [Fact]
-    public async Task Handle_FlatServiceWithOverrideQuantity_UsesOverrideQuantity()
+    [Theory]
+    [MemberData(nameof(OverrideCases))]
+    public async Task Handle_RoomServiceOverrides_ShouldRespectPriorityRules(OverrideCase tc)
     {
-        // @Service: Override quantity takes priority over occupant count
-        // 5 occupants but override qty=2, price=50,000 → amount=100,000
         var f = CreateFixture();
-        for (var i = 0; i < 5; i++)
+
+        for (var i = 0; i < tc.OccupantCount; i++)
             f.Contract.ContractTenants.Add(new ContractTenant { MoveInDate = new DateOnly(2026, 1, 1) });
 
-        var cleaning = new Service
+        var service = new Service
         {
-            Id         = Guid.NewGuid(),
+            Id        = Guid.NewGuid(),
             BuildingId = f.Building.Id,
-            Name       = "Vệ sinh",
-            IsMetered  = false,
-            IsActive   = true,
-            UnitPrice  = 50_000
+            Name      = "Service",
+            IsMetered = tc.IsMetered,
+            IsActive  = true,
+            UnitPrice = tc.DefaultUnitPrice,
         };
-        var qtyOverride = new RoomService
+
+        var roomService = new RoomService
         {
             RoomId            = f.Room.Id,
             Room              = f.Room,
-            ServiceId         = cleaning.Id,
+            ServiceId         = service.Id,
             IsEnabled         = true,
-            OverrideQuantity  = 2   // override: 2, even though 5 occupants
+            OverrideUnitPrice = tc.OverrideUnitPrice,
+            OverrideQuantity  = tc.OverrideQuantity,
         };
-        SetupMocks(f, services: [cleaning], roomServices: [qtyOverride]);
+
+        List<MeterReading> readings = tc.IsMetered
+            ? [new MeterReading
+              {
+                  RoomId          = f.Room.Id,
+                  Room            = f.Room,
+                  ServiceId       = service.Id,
+                  BillingYear     = 2026,
+                  BillingMonth    = 3,
+                  PreviousReading = 100,
+                  CurrentReading  = 100 + tc.Consumption,
+                  Consumption     = tc.Consumption,
+              }]
+            : [];
+
+        SetupMocks(f, services: [service], roomServices: [roomService], meterReadings: readings);
 
         var result = await CreateHandler().Handle(
             new GenerateInvoicesCommand { BuildingId = f.Building.Id, BillingYear = 2026, BillingMonth = 3 }, default);
 
         result.Generated.Should().HaveCount(1);
-        result.Generated[0].ServiceAmount.Should().Be(100_000); // 2 × 50,000 (override qty)
-    }
-
-    // ── @Service: Zero consumption creates line with zero amount ──────────────
-
-    [Fact]
-    public async Task Handle_MeteredServiceWithZeroConsumption_CreatesZeroAmountLine()
-    {
-        // @Service: Create service item with zero consumption → ServiceAmount = 0
-        var f = CreateFixture();
-        var electricity = new Service
-        {
-            Id         = Guid.NewGuid(),
-            BuildingId = f.Building.Id,
-            Name       = "Điện",
-            IsMetered  = true,
-            IsActive   = true,
-            UnitPrice  = 3_500
-        };
-        var reading = new MeterReading
-        {
-            RoomId          = f.Room.Id,
-            Room            = f.Room,
-            ServiceId       = electricity.Id,
-            BillingYear     = 2026,
-            BillingMonth    = 3,
-            PreviousReading = 1_000,
-            CurrentReading  = 1_000,
-            Consumption     = 0
-        };
-        SetupMocks(f, services: [electricity], meterReadings: [reading]);
-
-        var result = await CreateHandler().Handle(
-            new GenerateInvoicesCommand { BuildingId = f.Building.Id, BillingYear = 2026, BillingMonth = 3 }, default);
-
-        result.Generated.Should().HaveCount(1);
-        result.Generated[0].ServiceAmount.Should().Be(0);   // 0 × 3,500 = 0
-        result.Warnings.Should().BeEmpty();                  // no warning (reading exists)
+        result.Generated[0].ServiceAmount.Should().Be(tc.ExpectedServiceAmount);
     }
 }

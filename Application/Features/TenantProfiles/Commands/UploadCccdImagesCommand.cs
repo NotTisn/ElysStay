@@ -60,7 +60,7 @@ public class UploadCccdImagesCommandHandler : IRequestHandler<UploadCccdImagesCo
         if (!_currentUser.IsTenant)
         {
             var tenantBuildingId = await _db.Contracts
-                .Where(c => c.TenantUserId == request.UserId && c.Status == Domain.Enums.ContractStatus.Active)
+                .Where(c => c.ContractTenants.Any(ct2 => ct2.TenantUserId == request.UserId) && c.Status == Domain.Enums.ContractStatus.Active)
                 .Select(c => c.Room!.BuildingId)
                 .FirstOrDefaultAsync(ct);
             if (tenantBuildingId != Guid.Empty)

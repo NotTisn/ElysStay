@@ -47,15 +47,17 @@ public class TerminateContractUnitTests
             Id            = Guid.NewGuid(),
             RoomId        = room.Id,
             Room          = room,
-            TenantUserId  = tenant.Id,
-            TenantUser    = tenant,
             MonthlyRent   = 5_000_000,
             DepositAmount = deposit,
             DepositStatus = DepositStatus.Held,
             Status        = contractStatus,
             StartDate     = new DateOnly(2026, 1, 1),
             MoveInDate    = new DateOnly(2026, 1, 1),
-            EndDate       = new DateOnly(2027, 12, 31)
+            EndDate       = new DateOnly(2027, 12, 31),
+            ContractTenants = new List<ContractTenant>
+            {
+                new() { TenantUserId = tenant.Id, IsMainTenant = true, Tenant = tenant, MoveInDate = new DateOnly(2026, 1, 1) }
+            }
         };
         room.Building = building;
         return new Fixture(building, room, tenant, contract);

@@ -18,8 +18,8 @@ public record InvoiceDto
     public required int BillingMonth { get; init; }
     public required decimal RentAmount { get; init; }
     public required decimal ServiceAmount { get; init; }
-    public required decimal PenaltyAmount { get; init; }
-    public required decimal DiscountAmount { get; init; }
+    public required decimal? PenaltyAmount { get; init; }
+    public required decimal? DiscountAmount { get; init; }
     public required decimal TotalAmount { get; init; }
     public required decimal PaidAmount { get; init; }
     public required string Status { get; init; }

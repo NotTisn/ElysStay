@@ -8,6 +8,9 @@ public class Payment
     public Guid? InvoiceId { get; set; }
     public Guid? ContractId { get; set; }
     public Guid? ReservationId { get; set; }
+    public Invoice? Invoice { get; set; }
+    public Contract? Contract { get; set; }
+    public RoomReservation? Reservation { get; set; }
     public PaymentType Type { get; set; }
     public decimal Amount { get; set; }
     public string? PaymentMethod { get; set; }
@@ -18,8 +21,6 @@ public class Payment
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
-    public Invoice? Invoice { get; set; }
-    public Contract? Contract { get; set; }
-    public RoomReservation? Reservation { get; set; }
+ 
     public User? Recorder { get; set; }
 }

@@ -35,7 +35,6 @@ public class GetContractByIdQueryHandler : IRequestHandler<GetContractByIdQuery,
         var contract = await _db.Contracts
             .AsNoTracking()
             .Include(c => c.Room!).ThenInclude(r => r.Building!)
-            .Include(c => c.TenantUser!)
             .Include(c => c.ContractTenants).ThenInclude(ct => ct.Tenant!)
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Hợp đồng", request.Id);
@@ -43,10 +42,7 @@ public class GetContractByIdQueryHandler : IRequestHandler<GetContractByIdQuery,
         // TENANT: can only view their own contracts
         if (_currentUser.IsTenant)
         {
-            var isTenantOnContract = contract.TenantUserId == userId ||
-                contract.ContractTenants.Any(ct => ct.TenantUserId == userId);
-
-            if (!isTenantOnContract)
+            if (!contract.ContractTenants.Any(ct => ct.TenantUserId == userId))
                 throw new ForbiddenException("Bạn chỉ có thể xem hợp đồng của mình.");
         }
         else
@@ -55,6 +51,8 @@ public class GetContractByIdQueryHandler : IRequestHandler<GetContractByIdQuery,
             await _buildingScope.AuthorizeAsync(contract.Room!.BuildingId, cancellationToken);
         }
 
+        var mainTenant = contract.ContractTenants.First(ct => ct.IsMainTenant);
+
         return new ContractDetailDto
         {
             Id = contract.Id,
@@ -62,8 +60,8 @@ public class GetContractByIdQueryHandler : IRequestHandler<GetContractByIdQuery,
             RoomNumber = contract.Room!.RoomNumber,
             BuildingId = contract.Room.BuildingId,
             BuildingName = contract.Room.Building!.Name,
-            TenantUserId = contract.TenantUserId,
-            TenantName = contract.TenantUser!.FullName,
+            TenantUserId = mainTenant.TenantUserId,
+            TenantName = mainTenant.Tenant!.FullName,
             ReservationId = contract.ReservationId,
             StartDate = contract.StartDate,
             EndDate = contract.EndDate,

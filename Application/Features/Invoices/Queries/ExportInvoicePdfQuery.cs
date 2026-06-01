@@ -37,7 +37,8 @@ public class ExportInvoicePdfQueryHandler : IRequestHandler<ExportInvoicePdfQuer
                     .ThenInclude(r => r!.Building)
                         .ThenInclude(b => b!.Owner)
             .Include(i => i.Contract)
-                .ThenInclude(c => c!.TenantUser)
+                .ThenInclude(c => c!.ContractTenants)
+                    .ThenInclude(ct => ct.Tenant)
             .Include(i => i.Payments)
             .FirstOrDefaultAsync(i => i.Id == request.InvoiceId, ct)
             ?? throw new NotFoundException("Hóa đơn", request.InvoiceId);
@@ -47,7 +48,7 @@ public class ExportInvoicePdfQueryHandler : IRequestHandler<ExportInvoicePdfQuer
         if (_currentUser.IsTenant)
         {
             var contract2 = invoice.Contract!;
-            var isOnContract = contract2.TenantUserId == userId ||
+            var isOnContract = contract2.ContractTenants.Any(ct => ct.TenantUserId == userId) ||
                 await _db.ContractTenants.AnyAsync(
                     ct2 => ct2.ContractId == contract2.Id && ct2.TenantUserId == userId, ct);
             if (!isOnContract)
@@ -69,9 +70,11 @@ public class ExportInvoicePdfQueryHandler : IRequestHandler<ExportInvoicePdfQuer
         var contract = invoice.Contract!;
         var room = contract.Room!;
         var building = room.Building!;
-        var tenant = contract.TenantUser!;
+        var tenant = (contract.ContractTenants.FirstOrDefault(ct => ct.IsMainTenant)
+            ?? throw new InvalidOperationException($"Hợp đồng {contract.Id} không có người thuê chính.")).Tenant!;
 
         var paidAmount = invoice.Payments
+            .Where(p => p.Type == Domain.Enums.PaymentType.RentPayment)
             .Sum(p => p.Amount);
 
         var details = invoice.InvoiceDetails

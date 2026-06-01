@@ -155,7 +155,7 @@ public class ChangeRoomStatusUnitTests
     public async Task Handle_BookedRoom_ThrowsConflictException()
     {
         // Room is Booked (reservation exists) — manual status change blocked
-        var room = CreateRoom(RoomStatus.Booked);
+        var room = CreateRoom(RoomStatus.Reserved);
         SetupRoom(room);
 
         var act = () => CreateHandler().Handle(

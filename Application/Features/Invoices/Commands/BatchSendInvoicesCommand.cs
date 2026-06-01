@@ -42,7 +42,7 @@ public class BatchSendInvoicesCommandHandler : IRequestHandler<BatchSendInvoices
 
         var invoices = await _db.Invoices
             .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
-            .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
+            .Include(i => i.Contract!).ThenInclude(c => c.ContractTenants).ThenInclude(ct => ct.IsMainTenant)
             .Where(i => distinctIds.Contains(i.Id))
             .ToListAsync(cancellationToken);
 
@@ -54,6 +54,7 @@ public class BatchSendInvoicesCommandHandler : IRequestHandler<BatchSendInvoices
             .Select(i => i.Contract!.Room!.BuildingId)
             .Distinct()
             .ToList();
+
         foreach (var buildingId in buildingIds)
             await _buildingScope.AuthorizeAsync(buildingId, cancellationToken);
 
@@ -61,7 +62,7 @@ public class BatchSendInvoicesCommandHandler : IRequestHandler<BatchSendInvoices
         foreach (var invoice in invoices)
         {
             if (invoice.Status != InvoiceStatus.Draft)
-                continue; // Skip non-draft invoices silently in batch
+                continue; 
 
             invoice.Status = InvoiceStatus.Sent;
             invoice.UpdatedAt = DateTime.UtcNow;
@@ -70,7 +71,7 @@ public class BatchSendInvoicesCommandHandler : IRequestHandler<BatchSendInvoices
             // NT-01: Notify tenant (matching SendInvoiceCommand behavior)
             _db.Notifications.Add(new Notification
             {
-                UserId = invoice.Contract!.TenantUserId,
+                UserId = invoice.Contract!.ContractTenants.First(ct => ct.IsMainTenant).TenantUserId,
                 Title = "Hóa đơn mới",
                 Message = $"Hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear} đã được gửi.",
                 Type = Domain.Constants.NotificationTypes.InvoiceSent,
@@ -84,7 +85,8 @@ public class BatchSendInvoicesCommandHandler : IRequestHandler<BatchSendInvoices
         // Best-effort emails to tenants (after successful save)
         foreach (var invoice in invoices.Where(i => i.Status == InvoiceStatus.Sent))
         {
-            var tenant = invoice.Contract!.TenantUser!;
+            var mainTenant = invoice.Contract!.ContractTenants.First(ct => ct.IsMainTenant) ?? throw new InvalidOperationException("Hợp đồng phải có một người thuê chính.");
+            var tenant = mainTenant.Tenant!;
             var room = invoice.Contract!.Room!;
             var (subject, html) = Application.Common.Email.EmailTemplates.InvoiceSent(
                 tenant.FullName, room.RoomNumber, room.Building!.Name,
