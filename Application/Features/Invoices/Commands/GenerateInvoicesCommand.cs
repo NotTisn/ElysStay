@@ -109,6 +109,7 @@ public class GenerateInvoicesCommandHandler : IRequestHandler<GenerateInvoicesCo
                 contract, buildingServices, roomOverrides, roomReadings,
                 billingPeriodStart, billingPeriodEnd, dueDate);
 
+            built.Invoice.CreatedBy = _currentUser.GetRequiredUserId();
             _db.Invoices.Add(built.Invoice);
             foreach (var li in built.LineItems) _db.InvoiceDetails.Add(li);
             warnings.AddRange(built.Warnings);

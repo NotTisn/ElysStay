@@ -84,7 +84,7 @@ public class ProcessPaymentWebhookCommandHandler : IRequestHandler<ProcessPaymen
 
             var invoice = await _db.Invoices
                 .Include(i => i.Contract!).ThenInclude(c => c.Room!).ThenInclude(r => r.Building!)
-                .Include(i => i.Contract!).ThenInclude(c => c.TenantUser!)
+                .Include(i => i.Contract!).ThenInclude(c => c.ContractTenants).ThenInclude(ct => ct.Tenant!)
                 .Include(i => i.Payments)
                 .FirstOrDefaultAsync(i => i.Id == request.InvoiceId, cancellationToken)
                 ?? throw new NotFoundException("Hóa đơn", request.InvoiceId);
@@ -129,7 +129,7 @@ public class ProcessPaymentWebhookCommandHandler : IRequestHandler<ProcessPaymen
 
             _db.Notifications.Add(new Notification
             {
-                UserId = invoice.Contract!.TenantUserId,
+                UserId = invoice.Contract!.ContractTenants.First(ct => ct.IsMainTenant).TenantUserId,
                 Title = "Thanh toán ghi nhận",
                 Message = $"Thanh toán {request.Amount:N0}đ đã được ghi nhận cho hóa đơn tháng {invoice.BillingMonth}/{invoice.BillingYear}.",
                 Type = Domain.Constants.NotificationTypes.PaymentRecorded,
@@ -139,7 +139,7 @@ public class ProcessPaymentWebhookCommandHandler : IRequestHandler<ProcessPaymen
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            var tenant = invoice.Contract!.TenantUser!;
+            var tenant = invoice.Contract!.ContractTenants.First(ct => ct.IsMainTenant).Tenant!;
             var room = invoice.Contract!.Room!;
             var (subject, html) = Application.Common.Email.EmailTemplates.PaymentRecorded(
                 tenant.FullName,

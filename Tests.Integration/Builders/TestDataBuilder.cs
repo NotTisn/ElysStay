@@ -8,6 +8,7 @@ namespace Tests.Integration.Builders;
 /// </summary>
 public class TestDataBuilder
 {
+    // create tenant
     public static User CreateUser(
         string? email = null,
         string? phone = null,
@@ -96,6 +97,8 @@ public class TestDataBuilder
         DateOnly? EndDate = null
         )
     {
+        StartDate ??= new DateOnly(2026, 1, 31);
+        EndDate ??= new DateOnly(2026, 6, 30);
         return new Contract
         {
             Id = Guid.NewGuid(),
@@ -106,9 +109,13 @@ public class TestDataBuilder
             DepositAmount = depositAmount,
             DepositStatus = DepositStatus.Held,
             Status = status,
-            StartDate = StartDate??DateOnly.FromDateTime(DateTime.UtcNow),
+            StartDate = StartDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
             MoveInDate = MoveInDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
             EndDate = EndDate ?? StartDate?.AddMonths(6) ?? DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(6),
+            ContractTenants = new List<ContractTenant>
+            {
+                new() { TenantUserId = tenantUserId, IsMainTenant = true, MoveInDate = MoveInDate ?? DateOnly.FromDateTime(DateTime.UtcNow) }
+            },
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

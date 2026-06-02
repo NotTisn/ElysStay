@@ -7,6 +7,7 @@ public class Contract
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid CreatedBy { get; set; }
     public Guid RoomId { get; set; }
+    public Guid TenantUserId { get; set; }
     public Guid? ReservationId { get; set; }
     public DateOnly StartDate { get; set; }
     public DateOnly MoveInDate{ get; set; }
@@ -27,6 +28,7 @@ public class Contract
     public Room? Room { get; set; }
     public RoomReservation? Reservation { get; set; }
     public User? Creator { get; set; }
+    public User? TenantUser { get; set; }
     public ICollection<ContractTenant> ContractTenants { get; set; } = new List<ContractTenant>();
     public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();

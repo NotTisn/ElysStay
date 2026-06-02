@@ -52,7 +52,7 @@ public class UpdateInvoiceCommandHandler : IRequestHandler<UpdateInvoiceCommand,
             .FirstOrDefaultAsync(i => i.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Hóa đơn", request.Id);
 
-        if (invoice.Status is InvoiceStatus.Paid or InvoiceStatus.Void)
+        if (invoice.Status is InvoiceStatus.Paid or InvoiceStatus.Void or InvoiceStatus.Overdue or InvoiceStatus.PartiallyPaid)
             throw new ConflictException("Không thể chỉnh sửa hóa đơn đã thanh toán đầy đủ hoặc đã hủy.");
 
         await _buildingScope.AuthorizeAsync(invoice.Contract!.Room!.BuildingId, cancellationToken);

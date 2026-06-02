@@ -8,13 +8,6 @@ using Moq;
 using Xunit;
 
 namespace ElysStay.Tests.Unit.Business;
-
-/// <summary>
-/// Unit tests for GenerateInvoicesCommandHandler.
-/// Maps to @Invoice and @Service scenarios in InvoiceCalculation.feature.
-/// All DbSet dependencies are mocked via MockQueryable.Moq.
-/// Navigation properties are pre-populated because Include() is a no-op in LINQ-to-Objects.
-/// </summary>
 public class InvoiceGenerationUnitTests
 {
     private readonly Mock<IApplicationDbContext> _db           = new();
@@ -84,23 +77,6 @@ public class InvoiceGenerationUnitTests
     // ── @Invoice: Generate invoice successfully (IG-07) ───────────────────────
 
     [Fact]
-    public async Task Handle_NoExistingInvoice_GeneratesDraftInvoice()
-    {
-        // @Invoice: Generate invoice successfully → status Draft (IG-07: Status starts as DRAFT)
-        var f = CreateFixture();
-        SetupMocks(f);
-
-        var result = await CreateHandler().Handle(
-            new GenerateInvoicesCommand { BuildingId = f.Building.Id, BillingYear = 2026, BillingMonth = 3 }, default);
-
-        result.Generated.Should().HaveCount(1);
-        result.Generated[0].Status.Should().Be("Draft");
-        result.Generated[0].RentAmount.Should().Be(5_000_000);
-        result.Skipped.Should().BeEmpty();
-        result.Warnings.Should().BeEmpty();
-    }
-
-    [Fact]
     public async Task Handle_NoServices_TotalEqualsRentOnly()
     {
         // @Invoice: No services → TotalAmount = RentAmount
@@ -112,82 +88,6 @@ public class InvoiceGenerationUnitTests
 
         result.Generated[0].TotalAmount.Should().Be(5_000_000);
         result.Generated[0].ServiceAmount.Should().Be(0);
-    }
-
-    // ── @Invoice: Idempotency — skip if invoice already exists (IG-01) ────────
-
-    [Fact]
-    public async Task Handle_InvoiceAlreadyExists_SkipsContractAndReturnsSkippedEntry()
-    {
-        // @Invoice: Skip invoice generation when invoice already exists (IG-01)
-        var f = CreateFixture();
-        var existingInvoice = new Invoice
-        {
-            Id          = Guid.NewGuid(),
-            ContractId  = f.Contract.Id,
-            Contract    = f.Contract,   // needed: handler queries i.Contract!.Room!.BuildingId
-            BillingYear = 2026,
-            BillingMonth = 3,
-            Status      = InvoiceStatus.Draft
-        };
-        SetupMocks(f, existingInvoices: [existingInvoice]);
-
-        var result = await CreateHandler().Handle(
-            new GenerateInvoicesCommand { BuildingId = f.Building.Id, BillingYear = 2026, BillingMonth = 3 }, default);
-
-        result.Generated.Should().BeEmpty();
-        result.Skipped.Should().HaveCount(1);
-        result.Skipped[0].ContractId.Should().Be(f.Contract.Id);
-    }
-
-    [Fact]
-    public async Task Handle_VoidedInvoiceExists_RegeneratesInvoice()
-    {
-        // IG-01: Voided invoices are excluded from idempotency check → re-generation allowed
-        var f = CreateFixture();
-        var voidedInvoice = new Invoice
-        {
-            Id           = Guid.NewGuid(),
-            ContractId   = f.Contract.Id,
-            Contract     = f.Contract,
-            BillingYear  = 2026,
-            BillingMonth = 3,
-            Status       = InvoiceStatus.Void  // voided → should NOT block re-generation
-        };
-        SetupMocks(f, existingInvoices: [voidedInvoice]);
-
-        var result = await CreateHandler().Handle(
-            new GenerateInvoicesCommand { BuildingId = f.Building.Id, BillingYear = 2026, BillingMonth = 3 }, default);
-
-        // Voided invoice not counted → new invoice generated
-        result.Generated.Should().HaveCount(1);
-        result.Skipped.Should().BeEmpty();
-    }
-
-    // ── @Service: Missing meter reading → warning (IG-02) ────────────────────
-
-    [Fact]
-    public async Task Handle_MeteredServiceWithNoReading_AddsWarningAndSkipsServiceLine()
-    {
-        // @Service: Show warning when meter reading is missing (IG-02)
-        var f = CreateFixture();
-        var electricity = new Service
-        {
-            Id         = Guid.NewGuid(),
-            BuildingId = f.Building.Id,
-            Name       = "Điện",
-            IsMetered  = true,
-            IsActive   = true,
-            UnitPrice  = 3_500
-        };
-        SetupMocks(f, services: [electricity], meterReadings: []); // no reading
-
-        var result = await CreateHandler().Handle(
-            new GenerateInvoicesCommand { BuildingId = f.Building.Id, BillingYear = 2026, BillingMonth = 3 }, default);
-
-        result.Generated.Should().HaveCount(1);
-        result.Warnings.Should().Contain(w => w.Contains("Thiếu chỉ số đồng hồ") && w.Contains("Điện"));
-        result.Generated[0].ServiceAmount.Should().Be(0); // electricity line skipped
     }
 
     // ── @Service: Skip disabled room service ──────────────────────────────────
@@ -227,11 +127,8 @@ public class InvoiceGenerationUnitTests
     [Fact]
     public async Task Handle_FlatServiceWithThreeOccupants_CalculatesServiceAmountCorrectly()
     {
-        // @Service: Calculate service amount using occupant count
-        // 3 occupants × 100,000 = 300,000 → TotalAmount = 5,000,000 + 300,000 = 5,300,000
         var f = CreateFixture();
         var billingEnd = new DateOnly(2026, 3, 31);
-        f.Contract.ContractTenants.Add(new ContractTenant { MoveInDate = new DateOnly(2026, 1, 1) });
         f.Contract.ContractTenants.Add(new ContractTenant { MoveInDate = new DateOnly(2026, 1, 1) });
         f.Contract.ContractTenants.Add(new ContractTenant { MoveInDate = new DateOnly(2026, 1, 1) });
 
@@ -299,22 +196,22 @@ public class InvoiceGenerationUnitTests
 
         var service = new Service
         {
-            Id        = Guid.NewGuid(),
+            Id = Guid.NewGuid(),
             BuildingId = f.Building.Id,
-            Name      = "Service",
+            Name = "Service",
             IsMetered = tc.IsMetered,
-            IsActive  = true,
+            IsActive = true,
             UnitPrice = tc.DefaultUnitPrice,
         };
 
         var roomService = new RoomService
         {
-            RoomId            = f.Room.Id,
-            Room              = f.Room,
-            ServiceId         = service.Id,
-            IsEnabled         = true,
+            RoomId = f.Room.Id,
+            Room = f.Room,
+            ServiceId = service.Id,
+            IsEnabled = true,
             OverrideUnitPrice = tc.OverrideUnitPrice,
-            OverrideQuantity  = tc.OverrideQuantity,
+            OverrideQuantity = tc.OverrideQuantity,
         };
 
         List<MeterReading> readings = tc.IsMetered

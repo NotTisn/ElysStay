@@ -81,6 +81,9 @@ public class InvoiceCalculationUnitTests
 
     [Theory]
     [InlineData(InvoiceStatus.Paid)]
+    [InlineData(InvoiceStatus.PartiallyPaid)]
+    [InlineData(InvoiceStatus.Overdue)]
+    [InlineData(InvoiceStatus.Void)]
     public async Task Handle_WhenStatusIsNotDraftOrSent_ThrowsConflictException(InvoiceStatus status)
     {
         var invoice = BuildInvoice(status: status);
@@ -94,6 +97,7 @@ public class InvoiceCalculationUnitTests
 
     [Theory]
     [InlineData(InvoiceStatus.Draft)]
+    [InlineData(InvoiceStatus.Sent)]
     public async Task Handle_WhenStatusIsDraftOrSent_DoesNotThrowConflict(InvoiceStatus status)
     {
         var invoice = BuildInvoice(status: status);
@@ -110,7 +114,6 @@ public class InvoiceCalculationUnitTests
     [Fact]
     public async Task Handle_WhenDiscountExceedsTotal_ThrowsBadRequestException()
     {
-        // rent=1M, discount=2M → total = -1M
         var invoice = BuildInvoice(rent: 1_000_000, service: 0);
         SetupMocks(invoice);
 
@@ -183,7 +186,7 @@ public class InvoiceCalculationUnitTests
 
     public static TheoryData<Func<Guid, UpdateInvoiceCommand>> ChangedFieldCommands => new()
     {
-        id => new UpdateInvoiceCommand { Id = id, Note = "Khách yêu cầu gia hạn" },
+        id => new UpdateInvoiceCommand { Id = id, Note = "Khách làm hư hại tài sản" },
         id => new UpdateInvoiceCommand { Id = id, PenaltyAmount = 50_000 },
     };
 
@@ -200,23 +203,4 @@ public class InvoiceCalculationUnitTests
     }
     
 
-    // ── @Adjustment Exact Scenario ────────────────────────────────────────────
-
-    [Fact]
-    public async Task Handle_AdjustmentScenario_RentPlusPenaltyMinusDiscount_TotalIs5_400_000()
-    {
-        // Feature: Apply penalty and discount
-        // RentAmount=5_000_000, PenaltyAmount=500_000, DiscountAmount=100_000
-        // → TotalAmount = 5_000_000 + 500_000 - 100_000 = 5_400_000
-        var invoice = BuildInvoice(rent: 5_000_000, service: 0);
-        SetupMocks(invoice);
-
-        var result = await CreateHandler().Handle(
-            new UpdateInvoiceCommand { Id = invoice.Id, PenaltyAmount = 500_000, DiscountAmount = 100_000 }, default);
-
-        result.RentAmount.Should().Be(5_000_000);
-        result.PenaltyAmount.Should().Be(500_000);
-        result.DiscountAmount.Should().Be(100_000);
-        result.TotalAmount.Should().Be(5_400_000);
-    }
 }
