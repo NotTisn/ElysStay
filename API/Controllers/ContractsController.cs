@@ -186,6 +186,16 @@ public class ContractsController : BaseApiController
         await _mediator.Send(command, ct);
         return NoContent();
     }
+
+    /// <summary>
+    /// GET /contracts/{id}/pdf — Download contract as PDF.
+    /// </summary>
+    [HttpGet("{id:guid}/pdf")]
+    public async Task<IActionResult> ExportPdf(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new ExportContractPdfQuery(id), ct);
+        return File(result.PdfBytes, "application/pdf", result.FileName);
+    }
 }
 
 // ── Request DTOs ──────────────────────────────────────────────

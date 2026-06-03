@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Application.Features.Invoices.Queries;
 
 /// <summary>
-/// GET /invoices/{id}/export — Generate and return a PDF for the given invoice.
+/// GET /invoices/{id}/pdf — Generate and return a PDF for the given invoice.
 /// Auth: ALL authenticated users (building-scope enforced by invoice ownership).
 /// </summary>
 public record ExportInvoicePdfQuery(Guid InvoiceId) : IRequest<InvoicePdfResult>;

@@ -165,9 +165,9 @@ public class InvoicesController : BaseApiController
     }
 
     /// <summary>
-    /// GET /invoices/{id}/export — Download invoice as PDF.
+    /// GET /invoices/{id}/pdf — Download invoice as PDF.
     /// </summary>
-    [HttpGet("{id:guid}/export")]
+    [HttpGet("{id:guid}/pdf")]
     public async Task<IActionResult> ExportPdf(Guid id, CancellationToken ct)
     {
         var result = await _mediator.Send(new ExportInvoicePdfQuery(id), ct);

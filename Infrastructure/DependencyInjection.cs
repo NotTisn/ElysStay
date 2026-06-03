@@ -65,15 +65,36 @@ public static class DependencyInjection
         // Email (Resend free tier — no-op if Email:ApiKey is not set)
         services.AddHttpClient<IEmailService, ResendEmailService>();
 
-        // File uploads (Cloudinary free tier — no-op if Cloudinary section is not set)
-        services.AddSingleton<IFileUploadService, CloudinaryUploadService>();
+        // File uploads (Cloudinary if configured, else local fallback)
+        var cloudinarySection = configuration.GetSection("Cloudinary");
+        if (!string.IsNullOrWhiteSpace(cloudinarySection["CloudName"]) &&
+            !string.IsNullOrWhiteSpace(cloudinarySection["ApiKey"]) &&
+            !string.IsNullOrWhiteSpace(cloudinarySection["ApiSecret"]))
+        {
+            services.AddSingleton<IFileUploadService, CloudinaryUploadService>();
+        }
+        else
+        {
+            services.AddSingleton<IFileUploadService, LocalFileUploadService>();
+        }
 
         // Invoice PDF generation (QuestPDF Community)
         services.AddSingleton<IInvoicePdfService, InvoicePdfService>();
+        services.AddSingleton<IContractPdfService, ContractPdfService>();
 
-        // OCR (FPT.AI free tier — no-op if FptAi:ApiKey is not set)
-        services.AddHttpClient<IOcrService, FptAiOcrService>();
+        // OCR (FPT.AI if configured, else mock)
+        var fptAiSection = configuration.GetSection("FptAi");
+        if (!string.IsNullOrWhiteSpace(fptAiSection["ApiKey"]))
+        {
+            services.AddHttpClient<IOcrService, FptAiOcrService>();
+        }
+        else
+        {
+            services.AddSingleton<IOcrService, MockOcrService>();
+        }
 
+        services.AddSingleton<BackgroundJobHealthCheck>();
+        
         // Background jobs (BG-01, BG-02, BG-03)
         services.AddHostedService<ReservationExpiryBackgroundService>();
         services.AddHostedService<InvoiceOverdueBackgroundService>();

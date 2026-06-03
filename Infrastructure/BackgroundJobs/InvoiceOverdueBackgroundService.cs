@@ -19,13 +19,16 @@ public class InvoiceOverdueBackgroundService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<InvoiceOverdueBackgroundService> _logger;
+    private readonly BackgroundJobHealthCheck _healthCheck;
 
     public InvoiceOverdueBackgroundService(
         IServiceProvider serviceProvider,
-        ILogger<InvoiceOverdueBackgroundService> logger)
+        ILogger<InvoiceOverdueBackgroundService> logger,
+        BackgroundJobHealthCheck healthCheck)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _healthCheck = healthCheck;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -36,15 +39,34 @@ public class InvoiceOverdueBackgroundService : BackgroundService
         {
             try
             {
-                await RunOnceAsync(stoppingToken);
+                var retries = 3;
+                while (retries > 0)
+                {
+                    try
+                    {
+                        await RunOnceAsync(stoppingToken);
+                        _healthCheck.ReportJobRun("InvoiceOverdue");
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        retries--;
+                        if (retries == 0)
+                        {
+                            _logger.LogError(ex, "InvoiceOverdueJob failed after retries.");
+                            _healthCheck.ReportJobError("InvoiceOverdue", ex);
+                        }
+                        else
+                        {
+                            _logger.LogWarning(ex, "InvoiceOverdueJob error, retrying... ({RetriesLeft} retries left)", retries);
+                            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                        }
+                    }
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 break;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Invoice overdue background job failed");
             }
 
             var now = DateTime.UtcNow;

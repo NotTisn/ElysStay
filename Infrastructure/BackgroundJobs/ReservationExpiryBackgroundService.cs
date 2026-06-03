@@ -19,13 +19,16 @@ public class ReservationExpiryBackgroundService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ReservationExpiryBackgroundService> _logger;
+    private readonly BackgroundJobHealthCheck _healthCheck;
 
     public ReservationExpiryBackgroundService(
         IServiceProvider serviceProvider,
-        ILogger<ReservationExpiryBackgroundService> logger)
+        ILogger<ReservationExpiryBackgroundService> logger,
+        BackgroundJobHealthCheck healthCheck)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _healthCheck = healthCheck;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -36,15 +39,34 @@ public class ReservationExpiryBackgroundService : BackgroundService
         {
             try
             {
-                await RunOnceAsync(stoppingToken);
+                var retries = 3;
+                while (retries > 0)
+                {
+                    try
+                    {
+                        await RunOnceAsync(stoppingToken);
+                        _healthCheck.ReportJobRun("ReservationExpiry");
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        retries--;
+                        if (retries == 0)
+                        {
+                            _logger.LogError(ex, "ReservationExpiryJob failed after retries.");
+                            _healthCheck.ReportJobError("ReservationExpiry", ex);
+                        }
+                        else
+                        {
+                            _logger.LogWarning(ex, "ReservationExpiryJob error, retrying... ({RetriesLeft} retries left)", retries);
+                            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                        }
+                    }
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 break;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Reservation expiry background job failed");
             }
 
             var now = DateTime.UtcNow;
