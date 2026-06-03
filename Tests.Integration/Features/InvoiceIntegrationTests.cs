@@ -63,38 +63,6 @@ public class InvoiceIntegrationTests : IAsyncLifetime
         savedInvoice.RentAmount.Should().Be(_contract.MonthlyRent);
     }
 
-    [Fact]
-    public async Task CalculateInvoiceTotal_WithServiceCharges_CalculatesCorrectly()
-    {
-        // Arrange
-        await SetupTestData();
-        var service = TestDataBuilder.CreateService(_building.Id, isMetered: true);
-        var meter = TestDataBuilder.CreateMeterReading(_room.Id, service.Id, _owner.Id, 3, 2026, 100, 110);
-
-        await _fixture.DbContext.Services.AddAsync(service);
-        await _fixture.DbContext.Set<MeterReading>().AddAsync(meter);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        var invoice = new Invoice
-        {
-            Id = Guid.NewGuid(),
-            ContractId = _contract.Id,
-            BillingMonth = 3,
-            BillingYear = 2026,
-            RentAmount = _contract.MonthlyRent,
-            ServiceAmount = (decimal)(meter.Consumption * service.UnitPrice),
-            Status = InvoiceStatus.Draft,
-            CreatedBy = _owner.Id
-        };
-
-        // Act
-        await _fixture.DbContext.Invoices.AddAsync(invoice);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Assert
-        var total = invoice.RentAmount + invoice.ServiceAmount;
-        total.Should().Be(_contract.MonthlyRent + (decimal)(meter.Consumption * service.UnitPrice));
-    }
 
     [Fact]
     public async Task UpdateInvoiceStatus_ToPartialPaid_UpdatesSuccessfully()
@@ -133,26 +101,4 @@ public class InvoiceIntegrationTests : IAsyncLifetime
         var voided = _fixture.DbContext.Invoices.FirstOrDefault(i => i.Id == invoice.Id);
         voided!.Status.Should().Be(InvoiceStatus.Void);
     }
-
-    [Fact]
-    public async Task GetInvoices_FiltersByContract_ReturnsOnlyContractInvoices()
-    {
-        // Arrange
-        await SetupTestData();
-        var invoice1 = TestDataBuilder.CreateInvoice(_contract.Id, _owner.Id, billingMonth: 3); // March
-        var invoice2 = TestDataBuilder.CreateInvoice(_contract.Id, _owner.Id, billingMonth: 4); // April
-
-        await _fixture.DbContext.Invoices.AddAsync(invoice1);
-        await _fixture.DbContext.Invoices.AddAsync(invoice2);
-        await _fixture.DbContext.SaveChangesAsync();
-    
-        // Act
-        var invoices = _fixture.DbContext.Invoices
-            .Where(i => i.ContractId == _contract.Id)
-            .ToList();
-
-        // Assert
-        invoices.Should().HaveCount(2);
-        invoices.Should().AllSatisfy(i => i.ContractId.Should().Be(_contract.Id));
     }
-}

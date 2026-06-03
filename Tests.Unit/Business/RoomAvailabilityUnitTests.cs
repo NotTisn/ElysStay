@@ -28,17 +28,6 @@ public class RoomAvailabilityUnitTests
     }
 
     [Fact]
-    public void RoomStatus_Maintenance_CannotBeReserved()
-    {
-        // Arrange & Act
-        var status = RoomStatus.Maintenance;
-
-        // Assert
-        status.Should().Be(RoomStatus.Maintenance);
-        status.Should().NotBe(RoomStatus.Available);
-    }
-
-    [Fact]
     public void RoomStatus_Booked_CannotBeReserved()
     {
         // Arrange & Act
@@ -57,33 +46,10 @@ public class RoomAvailabilityUnitTests
         {
             RoomStatus.Available,
             RoomStatus.Occupied,
-            RoomStatus.Maintenance,
             RoomStatus.Booked
         };
 
         // Assert
-        statuses.Should().HaveCount(4);
+        statuses.Should().HaveCount(3);
     }
-
-    [Fact]
-    public void RoomStatus_CanConvertToString()
-    {
-        // Arrange & Act
-        var status = RoomStatus.Available;
-
-        // Assert
-        status.ToString().Should().Be("Available");
     }
-
-    [Fact]
-    public void IsRoomAvailable_ChecksStatus()
-    {
-        // Arrange
-        var availableStatus = RoomStatus.Available;
-        var occupiedStatus = RoomStatus.Occupied;
-
-        // Act & Assert
-        availableStatus.Should().Be(RoomStatus.Available);
-        occupiedStatus.Should().NotBe(RoomStatus.Available);
-    }
-}

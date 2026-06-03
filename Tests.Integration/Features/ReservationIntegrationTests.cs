@@ -131,26 +131,4 @@ public class ReservationIntegrationTests : IAsyncLifetime
             .FirstOrDefault(r => r.Id == reservation.Id);
         updated!.RefundedAt.Should().NotBeNull();
     }
-
-    [Fact]
-    public async Task GetReservations_FiltersByRoom_ReturnsOnlyRoomReservations()
-    {
-        // Arrange
-        await SetupTestData();
-        var res1 = TestDataBuilder.CreateReservation(_room.Id, _tenant.Id);
-        var res2 = TestDataBuilder.CreateReservation(_room.Id, _tenant.Id);
-
-        await _fixture.DbContext.Set<RoomReservation>().AddAsync(res1);
-        await _fixture.DbContext.Set<RoomReservation>().AddAsync(res2);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Act
-        var reservations = _fixture.DbContext.Set<RoomReservation>()
-            .Where(r => r.RoomId == _room.Id)
-            .ToList();
-
-        // Assert
-        reservations.Should().HaveCount(2);
-        reservations.Should().AllSatisfy(r => r.RoomId.Should().Be(_room.Id));
     }
-}

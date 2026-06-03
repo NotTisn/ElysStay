@@ -111,29 +111,6 @@ public class TestDataBuilder
         };
     }
 
-    public static Service CreateService(
-        Guid buildingId,
-        string name = "Water",
-        string unit = "m³",
-        decimal unitPrice = 10_000,
-        bool isMetered = true)
-    {
-        return new Service
-        {
-            Id = Guid.NewGuid(),
-            BuildingId = buildingId,
-            Name = name,
-            Unit = unit,
-            UnitPrice = unitPrice,
-            PreviousUnitPrice = unitPrice,
-            PriceUpdatedAt = DateTime.UtcNow,
-            IsMetered = isMetered,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-    }
-
     public static Invoice CreateInvoice(
         Guid contractId,
         Guid createdBy,
@@ -161,29 +138,6 @@ public class TestDataBuilder
         };
     }
 
-    public static MeterReading CreateMeterReading(
-        Guid roomId,
-        Guid serviceId,
-        Guid createdBy,
-        int billingMonth = 3,
-        int billingYear = 2026,
-        decimal previousReading = 100,
-        decimal currentReading = 110)
-    {
-        return new MeterReading
-        {
-            Id = Guid.NewGuid(),
-            RoomId = roomId,
-            ServiceId = serviceId,
-            CreatedBy = createdBy,
-            BillingMonth = billingMonth,
-            BillingYear = billingYear,
-            PreviousReading = previousReading,
-            CurrentReading = currentReading,
-            Consumption = currentReading - previousReading,
-            DateRead = DateTime.UtcNow
-        };
-    }
 
     public static Payment CreatePayment(
         Guid? invoiceId,

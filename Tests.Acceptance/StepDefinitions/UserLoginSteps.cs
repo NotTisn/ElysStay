@@ -32,6 +32,11 @@ public class UserLoginSteps
     {
         // For demonstration: Instead of saving the raw password, typically we'd hash it.
         // We will just store it to mimic a newly registered user.
+        
+        // Clear users to prevent duplicate email constraint issues between scenarios
+        _fixture.DbContext.Users.RemoveRange(_fixture.DbContext.Users);
+        await _fixture.DbContext.SaveChangesAsync();
+
         var user = TestDataBuilder.CreateUser(email: email, role: UserRole.Tenant);
         
         // Let's assume your Password property is accessible, or use whatever property ElyStay uses.

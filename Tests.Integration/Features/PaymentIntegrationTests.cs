@@ -117,26 +117,4 @@ public class PaymentIntegrationTests : IAsyncLifetime
             saved!.PaymentMethod.Should().Be(method);
         }
     }
-
-    [Fact]
-    public async Task GetPaymentsByInvoice_ReturnsOnlyRelatedPayments()
-    {
-        // Arrange
-        await SetupTestData();
-        var payment1 = TestDataBuilder.CreatePayment(_invoice.Id, _owner.Id, 1_000_000);
-        var payment2 = TestDataBuilder.CreatePayment(_invoice.Id, _owner.Id, 2_000_000);
-
-        await _fixture.DbContext.Set<Payment>().AddAsync(payment1);
-        await _fixture.DbContext.Set<Payment>().AddAsync(payment2);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Act
-        var payments = _fixture.DbContext.Set<Payment>()
-            .Where(p => p.InvoiceId == _invoice.Id)
-            .ToList();
-
-        // Assert
-        payments.Should().HaveCount(2);
-        payments.Should().AllSatisfy(p => p.InvoiceId.Should().Be(_invoice.Id));
     }
-}

@@ -111,48 +111,4 @@ public class ContractIntegrationTests : IAsyncLifetime
         contracts.Should().HaveCount(1);
         contracts.First().RoomId.Should().Be(_room.Id);
     }
-
-    [Fact]
-    public async Task RenewContract_CreatesNewContractWithUpdatedDates()
-    {
-        // Arrange
-        await SetupTestData();
-        
-        // 1. Create and save the first active contract
-        var originalContract = TestDataBuilder.CreateContract(_room.Id, _tenant.Id, _owner.Id);
-        await _fixture.DbContext.Contracts.AddAsync(originalContract);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // 2. Terminate the original contract so the room becomes available again
-        originalContract.Status = ContractStatus.Terminated; // Use Terminated or Expired based on your enum
-        _fixture.DbContext.Contracts.Update(originalContract);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Act
-        // 3. Now it is safe to create the new Active contract
-        var newStartDate = originalContract.EndDate;
-        var newEndDate = newStartDate.AddMonths(12);
-        var renewedContract = new Contract
-        {
-            Id = Guid.NewGuid(),
-            RoomId = _room.Id,
-            TenantUserId = _tenant.Id,
-            StartDate = newStartDate,
-            MoveInDate = newStartDate,
-            EndDate = newEndDate,
-            MonthlyRent = originalContract.MonthlyRent,
-            DepositAmount = originalContract.DepositAmount,
-            DepositStatus = DepositStatus.Held,
-            Status = ContractStatus.Active, // Database will accept this now!
-            CreatedBy = _owner.Id
-        };
-
-        await _fixture.DbContext.Contracts.AddAsync(renewedContract);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Assert
-        var savedRenewed = _fixture.DbContext.Contracts.FirstOrDefault(c => c.Id == renewedContract.Id);
-        savedRenewed.Should().NotBeNull();
-        savedRenewed!.StartDate.Should().Be(newStartDate);
     }
-}

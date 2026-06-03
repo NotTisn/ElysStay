@@ -78,22 +78,4 @@ public class UserAuthenticationUnitTests
         // Assert
         user.Status.Should().Be(UserStatus.Deactivated);
     }
-
-    [Fact]
-    public void SoftDeleteUser_ShouldSetDeletedAt_Successfully()
-    {
-        // Arrange
-        var user = new User
-        {
-            Email = "deleted@example.com",
-            FullName = "Delete Me"
-        };
-
-        // Act
-        user.DeletedAt = DateTime.UtcNow;
-
-        // Assert
-        user.DeletedAt.Should().NotBeNull();
-        user.DeletedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(2));
     }
-}

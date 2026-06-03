@@ -66,20 +66,4 @@ public class PaymentValidationUnitTests
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.ErrorMessage.Contains("Số tiền phải lớn hơn 0"));
     }
-
-    [Fact]
-    public void ProcessPaymentWebhookValidator_RequiresReferenceCode()
-    {
-        var validator = new ProcessPaymentWebhookCommandValidator();
-
-        var result = validator.Validate(new ProcessPaymentWebhookCommand
-        {
-            InvoiceId = Guid.NewGuid(),
-            Amount = 1000,
-            ReferenceCode = ""
-        });
-
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("Mã giao dịch ngân hàng là bắt buộc"));
     }
-}

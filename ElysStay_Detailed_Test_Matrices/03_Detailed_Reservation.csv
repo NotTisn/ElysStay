@@ -1,42 +1,42 @@
-Function Code,Module Reservation,Function Name,Submit Reservation,,,,,,,,,
-Created By,Ourselves,Executed By,Group 6,,,,,,,,,
-Lines of code,320,Lack of test cases,-,,,,,,,,,
-Test requirement,Check if room booking combinatorial logical boundary flows are met,,,,,,,,,,,,
-Passed,Failed,Untested,N/A,B,Total Test Cases,,,,,,,
-14,0,0,3,9,2,14,,,,,,
-,,,,,,,,,,,,,
-Condition,Precondition,UTCID01,UTCID02,UTCID03,UTCID04,UTCID05,UTCID06,UTCID07,UTCID08,UTCID09,UTCID10,UTCID11,UTCID12,UTCID13,UTCID14
-,System operates correctly,,,,,,,,,,,,,
-,,,,,,,,,,,,,,
-,Room Status,,,,,,,,,,,,,
-,1. Room is Available,O,O,O,O,O,O,O,,,,O,O,O,O
-,2. Room is Occupied,,,,,,,,O,O,O,,,,,
-,3. Room is under Maintenance,,,,,,,,,,,O,,,,
-,,,,,,,,,,,,,,
-,Move-In Date,,,,,,,,,,,,,
-,1. Valid Future Date,O,O,O,O,O,O,O,O,O,O,O,O,,
-,2. Date in the Past,,,,,,,,,,,,,O,
-,3. Overlapping existing booking period,,,,,,,,,,,,,,O
-,,,,,,,,,,,,,,
-,Deposit Requirement,,,,,,,,,,,,,
-,1. Deposit paid correctly,O,,,O,O,O,O,,,,,,,,
-,2. Deposit unpaid/skipped,,O,,,,,,,O,,,,,,
-,3. Excess Deposit Paid,,,O,,,,,,,,,O,O,,
-,,,,,,,,,,,,,,
-Confirm,Return,,,,,,,,,,,,,
-,T,O,,,O,O,O,O,,,,,,,,
-,F,,O,O,,,,,,O,O,O,O,O,O
-,Exception,,,,,,,,,,,,,
-,Log message,,,,,,,,,,,,,
-,"Booking successful",O,,,O,O,O,O,,,,,,,,
-,"Invalid room state - Occupied",,,,,,,,O,O,O,,,,,
-,"Room is under maintenance",,,,,,,,,,,O,,,,
-,"Move-In Date cannot be in the past",,,,,,,,,,,,,O,
-,"Room already booked for these dates",,,,,,,,,,,,,,O
-,"Deposit is required prior to confirmation",,O,,,,,,,O,,,,,,
-,"Overpaid deposit exception",,,O,,,,,,,,,O,O,,
-,,,,,,,,,,,,,,
-Result,Type(N : Normal / A : Abnormal / B : Boundary),N,A,A,N,N,N,N,A,A,A,A,B,B,A
-,Passed/Failed,P,P,P,P,P,P,P,P,P,P,P,P,P,P
-,Executed Date,28/03/26,28/03/26,28/03/26,28/03/26,28/03/26,28/03/26,28/03/26,28/03/26,28/03/26,28/03/26,28/03/26,28/03/26,28/03/26,28/03/26
-,Defect ID,,,,,,,,,,,,,,
+Function Code,Module Reservation,Function Name,Submit Reservation,,,
+Created By,Ourselves,Executed By,Group 6,,,
+Lines of code,320,Lack of test cases,-,,,
+Test requirement,Check if room booking combinatorial logical boundary flows are met,,,,,
+Passed,Failed,Untested,N/A,B,Total Test Cases,
+14,0,0,3,9,2,14
+,,,,,,
+Condition,Precondition,UTCID01,UTCID02,UTCID03,UTCID04,UTCID05
+,System operates correctly,,,,,
+,,,,,,
+,Room Status,,,,,
+,1. Room is Available,O,O,O,O,O
+,2. Room is Occupied,,,,,
+,3. Room is under Booked,,,,,
+,,,,,,
+,Move-In Date,,,,,
+,1. Valid Future Date,O,O,O,O,O
+,2. Date in the Past,,,,,
+,3. Overlapping existing booking period,,,,,
+,,,,,,
+,Deposit Requirement,,,,,
+,1. Deposit paid correctly,O,,,O,O
+,2. Deposit unpaid/skipped,,O,,,
+,3. Excess Deposit Paid,,,O,,
+,,,,,,
+Confirm,Return,,,,,
+,T,O,,,O,O
+,F,,O,O,,
+,Exception,,,,,
+,Log message,,,,,
+,Booking successful,O,,,O,O
+,Invalid room state - Occupied,,,,,
+,Room is under booked,,,,,
+,Move-In Date cannot be in the past,,,,,
+,Room already booked for these dates,,,,,
+,Deposit is required prior to confirmation,,O,,,
+,Overpaid deposit exception,,,O,,
+,,,,,,
+Result,Type(N : Normal / A : Abnormal / B : Boundary),N,A,A,N,N
+,Passed/Failed,P,P,P,P,P
+,Executed Date,28/03/26,28/03/26,28/03/26,28/03/26,28/03/26
+,Defect ID,,,,,

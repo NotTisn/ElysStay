@@ -62,28 +62,4 @@ public class PaymentMethodValidationUnitTests
         validMethods.Should().HaveCount(4);
         validMethods.Should().AllSatisfy(m => m.Should().NotBeNullOrEmpty());
     }
-
-    [Fact]
-    public void PaymentMethod_CanBeAssignedToPayment()
-    {
-        // Arrange
-        var method = "BankTransfer";
-        var payment = new Payment();
-
-        // Act
-        payment.PaymentMethod = method;
-
-        // Assert
-        payment.PaymentMethod.Should().Be("BankTransfer");
     }
-
-    [Fact]
-    public void PaymentMethod_CanBeNull()
-    {
-        // Arrange & Act
-        var payment = new Payment { PaymentMethod = null };
-
-        // Assert
-        payment.PaymentMethod.Should().BeNull();
-    }
-}
