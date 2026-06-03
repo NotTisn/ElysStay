@@ -353,6 +353,25 @@ public static class DevDataSeeder
 
         db.Contracts.AddRange(contract1, contract2);
 
+        // ── 8b. Contract Tenants ─────────────────────────────────────────────
+
+        db.Set<ContractTenant>().AddRange(
+            new ContractTenant
+            {
+                ContractId = Contract1Id,
+                TenantUserId = Tenant1Id,
+                IsMainTenant = true,
+                MoveInDate = contractStart1,
+            },
+            new ContractTenant
+            {
+                ContractId = Contract2Id,
+                TenantUserId = Tenant2Id,
+                IsMainTenant = true,
+                MoveInDate = contractStart2,
+            }
+        );
+
         // ── 9. Reservation deposit payment (Tenant3) ──────────────────────────
 
         db.Payments.Add(new Payment
