@@ -1,17 +1,34 @@
-using Xunit;
-using FluentAssertions;
+using Application.Common.Exceptions;
+using Application.Common.Interfaces;
+using Application.Features.Expenses.Commands;
 using Domain.Entities;
 using Domain.Enums;
-using Tests.Integration.Fixtures;
+using FluentAssertions;
+using Infrastructure.Auth;
+using Microsoft.EntityFrameworkCore;
+using Moq;
 using Tests.Integration.Builders;
+using Tests.Integration.Fixtures;
+using Xunit;
 
 namespace ElysStay.Tests.Integration.Features;
 
+/// <summary>
+/// Integration tests for expense recording, driven through the real
+/// CreateExpenseCommandHandler against a real PostgreSQL database.
+///
+/// Business process: 1.5.8 — Expenses are operational costs stored in the Expense
+/// table; they feed the "Expenses" bucket of the P&L report. Expense creation is
+/// building-scoped (Owner/Staff). See <see cref="PnlReportIntegrationTests"/> for
+/// how these expenses flow into Net Operating Profit / Net Cash Flow.
+/// </summary>
 public class ExpenseIntegrationTests : IAsyncLifetime
 {
     private readonly DatabaseFixture _fixture = new();
+
     private User _owner = null!;
     private Building _building = null!;
+    private Room _room = null!;
 
     public async Task InitializeAsync() => await _fixture.InitializeAsync();
     public async Task DisposeAsync() => await _fixture.DisposeAsync();
@@ -20,111 +37,115 @@ public class ExpenseIntegrationTests : IAsyncLifetime
     {
         _owner = TestDataBuilder.CreateUser(role: UserRole.Owner);
         _building = TestDataBuilder.CreateBuilding(_owner.Id);
+        _room = TestDataBuilder.CreateRoom(_building.Id);
 
-        await _fixture.DbContext.Users.AddAsync(_owner);
-        await _fixture.DbContext.Buildings.AddAsync(_building);
+        _fixture.DbContext.Users.Add(_owner);
+        _fixture.DbContext.Buildings.Add(_building);
+        _fixture.DbContext.Rooms.Add(_room);
         await _fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.ChangeTracker.Clear();
+    }
+
+    private CreateExpenseCommandHandler CreateHandler(Guid? ownerId = null)
+    {
+        var currentUser = new Mock<ICurrentUserService>();
+        currentUser.Setup(m => m.GetRequiredUserId()).Returns(ownerId ?? _owner.Id);
+        currentUser.Setup(m => m.UserId).Returns(ownerId ?? _owner.Id);
+        currentUser.Setup(m => m.IsOwner).Returns(true);
+        currentUser.Setup(m => m.Role).Returns(UserRole.Owner);
+
+        var scope = new BuildingScopeService(_fixture.DbContext, currentUser.Object);
+        return new CreateExpenseCommandHandler(_fixture.DbContext, currentUser.Object, scope);
     }
 
     [Fact]
-    public async Task CreateExpense_WithValidData_CreatesSuccessfully()
+    public async Task CreateExpense_WithValidData_PersistsWithRecorder()
     {
-        // Arrange
         await SetupTestData();
-        var expense = new Expense
+
+        var result = await CreateHandler().Handle(new CreateExpenseCommand
         {
-            Id = Guid.NewGuid(),
             BuildingId = _building.Id,
             Category = "Maintenance",
-            Description = "Roof repair",
+            Description = "Sửa mái nhà",
             Amount = 5_000_000,
-            ExpenseDate = DateOnly.FromDateTime(DateTime.UtcNow),
-            RecordedBy = _owner.Id
-        };
+            ExpenseDate = DateOnly.FromDateTime(DateTime.UtcNow)
+        }, default);
 
-        // Act
-        await _fixture.DbContext.Expenses.AddAsync(expense);
-        await _fixture.DbContext.SaveChangesAsync();
+        result.Category.Should().Be("Maintenance");
+        result.Amount.Should().Be(5_000_000);
+        result.RecordedBy.Should().Be(_owner.Id);
 
-        // Assert
-        var saved = _fixture.DbContext.Expenses.FirstOrDefault(e => e.Id == expense.Id);
+        var saved = await _fixture.DbContext.Expenses.FindAsync(result.Id);
         saved.Should().NotBeNull();
-        saved!.Category.Should().Be("Maintenance");
+        saved!.BuildingId.Should().Be(_building.Id);
+        saved.RecordedBy.Should().Be(_owner.Id);
     }
 
     [Fact]
-    public async Task GetExpenses_FiltersByBuilding_ReturnsOnlyBuildingExpenses()
+    public async Task CreateExpense_ScopedToRoom_PersistsRoomLink()
     {
-        // Arrange
         await SetupTestData();
-        var expense1 = new Expense
+
+        var result = await CreateHandler().Handle(new CreateExpenseCommand
         {
-            Id = Guid.NewGuid(),
             BuildingId = _building.Id,
-            Category = "Maintenance",
-            Amount = 1_000_000,
-            ExpenseDate = DateOnly.FromDateTime(DateTime.UtcNow),
-            RecordedBy = _owner.Id
-        };
+            RoomId = _room.Id,
+            Category = "Repair",
+            Description = "Thay khóa cửa phòng 101",
+            Amount = 800_000,
+            ExpenseDate = DateOnly.FromDateTime(DateTime.UtcNow)
+        }, default);
 
-        var expense2 = new Expense
-        {
-            Id = Guid.NewGuid(),
-            BuildingId = _building.Id,
-            Category = "Utilities",
-            Amount = 2_000_000,
-            ExpenseDate = DateOnly.FromDateTime(DateTime.UtcNow),
-            RecordedBy = _owner.Id
-        };
+        result.RoomId.Should().Be(_room.Id);
 
-        await _fixture.DbContext.Expenses.AddAsync(expense1);
-        await _fixture.DbContext.Expenses.AddAsync(expense2);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Act
-        var expenses = _fixture.DbContext.Expenses
-            .Where(e => e.BuildingId == _building.Id)
-            .ToList();
-
-        // Assert
-        expenses.Should().HaveCount(2);
+        var saved = await _fixture.DbContext.Expenses.FindAsync(result.Id);
+        saved!.RoomId.Should().Be(_room.Id);
     }
 
     [Fact]
-    public async Task GetExpenses_FiltersByCategory_ReturnsOnlyCategoryExpenses()
+    public async Task CreateExpense_RoomNotInBuilding_ThrowsNotFound()
     {
-        // Arrange
         await SetupTestData();
-        var maintenance = new Expense
-        {
-            Id = Guid.NewGuid(),
-            BuildingId = _building.Id,
-            Category = "Maintenance",
-            Amount = 1_000_000,
-            ExpenseDate = DateOnly.FromDateTime(DateTime.UtcNow),
-            RecordedBy = _owner.Id
-        };
 
-        var utilities = new Expense
+        // A room that belongs to a different building
+        var otherOwner = TestDataBuilder.CreateUser(role: UserRole.Owner);
+        var otherBuilding = TestDataBuilder.CreateBuilding(otherOwner.Id);
+        var otherRoom = TestDataBuilder.CreateRoom(otherBuilding.Id, roomNumber: "999");
+        _fixture.DbContext.Users.Add(otherOwner);
+        _fixture.DbContext.Buildings.Add(otherBuilding);
+        _fixture.DbContext.Rooms.Add(otherRoom);
+        await _fixture.DbContext.SaveChangesAsync();
+        _fixture.DbContext.ChangeTracker.Clear();
+
+        var act = () => CreateHandler().Handle(new CreateExpenseCommand
         {
-            Id = Guid.NewGuid(),
+            BuildingId = _building.Id,
+            RoomId = otherRoom.Id,
+            Category = "Repair",
+            Description = "Sai phòng",
+            Amount = 100_000,
+            ExpenseDate = DateOnly.FromDateTime(DateTime.UtcNow)
+        }, default);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task CreateExpense_BuildingNotOwnedByUser_ThrowsForbidden()
+    {
+        await SetupTestData();
+
+        // A different owner attempts to record an expense on this building
+        var act = () => CreateHandler(ownerId: Guid.NewGuid()).Handle(new CreateExpenseCommand
+        {
             BuildingId = _building.Id,
             Category = "Utilities",
-            Amount = 2_000_000,
-            ExpenseDate = DateOnly.FromDateTime(DateTime.UtcNow),
-            RecordedBy = _owner.Id
-        };
+            Description = "Tiền điện khu vực chung",
+            Amount = 1_200_000,
+            ExpenseDate = DateOnly.FromDateTime(DateTime.UtcNow)
+        }, default);
 
-        await _fixture.DbContext.Expenses.AddAsync(maintenance);
-        await _fixture.DbContext.Expenses.AddAsync(utilities);
-        await _fixture.DbContext.SaveChangesAsync();
-
-        // Act
-        var maintenanceExpenses = _fixture.DbContext.Expenses
-            .Where(e => e.Category == "Maintenance")
-            .ToList();
-
-        // Assert
-        maintenanceExpenses.Should().HaveCount(1);
+        await act.Should().ThrowAsync<ForbiddenException>();
     }
 }

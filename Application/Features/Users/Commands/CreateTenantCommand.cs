@@ -38,6 +38,7 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, C
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
         var normalizedFullName = request.FullName.Trim();
+        var normalizedPhone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
 
         // Auth: Owner or Staff
         if (_currentUser.IsTenant)
@@ -50,6 +51,17 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, C
         if (emailExists)
             throw new ConflictException("Email này đã được sử dụng.", "DUPLICATE_EMAIL");
 
+        // Phone uniqueness (IX_Users_Phone) — check before creating in Keycloak so a
+        // duplicate phone fails cleanly instead of leaving an orphaned Keycloak user.
+        if (normalizedPhone is not null)
+        {
+            var phoneExists = await _db.Users
+                .IgnoreQueryFilters()
+                .AnyAsync(u => u.Phone == normalizedPhone, ct);
+            if (phoneExists)
+                throw new ConflictException("Số điện thoại này đã được sử dụng.", "DUPLICATE_PHONE");
+        }
+
         // Generate random password if not provided (spec: "Không có password → tạo ngẫu nhiên")
         var password = request.Password ?? GenerateRandomPassword();
 
@@ -58,7 +70,7 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, C
             normalizedEmail,
             normalizedFullName,
             password,
-            UserRole.Tenant.ToString(),
+            UserRole.Tenant.ToString().ToLowerInvariant(),
             ct);
 
         // Create in local DB
@@ -67,7 +79,7 @@ public class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, C
             KeycloakId = keycloakId,
             Email = normalizedEmail,
             FullName = normalizedFullName,
-            Phone = request.Phone?.Trim(),
+            Phone = normalizedPhone,
             Role = UserRole.Tenant,
             Status = UserStatus.Active
         };

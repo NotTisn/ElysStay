@@ -40,6 +40,11 @@ public class DatabaseHooks
     {
         var fixture = featureContext.Get<DatabaseFixture>();
 
+        // Detach entities tracked by the long-lived per-feature DbContext. Without this, entities
+        // from the previous scenario stay tracked after the TRUNCATE below, so an Update+SaveChanges
+        // hits a row that no longer exists → DbUpdateConcurrencyException ("0 rows affected").
+        fixture.DbContext.ChangeTracker.Clear();
+
         // Truncate all tables between scenarios (faster and safer than drop+recreate).
         // RESTART IDENTITY resets sequences; CASCADE handles FK constraints.
         await fixture.DbContext.Database.ExecuteSqlRawAsync(@"

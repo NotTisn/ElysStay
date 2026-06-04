@@ -265,6 +265,8 @@ public class TerminateContractIntegrationTests : IAsyncLifetime
     public async Task Terminate_TenantAlreadyMovedOut_DoesNotOverrideMoveOutDate()
     {
         await SeedBaseData();
+        // SeedBaseData already created an active main tenant (MoveOutDate == null).
+        // Add a second, non-main tenant who has already moved out.
         var existingMoveOut = new DateOnly(2026, 3, 15);
         await AddContractTenant(moveOutDate: existingMoveOut);
 
@@ -273,9 +275,15 @@ public class TerminateContractIntegrationTests : IAsyncLifetime
             Id = _contract.Id, TerminationDate = new DateOnly(2026, 6, 30)
         }, default);
 
-        var tenant = await _fixture.DbContext.ContractTenants
-            .FirstAsync(ct => ct.ContractId == _contract.Id);
-        tenant.MoveOutDate.Should().Be(existingMoveOut);
+        // The already-moved-out tenant keeps their original MoveOutDate (not overridden) …
+        var movedOutTenant = await _fixture.DbContext.ContractTenants
+            .FirstAsync(ct => ct.ContractId == _contract.Id && !ct.IsMainTenant);
+        movedOutTenant.MoveOutDate.Should().Be(existingMoveOut);
+
+        // … while the still-active main tenant receives the termination date.
+        var mainTenant = await _fixture.DbContext.ContractTenants
+            .FirstAsync(ct => ct.ContractId == _contract.Id && ct.IsMainTenant);
+        mainTenant.MoveOutDate.Should().Be(new DateOnly(2026, 6, 30));
     }
 
     // ── Auto-void future invoices ──────────────────────────────────────────────

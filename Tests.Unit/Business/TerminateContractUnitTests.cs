@@ -246,10 +246,12 @@ public class TerminateContractUnitTests
     {
         var existing = new DateOnly(2026, 3, 15);
         var f = CreateFixture();
+        // The fixture already has one active main tenant; add a second tenant who has already moved out.
+        var movedOutTenantId = Guid.NewGuid();
         f.Contract.ContractTenants.Add(new ContractTenant
         {
             Id = Guid.NewGuid(), ContractId = f.Contract.Id,
-            TenantUserId = Guid.NewGuid(), MoveInDate = new DateOnly(2026, 1, 1),
+            TenantUserId = movedOutTenantId, MoveInDate = new DateOnly(2026, 1, 1),
             MoveOutDate = existing    // already moved out
         });
         SetupMocks(f);
@@ -259,7 +261,12 @@ public class TerminateContractUnitTests
             Id = f.Contract.Id, TerminationDate = new DateOnly(2026, 6, 30)
         }, default);
 
-        f.Contract.ContractTenants.Single().MoveOutDate.Should().Be(existing);
+        // The already-moved-out tenant keeps their original MoveOutDate (not overridden) …
+        f.Contract.ContractTenants.Single(ct => ct.TenantUserId == movedOutTenantId)
+            .MoveOutDate.Should().Be(existing);
+        // … while the still-active main tenant receives the termination date.
+        f.Contract.ContractTenants.Single(ct => ct.IsMainTenant)
+            .MoveOutDate.Should().Be(new DateOnly(2026, 6, 30));
     }
 
     // ── Validation guards ──────────────────────────────────────────────────────

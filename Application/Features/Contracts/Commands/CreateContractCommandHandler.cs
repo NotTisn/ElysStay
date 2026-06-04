@@ -100,6 +100,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
         var contract = new Contract
         {
             RoomId = request.RoomId,
+            TenantUserId = request.TenantUserId,
             ReservationId = request.ReservationId,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
@@ -108,6 +109,7 @@ public class CreateContractCommandHandler : IRequestHandler<CreateContractComman
             DepositAmount = request.DepositAmount,
             Status = ContractStatus.Active,
             Note = request.Note,
+            CreatedBy = userId,
             Creator = creator,
             ContractTenants =
             [

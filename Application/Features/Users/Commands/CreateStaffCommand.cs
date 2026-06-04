@@ -55,7 +55,7 @@ public class CreateStaffCommandHandler : IRequestHandler<CreateStaffCommand, Cre
             normalizedEmail,
             normalizedFullName,
             request.Password,
-            UserRole.Staff.ToString(),
+            UserRole.Staff.ToString().ToLowerInvariant(),
             ct);
 
         // Create in local DB

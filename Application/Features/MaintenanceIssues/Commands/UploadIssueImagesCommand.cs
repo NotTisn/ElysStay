@@ -7,7 +7,8 @@ namespace Application.Features.MaintenanceIssues.Commands;
 
 /// <summary>
 /// POST /issues/{id}/images — Upload up to 3 images for a maintenance issue.
-/// Auth: ALL authenticated users.
+/// Auth: the issue reporter (any authenticated user) for their own issue; otherwise Owner/Staff
+/// scoped to the issue's building.
 /// Max 3 MB per image, JPEG/PNG only.
 /// </summary>
 public class UploadIssueImagesCommand : IRequest<IReadOnlyList<string>>
@@ -50,7 +51,7 @@ public class UploadIssueImagesCommandHandler : IRequestHandler<UploadIssueImages
 
     public async Task<IReadOnlyList<string>> Handle(UploadIssueImagesCommand request, CancellationToken ct)
     {
-        _currentUser.GetRequiredUserId();
+        var userId = _currentUser.GetRequiredUserId();
 
         if (request.Files is null || request.Files.Count == 0)
             throw new BadRequestException("Vui lòng chọn ít nhất 1 ảnh.");
@@ -70,8 +71,11 @@ public class UploadIssueImagesCommandHandler : IRequestHandler<UploadIssueImages
         var issue = await _db.MaintenanceIssues.FindAsync([request.IssueId], ct)
             ?? throw new NotFoundException("Sự cố", request.IssueId);
 
-        // Building-scope authorization
-        await _buildingScope.AuthorizeAsync(issue.BuildingId, ct);
+        // Auth: any authenticated user may upload to an issue they reported (e.g. the tenant
+        // attaching photos to their own request). Anyone else must be Owner/Staff scoped to the
+        // issue's building — this blocks cross-tenant uploads onto someone else's issue.
+        if (issue.ReportedBy != userId)
+            await _buildingScope.AuthorizeAsync(issue.BuildingId, ct);
 
         // Parse existing URLs (if any) so we don't exceed total limit
         var existingUrls = string.IsNullOrWhiteSpace(issue.ImageUrls)

@@ -51,33 +51,10 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PagedResult<U
         if (request.RoleFilter.HasValue)
             query = query.Where(u => u.Role == request.RoleFilter.Value);
 
-        // Building-scope filtering: Owner/Staff must only see users in their buildings
-        if (_currentUser.IsOwner)
-        {
-            var ownedBuildingIds = _db.Buildings
-                .Where(b => b.OwnerId == userId)
-                .Select(b => b.Id);
-
-            // Tenants: linked via Contract.TenantUserId or ContractTenants (roommates)
-            var tenantIdsInOwnedBuildings = _db.Contracts
-                .Where(c => ownedBuildingIds.Contains(c.Room!.BuildingId))
-                .SelectMany(c => c.ContractTenants.Select(ct => ct.TenantUserId))
-                .Distinct();
-
-            // Staff: linked via StaffAssignments
-            var staffIdsInOwnedBuildings = _db.StaffAssignments
-                .Where(sa => ownedBuildingIds.Contains(sa.BuildingId))
-                .Select(sa => sa.StaffId)
-                .Distinct();
-
-            query = query.Where(u =>
-                u.Role == Domain.Enums.UserRole.Owner
-                    ? u.Id == userId // Owner sees only themselves for Owner role
-                    : u.Role == Domain.Enums.UserRole.Staff
-                        ? staffIdsInOwnedBuildings.Contains(u.Id)
-                        : tenantIdsInOwnedBuildings.Contains(u.Id));
-        }
-        else if (_currentUser.IsStaff)
+        // Building-scope filtering: Staff only see tenants in their assigned buildings.
+        // Owners see all users matching the role filter (no building scope), so
+        // newly created tenants without a contract yet are still visible.
+        if (_currentUser.IsStaff)
         {
             var assignedBuildingIds = _db.StaffAssignments
                 .Where(sa => sa.StaffId == userId)

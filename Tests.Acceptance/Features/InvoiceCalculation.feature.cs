@@ -663,15 +663,12 @@ namespace Tests.Acceptance.Features
                             "Previous",
                             "Current"});
                 table10.AddRow(new string[] {
-                            "-----------",
-                            "----------"});
-                table10.AddRow(new string[] {
                             "100",
                             "110"});
 #line 149
     await testRunner.AndAsync("meter reading for room \"101\":", ((string)(null)), table10, "And ");
 #line hidden
-#line 155
+#line 154
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
                 TechTalk.SpecFlow.Table table11 = new TechTalk.SpecFlow.Table(new string[] {
@@ -686,7 +683,7 @@ namespace Tests.Acceptance.Features
                 table11.AddRow(new string[] {
                             "ServiceAmount",
                             "150000"});
-#line 156
+#line 155
     await testRunner.ThenAsync("the invoice should contain:", ((string)(null)), table11, "Then ");
 #line hidden
             }
@@ -703,7 +700,7 @@ namespace Tests.Acceptance.Features
                     "Service"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Create service item with zero consumption", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 165
+#line 164
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -716,22 +713,19 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 166
+#line 165
     await testRunner.GivenAsync("electricity service enabled with unit price 3500 VND", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
                 TechTalk.SpecFlow.Table table12 = new TechTalk.SpecFlow.Table(new string[] {
                             "Previous",
                             "Current"});
                 table12.AddRow(new string[] {
-                            "-----------",
-                            "----------"});
-                table12.AddRow(new string[] {
                             "1000",
                             "1000"});
-#line 167
+#line 166
     await testRunner.AndAsync("meter reading for room \"101\":", ((string)(null)), table12, "And ");
 #line hidden
-#line 173
+#line 171
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
                 TechTalk.SpecFlow.Table table13 = new TechTalk.SpecFlow.Table(new string[] {
@@ -743,7 +737,7 @@ namespace Tests.Acceptance.Features
                 table13.AddRow(new string[] {
                             "ServiceAmount",
                             "0"});
-#line 174
+#line 172
     await testRunner.ThenAsync("the invoice should contain:", ((string)(null)), table13, "Then ");
 #line hidden
             }
@@ -760,7 +754,7 @@ namespace Tests.Acceptance.Features
                     "Service"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Skip service item when room service is disabled", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 182
+#line 180
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -773,13 +767,16 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 183
-    await testRunner.GivenAsync("water service is disabled for room \"101\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 181
+    await testRunner.GivenAsync("water service enabled with unit price 10000 VND", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 184
+#line 182
+    await testRunner.AndAsync("water service is disabled for room \"101\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
+#line hidden
+#line 183
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 185
+#line 184
     await testRunner.ThenAsync("no service item should be created", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -796,7 +793,7 @@ namespace Tests.Acceptance.Features
                     "Service"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Show warning when meter reading is missing", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 189
+#line 188
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -809,19 +806,19 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 190
+#line 189
     await testRunner.GivenAsync("electricity service enabled with unit price 3500 VND", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 191
+#line 190
     await testRunner.AndAsync("no meter reading exists for room \"101\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 192
+#line 191
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 193
-    await testRunner.ThenAsync("warning \"Meter reading missing\" should be displayed", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line 192
+    await testRunner.ThenAsync("warning \"Thiếu chỉ số đồng hồ\" should be displayed", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
-#line 194
+#line 193
     await testRunner.AndAsync("service item should not be created", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             }
@@ -838,7 +835,7 @@ namespace Tests.Acceptance.Features
                     "Service"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Override unit price takes priority over default service price", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 196
+#line 195
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -851,16 +848,16 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 197
+#line 196
     await testRunner.GivenAsync("water service enabled with unit price 10000 VND", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 198
+#line 197
     await testRunner.AndAsync("override unit price is 15000 VND", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 199
+#line 198
     await testRunner.AndAsync("room \"101\" has 10 consumption units", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 200
+#line 199
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
                 TechTalk.SpecFlow.Table table14 = new TechTalk.SpecFlow.Table(new string[] {
@@ -872,7 +869,7 @@ namespace Tests.Acceptance.Features
                 table14.AddRow(new string[] {
                             "ServiceAmount",
                             "150000"});
-#line 201
+#line 200
     await testRunner.ThenAsync("the invoice should contain:", ((string)(null)), table14, "Then ");
 #line hidden
             }
@@ -889,7 +886,7 @@ namespace Tests.Acceptance.Features
                     "Service"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Override quantity takes priority over occupant count", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 207
+#line 206
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -902,16 +899,16 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 208
+#line 207
     await testRunner.GivenAsync("cleaning service enabled with unit price 50000 VND", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 209
+#line 208
     await testRunner.AndAsync("room \"101\" has 5 occupants", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 210
+#line 209
     await testRunner.AndAsync("override quantity is 2", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 211
+#line 210
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
                 TechTalk.SpecFlow.Table table15 = new TechTalk.SpecFlow.Table(new string[] {
@@ -923,7 +920,7 @@ namespace Tests.Acceptance.Features
                 table15.AddRow(new string[] {
                             "ServiceAmount",
                             "100000"});
-#line 212
+#line 211
     await testRunner.ThenAsync("the invoice should contain:", ((string)(null)), table15, "Then ");
 #line hidden
             }
@@ -940,7 +937,7 @@ namespace Tests.Acceptance.Features
                     "Service"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Use occupant count when override quantity is missing", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 218
+#line 217
     this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -953,13 +950,13 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 219
+#line 218
     await testRunner.GivenAsync("internet service enabled with unit price 100000 VND", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 220
+#line 219
     await testRunner.AndAsync("room \"101\" has 3 occupants", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 221
+#line 220
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
                 TechTalk.SpecFlow.Table table16 = new TechTalk.SpecFlow.Table(new string[] {
@@ -968,7 +965,7 @@ namespace Tests.Acceptance.Features
                 table16.AddRow(new string[] {
                             "ServiceQuantity",
                             "3"});
-#line 222
+#line 221
     await testRunner.ThenAsync("the invoice should contain:", ((string)(null)), table16, "Then ");
 #line hidden
             }
@@ -985,7 +982,7 @@ namespace Tests.Acceptance.Features
                     "Service"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Return validation error for invalid override unit price", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 231
+#line 230
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -998,16 +995,16 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 232
+#line 231
     await testRunner.GivenAsync("override unit price is -100", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 233
+#line 232
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 234
+#line 233
     await testRunner.ThenAsync("validation error should be displayed", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
-#line 235
+#line 234
     await testRunner.AndAsync("no invoice should be created", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             }
@@ -1024,7 +1021,7 @@ namespace Tests.Acceptance.Features
                     "Service"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Return validation error for invalid override quantity", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 239
+#line 238
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1037,16 +1034,16 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 240
+#line 239
     await testRunner.GivenAsync("override quantity is -1", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 241
+#line 240
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 242
+#line 241
     await testRunner.ThenAsync("validation error should be displayed", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
-#line 243
+#line 242
     await testRunner.AndAsync("no invoice should be created", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             }
@@ -1063,7 +1060,7 @@ namespace Tests.Acceptance.Features
                     "Service"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Return validation error for invalid meter consumption", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 247
+#line 246
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1076,28 +1073,25 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 248
+#line 247
     await testRunner.GivenAsync("water service enabled with unit price 10000 VND", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
                 TechTalk.SpecFlow.Table table17 = new TechTalk.SpecFlow.Table(new string[] {
                             "Previous",
                             "Current"});
                 table17.AddRow(new string[] {
-                            "-----------",
-                            "----------"});
-                table17.AddRow(new string[] {
                             "100",
                             "90"});
-#line 249
+#line 248
     await testRunner.AndAsync("meter reading for room \"101\":", ((string)(null)), table17, "And ");
 #line hidden
-#line 255
+#line 253
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 256
+#line 254
     await testRunner.ThenAsync("validation error should be displayed", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
-#line 257
+#line 255
     await testRunner.AndAsync("no invoice should be created", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             }
@@ -1114,7 +1108,7 @@ namespace Tests.Acceptance.Features
                     "Service"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Meter reset is handled correctly", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 260
+#line 258
     this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1127,16 +1121,16 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 261
+#line 259
       await testRunner.GivenAsync("previous meter reading is 1000", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 262
+#line 260
       await testRunner.AndAsync("new meter is replaced with reading 0", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 263
+#line 261
       await testRunner.WhenAsync("I generate invoice", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 264
+#line 262
       await testRunner.ThenAsync("system should create a new meter baseline or flag error", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -1153,7 +1147,7 @@ namespace Tests.Acceptance.Features
                     "Service"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Duplicate meter readings should be ignored", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 267
+#line 265
     this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1166,13 +1160,13 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 268
+#line 266
       await testRunner.GivenAsync("multiple meter readings exist for same period", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 269
+#line 267
       await testRunner.WhenAsync("I generate invoice", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 270
+#line 268
       await testRunner.ThenAsync("only latest valid reading should be used", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -1189,7 +1183,7 @@ namespace Tests.Acceptance.Features
                     "Invoice"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Generate invoice successfully", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 278
+#line 276
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1202,16 +1196,16 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 279
+#line 277
     await testRunner.GivenAsync("no invoice exists for room \"101\" in March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 280
+#line 278
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 281
+#line 279
     await testRunner.ThenAsync("an invoice should be created", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
-#line 282
+#line 280
     await testRunner.AndAsync("invoice status should be \"Draft\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             }
@@ -1228,7 +1222,7 @@ namespace Tests.Acceptance.Features
                     "Invoice"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Skip invoice generation when invoice already exists", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 286
+#line 284
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1241,16 +1235,16 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 287
+#line 285
     await testRunner.GivenAsync("invoice already exists for room \"101\" in March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 288
+#line 286
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 289
+#line 287
     await testRunner.ThenAsync("invoice generation should be skipped", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
-#line 290
+#line 288
     await testRunner.AndAsync("only one invoice should exist", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             }
@@ -1267,7 +1261,7 @@ namespace Tests.Acceptance.Features
                     "Invoice"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Invoice generation is idempotent", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 294
+#line 292
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1280,16 +1274,16 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 295
+#line 293
     await testRunner.GivenAsync("no invoice exists for room \"101\" in March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 296
+#line 294
     await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 297
+#line 295
     await testRunner.AndAsync("I generate invoice for March 2026 again", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 298
+#line 296
     await testRunner.ThenAsync("only one invoice should exist", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -1306,7 +1300,7 @@ namespace Tests.Acceptance.Features
                     "Invoice"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Calculate invoice with multiple services", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 301
+#line 299
     this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1319,16 +1313,16 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 302
+#line 300
       await testRunner.GivenAsync("electricity service enabled with unit price 3000 VND", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 303
+#line 301
       await testRunner.AndAsync("water service enabled with unit price 10000 VND", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 304
+#line 302
       await testRunner.AndAsync("internet service enabled with unit price 100000 VND", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 305
+#line 303
       await testRunner.AndAsync("room \"101\" has 2 occupants", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
                 TechTalk.SpecFlow.Table table18 = new TechTalk.SpecFlow.Table(new string[] {
@@ -1340,10 +1334,10 @@ namespace Tests.Acceptance.Features
                 table18.AddRow(new string[] {
                             "Water",
                             "10"});
-#line 306
+#line 304
       await testRunner.AndAsync("meter readings exist:", ((string)(null)), table18, "And ");
 #line hidden
-#line 310
+#line 308
       await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
                 TechTalk.SpecFlow.Table table19 = new TechTalk.SpecFlow.Table(new string[] {
@@ -1351,11 +1345,11 @@ namespace Tests.Acceptance.Features
                             "Value"});
                 table19.AddRow(new string[] {
                             "TotalAmount",
-                            "5310000"});
-#line 311
+                            "5600000"});
+#line 309
       await testRunner.ThenAsync("the invoice should contain:", ((string)(null)), table19, "Then ");
 #line hidden
-#line 314
+#line 312
       await testRunner.AndAsync("invoice should include 3 service items", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             }
@@ -1372,7 +1366,7 @@ namespace Tests.Acceptance.Features
                     "Invoice"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Skip missing meter services but still calculate others", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 317
+#line 315
     this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1385,22 +1379,22 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 318
+#line 316
       await testRunner.GivenAsync("electricity service enabled but missing meter reading", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 319
+#line 317
       await testRunner.AndAsync("water service enabled with valid meter reading", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 320
+#line 318
       await testRunner.WhenAsync("I generate invoice for March 2026", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 321
+#line 319
       await testRunner.ThenAsync("electricity service should be skipped", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
-#line 322
+#line 320
       await testRunner.AndAsync("water service should be included", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 323
+#line 321
       await testRunner.AndAsync("invoice should still be created", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
             }
@@ -1417,7 +1411,7 @@ namespace Tests.Acceptance.Features
                     "InvoiceStatus"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Send invoice changes status from Draft to Sent", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 326
+#line 324
     this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1430,13 +1424,13 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 327
+#line 325
       await testRunner.GivenAsync("an invoice exists in Draft status", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 328
+#line 326
       await testRunner.WhenAsync("owner sends invoice to tenant", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 329
+#line 327
       await testRunner.ThenAsync("invoice status should be \"Sent\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -1453,7 +1447,7 @@ namespace Tests.Acceptance.Features
                     "InvoiceStatus"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Partial payment changes invoice to Partially Paid", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 332
+#line 330
     this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1466,13 +1460,13 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 333
+#line 331
       await testRunner.GivenAsync("an invoice is in Sent status", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 334
+#line 332
       await testRunner.WhenAsync("tenant pays part of the invoice", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 335
+#line 333
       await testRunner.ThenAsync("invoice status should be \"PartiallyPaid\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -1489,7 +1483,7 @@ namespace Tests.Acceptance.Features
                     "InvoiceStatus"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Full payment completes invoice", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 338
+#line 336
     this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1502,13 +1496,13 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 339
+#line 337
       await testRunner.GivenAsync("an invoice is in Sent status", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 340
+#line 338
       await testRunner.WhenAsync("tenant pays full amount", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 341
+#line 339
       await testRunner.ThenAsync("invoice status should be \"Paid\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -1525,7 +1519,7 @@ namespace Tests.Acceptance.Features
                     "InvoiceStatus"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Overdue is triggered after due date passes", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 344
+#line 342
     this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1538,13 +1532,13 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 345
+#line 343
       await testRunner.GivenAsync("an invoice in Sent status with due date passed 24 hours", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 346
+#line 344
       await testRunner.WhenAsync("system runs overdue check job", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 347
+#line 345
       await testRunner.ThenAsync("invoice status should be \"Overdue\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -1561,7 +1555,7 @@ namespace Tests.Acceptance.Features
                     "Payment"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Multiple partial payments are accumulated correctly", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 350
+#line 348
     this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1574,16 +1568,16 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 351
+#line 349
       await testRunner.GivenAsync("invoice total is 5,000,000", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 352
+#line 350
       await testRunner.WhenAsync("tenant pays 1,000,000", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 353
+#line 351
       await testRunner.AndAsync("tenant pays 2,000,000", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 354
+#line 352
       await testRunner.ThenAsync("total paid amount should be 3,000,000", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -1600,7 +1594,7 @@ namespace Tests.Acceptance.Features
                     "Payment"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Overpayment is rejected or capped", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 357
+#line 355
       this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1613,13 +1607,13 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 358
+#line 356
         await testRunner.GivenAsync("invoice total is 5,000,000", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 359
+#line 357
         await testRunner.WhenAsync("tenant attempts to pay 6,000,000", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 360
+#line 358
         await testRunner.ThenAsync("payment should be rejected or capped at invoice total", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -1636,7 +1630,7 @@ namespace Tests.Acceptance.Features
                     "Payment"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Payment not allowed on Draft invoice", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 363
+#line 361
       this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1649,13 +1643,13 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 364
+#line 362
         await testRunner.GivenAsync("invoice is in Draft status", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 365
+#line 363
         await testRunner.WhenAsync("tenant attempts to pay", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 366
+#line 364
         await testRunner.ThenAsync("payment should be rejected", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -1672,7 +1666,7 @@ namespace Tests.Acceptance.Features
                     "Adjustment"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Apply penalty and discount", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 373
+#line 371
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -1685,7 +1679,7 @@ namespace Tests.Acceptance.Features
 #line 6
   await this.FeatureBackgroundAsync();
 #line hidden
-#line 374
+#line 372
     await testRunner.WhenAsync("I generate invoice for March 2026 with penalty 500000 and discount 100000", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
                 TechTalk.SpecFlow.Table table20 = new TechTalk.SpecFlow.Table(new string[] {
@@ -1703,7 +1697,7 @@ namespace Tests.Acceptance.Features
                 table20.AddRow(new string[] {
                             "TotalAmount",
                             "5400000"});
-#line 375
+#line 373
     await testRunner.ThenAsync("the invoice should contain:", ((string)(null)), table20, "Then ");
 #line hidden
             }

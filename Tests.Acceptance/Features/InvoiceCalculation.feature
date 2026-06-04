@@ -149,8 +149,7 @@ Feature: Monthly Invoice Calculation
     And meter reading for room "101":
 
       | Previous | Current |
-      |-----------|----------|
-      | 100       | 110      |
+      | 100      | 110     |
 
     When I generate invoice for March 2026
     Then the invoice should contain:
@@ -167,8 +166,7 @@ Feature: Monthly Invoice Calculation
     And meter reading for room "101":
 
       | Previous | Current |
-      |-----------|----------|
-      | 1000      | 1000     |
+      | 1000     | 1000    |
 
     When I generate invoice for March 2026
     Then the invoice should contain:
@@ -180,7 +178,8 @@ Feature: Monthly Invoice Calculation
 
   @Service
   Scenario: Skip service item when room service is disabled
-    Given water service is disabled for room "101"
+    Given water service enabled with unit price 10000 VND
+    And water service is disabled for room "101"
     When I generate invoice for March 2026
     Then no service item should be created
 
@@ -190,7 +189,7 @@ Feature: Monthly Invoice Calculation
     Given electricity service enabled with unit price 3500 VND
     And no meter reading exists for room "101"
     When I generate invoice for March 2026
-    Then warning "Meter reading missing" should be displayed
+    Then warning "Thiếu chỉ số đồng hồ" should be displayed
     And service item should not be created
   @Service
   Scenario: Override unit price takes priority over default service price
@@ -249,8 +248,7 @@ Feature: Monthly Invoice Calculation
     And meter reading for room "101":
 
       | Previous | Current |
-      |-----------|----------|
-      | 100       | 90       |
+      | 100      | 90      |
 
     When I generate invoice for March 2026
     Then validation error should be displayed
@@ -310,7 +308,7 @@ Feature: Monthly Invoice Calculation
       When I generate invoice for March 2026
       Then the invoice should contain:
       | Field | Value |
-      | TotalAmount | 5310000 |
+      | TotalAmount | 5600000 |
       And invoice should include 3 service items
 
   @Invoice

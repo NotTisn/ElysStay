@@ -109,14 +109,16 @@ public class ChangeRoomStatusUnitTests
     }
 
     [Fact]
-    public async Task Handle_TargetStatusBooked_ThrowsBadRequestException()
+    public async Task Handle_TargetStatusReserved_ThrowsBadRequestException()
     {
-        // Cannot manually set a room to Booked — that is managed by reservation lifecycle
+        // Cannot manually set a room to Reserved — that is managed by the reservation lifecycle.
+        // "Reserved" is a valid RoomStatus but not an allowed manual target, so it must reach
+        // the "Trống hoặc Bảo trì" guard (not the enum-parse failure).
         var room = CreateRoom(RoomStatus.Available);
         SetupRoom(room);
 
         var act = () => CreateHandler().Handle(
-            new ChangeRoomStatusCommand { Id = room.Id, Status = "Booked" }, default);
+            new ChangeRoomStatusCommand { Id = room.Id, Status = "Reserved" }, default);
 
         await act.Should().ThrowAsync<BadRequestException>()
             .WithMessage("*Trống hoặc Bảo trì*");

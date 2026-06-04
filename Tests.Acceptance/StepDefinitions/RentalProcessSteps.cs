@@ -450,10 +450,19 @@ public class RentalProcessSteps
     [Then("the room status should be \"([^\"]*)\"")]
     public async Task ThenRoomStatusShouldBe(string status)
     {
-        var expected = Enum.Parse<RoomStatus>(status);
+        var expected = ParseRoomStatus(status);
         var dbRoom = await _fixture.DbContext.Rooms.FindAsync(_room.Id);
         dbRoom!.Status.Should().Be(expected);
     }
+
+    /// <summary>
+    /// The feature files use the business term "Booked" for the <see cref="RoomStatus.Reserved"/>
+    /// state. Map it here so the ubiquitous language in the specs matches the domain enum.
+    /// </summary>
+    private static RoomStatus ParseRoomStatus(string status) =>
+        status.Equals("Booked", StringComparison.OrdinalIgnoreCase)
+            ? RoomStatus.Reserved
+            : Enum.Parse<RoomStatus>(status, ignoreCase: true);
 
     // ── Then — payment assertions ──────────────────────────────────────────────
 

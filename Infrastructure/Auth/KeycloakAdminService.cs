@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -46,6 +47,8 @@ public class KeycloakAdminService : IKeycloakAdminService
         };
 
         var createResponse = await PostAsync($"admin/realms/{_options.Realm}/users", createPayload, ct);
+        if (createResponse.StatusCode == System.Net.HttpStatusCode.Conflict)
+            throw new ConflictException("Email này đã được sử dụng.", "DUPLICATE_EMAIL");
         createResponse.EnsureSuccessStatusCode();
 
         // 2. Get the created user by email to retrieve Keycloak ID

@@ -252,12 +252,10 @@ public class InvoiceIntegrationTests : IAsyncLifetime
 
     // ── @Invoice: Contract don't active in period  ─────────────────────────
     [Theory]
-        [InlineData("StatusTerminated", 1)]
-        [InlineData("TerminatedBeforePeriod", 1)]
-        [InlineData("StartsAfterPeriod", 1)]
-        public async Task GenerateInvoices_IneligibleContract_DoesNotGenerateInvoice(
-            string scenario,
-            int expectedSkippedCount)
+        [InlineData("StatusTerminated")]
+        [InlineData("TerminatedBeforePeriod")]
+        [InlineData("StartsAfterPeriod")]
+        public async Task GenerateInvoices_IneligibleContract_DoesNotGenerateInvoice(string scenario)
         {
             await SetupBaseData();
 
@@ -281,10 +279,16 @@ public class InvoiceIntegrationTests : IAsyncLifetime
 
             var result = await CreateHandler().Handle(Command(2026, 3), default);
 
+            // A contract that is not active within the billing period is filtered out of candidacy
+            // entirely: no invoice is generated. `Skipped` is reserved for contracts that ARE
+            // candidates but already have an invoice for the period, so it stays empty here.
             result.Generated.Should().BeEmpty();
-            result.Skipped.Should().HaveCount(expectedSkippedCount);
+            result.Skipped.Should().BeEmpty();
 
-            var invoiceCount = await _fixture.DbContext.Invoices.CountAsync();
+            // Scope the count to this contract — the shared test database is not reset between
+            // tests, so a global Invoices count would include rows created by other tests.
+            var invoiceCount = await _fixture.DbContext.Invoices
+                .CountAsync(i => i.ContractId == _contract.Id);
             invoiceCount.Should().Be(0);
         }
 

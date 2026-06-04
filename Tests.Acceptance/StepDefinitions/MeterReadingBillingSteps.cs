@@ -122,7 +122,7 @@ public class MeterReadingBillingSteps
             BillingYear = year,
             RentAmount = 5_000_000,
             ServiceAmount = serviceAmount,
-            Status = InvoiceStatus.Unpaid,
+            Status = InvoiceStatus.Draft,
             DueDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(7),
             CreatedBy = _owner.Id
         };
